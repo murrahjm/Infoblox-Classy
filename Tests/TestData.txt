@@ -1,0 +1,271 @@
+{"TestData": [
+    {
+        "_ref":  "record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default",
+        "name":  "testrecord.domain.com",
+		"extattrs":  {
+			"Site":  {
+						"value":  "corp"
+					 }
+        },
+		"ipv4addr":  "1.1.1.1",
+        "comment":  "test comment",
+        "ttl":  "1200",
+        "use_ttl":  true,
+        "view":  "default",
+        "zone":  "domain.com"
+    },
+    {
+        "_ref":  "record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default",
+        "name":  "testrecord3.domain.com",
+		"extattrs":  {
+			"Site":  {
+						"value":  "corp"
+					 }
+        },
+        "ipv4addr":  "1.1.1.1",
+        "comment":  "test comment 2",
+        "ttl":  "1200",
+        "use_ttl":  true,
+        "view":  "default",
+        "zone":  "domain.com"
+    },
+    {
+        "_ref":  "record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3",
+        "name":  "testrecord2.domain.com",
+        "ipv4addr":  "2.2.2.2",
+        "comment":  "",
+        "ttl":  "",
+        "use_ttl":  false,
+        "view":  "view3",
+        "zone":  "domain.com"
+    },
+    {
+        "_ref":  "record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default",
+        "name":  "testalias.domain.com",
+		"extattrs":  {
+			"Site":  {
+						"value":  "corp"
+					 }
+        },
+        "canonical":  "testrecord.domain.com",
+        "comment":  "test comment",
+        "ttl":  "1200",
+        "use_ttl":  true,
+        "view":  "default",
+        "zone":  "domain.com"
+    },
+    {
+        "_ref":  "record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default",
+        "name":  "testalias3.domain.com",
+		"extattrs":  {
+			"Site":  {
+						"value":  "corp"
+					 }
+        },
+        "canonical":  "testrecord.domain.com",
+        "comment":  "test comment 2",
+        "ttl":  "1200",
+        "use_ttl":  true,
+        "view":  "default",
+        "zone":  "domain.com"
+    },
+    {
+        "_ref":  "record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3",
+        "name":  "testalias2.domain.com",
+        "canonical":  "testrecord2.domain.com",
+        "comment":  "",
+        "ttl":  "",
+        "use_ttl":  false,
+        "view":  "view3",
+        "zone":  "domain.com"
+    },
+    {
+        "_ref":  "view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true",
+        "name":  "default",
+        "comment":  "Default view",
+        "is_default":  true
+    },
+    {
+        "_ref":  "view/asdfioaweo3893jco:view2/False",
+        "name":  "view2",
+        "comment":  "Second View",
+        "is_default":  false
+    },
+    {
+        "_ref":  "view/jkdfjover89345jh934:view3/False",
+        "name":  "view3",
+        "comment":  "Third View",
+        "is_default":  false
+    },
+    {
+        "Name":  "Building",
+        "Type":  "STRING",
+        "Comment":  "",
+        "DefaultValue":  "",
+        "_ref":  "extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLkJ1aWxkaW5n:Building"
+    },
+    {
+        "Name":  "Country",
+        "Type":  "STRING",
+        "Comment":  "",
+        "DefaultValue":  "",
+        "_ref":  "extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLkNvdW50cnk:Country"
+    },
+    {
+        "Name":  "Region",
+        "Type":  "STRING",
+        "Comment":  "",
+        "DefaultValue":  "",
+        "_ref":  "extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLlJlZ2lvbg:Region"
+    },
+    {
+        "Name":  "Site",
+        "Type":  "STRING",
+        "Comment":  "",
+        "DefaultValue":  "",
+        "_ref":  "extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLlNpdGU:Site"
+    },
+    {
+        "Name":  "State",
+        "Type":  "STRING",
+        "Comment":  "",
+        "DefaultValue":  "",
+        "_ref":  "extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLlN0YXRl:State"
+    },
+    {
+        "Name":  "VLAN",
+        "Type":  "STRING",
+        "Comment":  "",
+        "DefaultValue":  "",
+        "_ref":  "extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLlZMQU4:VLAN"
+    },
+    {
+        "Name":  "IBscavenge",
+        "Type":  "ENUM",
+        "Comment":  "Y = Yes\\r\\nN = No\\r\\nAttribute to scavenge record",
+        "DefaultValue":  "",
+        "_ref":  "extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLklCc2NhdmVuZ2U:IBscavenge"
+    },
+    {
+        "Name":  "IBscavengeExclude",
+        "Type":  "ENUM",
+        "Comment":  "Y = Yes\\r\\nN = No\\r\\nAttribute for scavenging",
+        "DefaultValue":  "",
+        "_ref":  "extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLklCc2NhdmVuZ2VFeGNsdWRl:IBscavengeExclude"
+    },
+    {
+        "Name":  "Test Networks",
+        "Type":  "ENUM",
+        "Comment":  "Networks for IB Script Testing",
+        "DefaultValue":  "",
+        "_ref":  "extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLlRlc3QgTmV0d29ya3M:Test%20Networks"
+    },
+    {
+        "Name":  "IBscavengeUndiscoveredCount",
+        "Type":  "INTEGER",
+        "Comment":  "Counter for devices identified by the scavenging script who have not ever been discovered by Network Discovery",
+        "DefaultValue":  "",
+        "_ref":  "extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLklCc2NhdmVuZ2VVbmRpc2NvdmVyZWRDb3VudA:IBscavengeUndiscoveredCount"
+    },
+    {
+        "_ref":  "fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default",
+        "name":  "testrecord.domain.com",
+		"extattrs":  {
+			"Site":  {
+						"value":  "corp"
+					 }
+        },
+        "ipv4addr":  "1.1.1.1",
+        "comment":  "test comment",
+        "network_view":  "default",
+        "mac":  "00:00:00:00:00:00"
+    },
+    {
+        "_ref":  "fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default",
+        "name":  "testrecord.domain.com",
+        "ipv4addr":  "1.2.3.4",
+        "comment":  "test comment 2",
+        "network_view":  "default",
+        "mac":  "00:00:00:00:00:00"
+    },
+    {
+        "_ref":  "fixedAddress/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2/networkview3",
+        "name":  "testrecord2.domain.com",
+        "ipv4addr":  "2.2.2.2",
+        "comment":  "",
+        "network_view":  "networkview3",
+        "mac":  "00:00:00:00:00:11"
+    },
+    {
+        "_ref":  "networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true",
+        "name":  "default",
+        "comment":  "Default networkview",
+        "is_default":  true
+    },
+    {
+        "_ref":  "networkview/asdfioaweo3893jco:networkview2/False",
+        "name":  "networkview2",
+        "comment":  "Second networkview",
+        "is_default":  false
+    },
+    {
+        "_ref":  "networkview/jkdfjover89345jh934:networkview3/False",
+        "name":  "networkview3",
+        "comment":  "Third networkview",
+        "is_default":  false
+    },
+    {
+        "_ref":  "record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default",
+        "ptrdname":  "testrecord.domain.com",
+		"extattrs":  {
+			"Site":  {
+						"value":  "corp"
+					 }
+        },
+        "ipv4addr":  "1.1.1.1",
+        "comment":  "test comment",
+        "ttl":  "1200",
+        "use_ttl":  true,
+        "view":  "default",
+        "zone":  "domain.com",
+        "name":  "1.1.1.1.in-addr.arpa"
+    },
+    {
+        "_ref":  "record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default",
+        "ptrdname":  "testrecord.domain.com",
+		"extattrs":  {
+			"Site":  {
+						"value":  "corp"
+					 }
+        },
+        "ipv4addr":  "1.2.3.4",
+        "comment":  "test comment 2",
+        "ttl":  "1200",
+        "use_ttl":  true,
+        "view":  "default",
+        "zone":  "domain.com",
+        "name":  "4.3.2.1.in-addr.arpa"
+    },
+    {
+        "_ref":  "record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3",
+        "ptrdname":  "testrecord2.domain.com",
+        "ipv4addr":  "2.2.2.2",
+        "comment":  "",
+        "ttl":  "",
+        "use_ttl":  false,
+        "view":  "view3",
+        "zone":  "domain.com",
+        "name":  "2.2.2.2.in-addr.arpa"
+    },
+    {
+        "_ref":  "record:ptr/adfwejfojvkalfpjqpe:1.0.0.0.in-addr.arpa/default",
+        "ptrdname":  "localhost",
+        "ipv4addr":  "",
+        "comment":  "",
+        "ttl":  "1",
+        "use_ttl":  true,
+        "view":  "default",
+        "zone":  "",
+        "name":  "1.0.0.0.in-addr.arpa"
+    }
+]}
