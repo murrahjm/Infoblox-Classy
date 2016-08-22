@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	Get-DNSARecord retreives objects of type DNSARecord from the Infoblox database.
+	Get-IBDNSARecord retreives objects of type DNSARecord from the Infoblox database.
 .DESCRIPTION
-	Get-DNSARecord retreives objects of type DNSARecord from the Infoblox database.  Parameters allow searching by Name, IPAddress, View, Zone or Comment  Also allows retrieving a specific record by reference string.  Returned object is of class type DNSARecord.
+	Get-IBDNSARecord retreives objects of type DNSARecord from the Infoblox database.  Parameters allow searching by Name, IPAddress, View, Zone or Comment  Also allows retrieving a specific record by reference string.  Returned object is of class type DNSARecord.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -24,27 +24,27 @@
 .PARAMETER _Ref
 	The unique reference string representing the DNS record.  String is in format <recordtype>/<uniqueString>:<Name>/<view>.  Value is assigned by the Infoblox appliance and returned with and find- or get- command.
 .EXAMPLE
-	Get-DNSARecord -Gridmaster $Gridmaster -Credential $Credential -IPAddress '192.168.101.1'
+	Get-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -IPAddress '192.168.101.1'
 
 	This example retrieves all DNS records with IP Address of 192.168.101.1
 .EXAMPLE
-	Get-DNSARecord -Gridmaster $Gridmaster -Credential $Credential -comment 'Test Comment' -Strict
+	Get-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -comment 'Test Comment' -Strict
 
 	This example retrieves all DNS records with the exact comment 'test comment'
 .EXAMPLE
-	Get-DNSARecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default'
+	Get-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default'
 
 	This example retrieves the single DNS record with the assigned reference string
 .EXAMPLE
-	Get-DNSARecord -Gridmaster $Gridmaster -Credential $Credential -name Testrecord.domain.com | Remove-DNSARecord
+	Get-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -name Testrecord.domain.com | Remove-IBDNSARecord
 
 	This example retrieves the dns record with name testrecord.domain.com, and deletes it from the infoblox database.
 .EXAMPLE
-	Get-DNSARecord -Gridmaster $Gridmaster -Credential $Credential -comment 'old comment' -Strict | Set-DNSARecord -comment 'new comment'
+	Get-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -comment 'old comment' -Strict | Set-IBDNSARecord -comment 'new comment'
 	
 	This example retrieves all dns records with a comment of 'old comment' and replaces it with 'new comment'
 .EXAMPLE
-	Get-DNSARecord -gridmaster $gridmaster -credential $credential -ExtAttributeQuery {Site -eq 'OldSite'}
+	Get-IBDNSARecord -gridmaster $gridmaster -credential $credential -ExtAttributeQuery {Site -eq 'OldSite'}
 
 	This example retrieves all dns records with an extensible attribute defined for 'Site' with value of 'OldSite'
 .INPUTS
@@ -54,7 +54,7 @@
 .OUTPUTS
 	IB_DNSARecord
 #>
-Function Get-DNSARecord {
+Function Get-IBDNSARecord {
 	[CmdletBinding(DefaultParameterSetName = 'byQuery')]
 	Param(
         [Parameter(Mandatory=$True)]
@@ -97,7 +97,7 @@ Function Get-DNSARecord {
         write-verbose "$FunctionName`:  Beginning Function"
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
         Try {
-            $IBViews = Get-InfobloxView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
+            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
         } Catch {
             Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
         }

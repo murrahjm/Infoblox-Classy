@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	Set-FixedAddress modifies properties of an existing fixed address in the Infoblox database.
+	Set-IBFixedAddress modifies properties of an existing fixed address in the Infoblox database.
 .DESCRIPTION
-	Set-FixedAddress modifies properties of an existing fixed address in the Infoblox database.  Valid IB_FixedAddress objects can be passed through the pipeline for modification.  A valid reference string can also be specified.  On a successful edit no value is returned unless the -Passthru switch is used.
+	Set-IBFixedAddress modifies properties of an existing fixed address in the Infoblox database.  Valid IB_FixedAddress objects can be passed through the pipeline for modification.  A valid reference string can also be specified.  On a successful edit no value is returned unless the -Passthru switch is used.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -10,7 +10,7 @@
 .PARAMETER _Ref
 	The unique reference string representing the DNS record.  String is in format <recordtype>/<uniqueString>:<Name>/<view>.  Value is assigned by the Infoblox appliance and returned with and find- or get- command.
 .PARAMETER Record
-	An object of type IB_FixedAddress representing the DNS record.  This parameter is typically for passing an object in from the pipeline, likely from Get-FixedAddress.
+	An object of type IB_FixedAddress representing the DNS record.  This parameter is typically for passing an object in from the pipeline, likely from Get-IBFixedAddress.
 .PARAMETER Name
 	The hostname to set on the provided dns record.	
 .PARAMETER Comment
@@ -20,11 +20,11 @@
 .PARAMETER Passthru
 	Switch parameter to return an IB_FixedAddress object with the new values after updating the Infoblox.  The default behavior is to return nothing on successful record edit.
 .EXAMPLE
-	Get-FixedAddress -Gridmaster $Gridmaster -Credential $Credential -comment 'old comment' -Strict | Set-FixedAddress -comment 'new comment'
+	Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -comment 'old comment' -Strict | Set-IBFixedAddress -comment 'new comment'
 	
 	This example retrieves all fixed addresses with a comment of 'old comment' and replaces it with 'new comment'
 .EXAMPLE
-	Get-FixedAddress -Gridmaster $Gridmaster -Credential $Credential -Name testrecord.domain.com | Set-FixedAddress -Name testrecord2.domain.com -comment 'new comment' -passthru
+	Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -Name testrecord.domain.com | Set-IBFixedAddress -Name testrecord2.domain.com -comment 'new comment' -passthru
 
 		Name      : testrecord2.domain.com
 		IPAddress : 192.168.1.1
@@ -37,7 +37,7 @@
 	-----------
 	This example modifes the PTRDName and comment on the provided record and outputs the updated record definition
 .EXAMPLE
-	Set-FixedAddress -Gridmaster $Gridmaster -Credential $Credential -_ref fixedaddress/ZG5zLmJpbmRfYSQuX2RlZmF1bHQuY29tLmVwcm9kLHBkZGNlcGQwMWhvdW1yaWIsMTAuNzUuMTA4LjE4MA:192.168.1.2/default -MAC '11:11:11:11:11:11' -Passthru
+	Set-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -_ref fixedaddress/ZG5zLmJpbmRfYSQuX2RlZmF1bHQuY29tLmVwcm9kLHBkZGNlcGQwMWhvdW1yaWIsMTAuNzUuMTA4LjE4MA:192.168.1.2/default -MAC '11:11:11:11:11:11' -Passthru
 
 		Name      : testrecord2.domain.com
 		IPAddress : 192.168.1.2
@@ -56,7 +56,7 @@
 .OUTPUTS
 	IB_FixedAddress
 #>
-Function Set-FixedAddress{
+Function Set-IBFixedAddress{
     [CmdletBinding(DefaultParameterSetName='byObject',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
@@ -93,7 +93,7 @@ Function Set-FixedAddress{
 			
             $Record = [IB_FixedAddress]::Get($Gridmaster,$Credential,$_Ref)
             If ($Record){
-                $Record | Set-FixedAddress -Name $Name -Comment $Comment -mac $MAC -Passthru:$Passthru
+                $Record | Set-IBFixedAddress -Name $Name -Comment $Comment -mac $MAC -Passthru:$Passthru
             }
 			
         }else {

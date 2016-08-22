@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	Set-DNSCNameRecord modifies properties of an existing DNS CName Record in the Infoblox database.
+	Set-IBDNSCNameRecord modifies properties of an existing DNS CName Record in the Infoblox database.
 .DESCRIPTION
-	Set-DNSCNameRecord modifies properties of an existing DNS CName Record in the Infoblox database.  Valid IB_DNSCNameRecord objects can be passed through the pipeline for modification.  A valid reference string can also be specified.  On a successful edit no value is returned unless the -Passthru switch is used.
+	Set-IBDNSCNameRecord modifies properties of an existing DNS CName Record in the Infoblox database.  Valid IB_DNSCNameRecord objects can be passed through the pipeline for modification.  A valid reference string can also be specified.  On a successful edit no value is returned unless the -Passthru switch is used.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -10,7 +10,7 @@
 .PARAMETER _Ref
 	The unique reference string representing the DNS record.  String is in format <recordtype>/<uniqueString>:<Name>/<view>.  Value is assigned by the Infoblox appliance and returned with and find- or get- command.
 .PARAMETER Record
-	An object of type IB_DNSCNameRecord representing the DNS record.  This parameter is typically for passing an object in from the pipeline, likely from Get-DNSCNameRecord.
+	An object of type IB_DNSCNameRecord representing the DNS record.  This parameter is typically for passing an object in from the pipeline, likely from Get-IBDNSCNameRecord.
 .PARAMETER Canonical
 	The canonical name or alias target to set on the provided dns record.
 .PARAMETER Comment
@@ -22,11 +22,11 @@
 .PARAMETER Passthru
 	Switch parameter to return an IB_DNSCNameRecord object with the new values after updating the Infoblox.  The default behavior is to return nothing on successful record edit.
 .EXAMPLE
-	Get-DNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'old comment' -Strict | Set-DNSCNameRecord -comment 'new comment'
+	Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'old comment' -Strict | Set-IBDNSCNameRecord -comment 'new comment'
 	
 	This example retrieves all dns records with a comment of 'old comment' and replaces it with 'new comment'
 .EXAMPLE
-	Get-DNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name testalias.domain.com | Set-DNSCNameRecord -Canonical testrecord2.domain.com -comment 'new comment' -passthru
+	Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name testalias.domain.com | Set-IBDNSCNameRecord -Canonical testrecord2.domain.com -comment 'new comment' -passthru
 
 		Name      : testalias.domain.com
 		Canonical : testrecord2.domain.com
@@ -40,7 +40,7 @@
 	-----------
 	This example modifes the IPAddress and comment on the provided record and outputs the updated record definition
 .EXAMPLE
-	Set-DNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -_ref record:cname/ZG5zLmJpbmRfYSQuX2RlZmF1bHQuY29tLmVwcm9kLHBkZGNlcGQwMWhvdW1yaWIsMTAuNzUuMTA4LjE4MA:testrecord2.domain.com/default -ClearTTL -Passthru
+	Set-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -_ref record:cname/ZG5zLmJpbmRfYSQuX2RlZmF1bHQuY29tLmVwcm9kLHBkZGNlcGQwMWhvdW1yaWIsMTAuNzUuMTA4LjE4MA:testrecord2.domain.com/default -ClearTTL -Passthru
 
 		Name      : testalias2.domain.com
 		Canonical : testrecord2.domain.com
@@ -60,7 +60,7 @@
 .OUTPUTS
 	IB_DNSCNameRecord
 #>
-Function Set-DNSCNameRecord{
+Function Set-IBDNSCNameRecord{
     [CmdletBinding(DefaultParameterSetName='byObject',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
@@ -101,7 +101,7 @@ Function Set-DNSCNameRecord{
 			
             $Record = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,$_Ref)
             If ($Record){
-                $Record | Set-DNSCNameRecord -Canonical $Canonical -Comment $Comment -TTL $TTL -ClearTTL:$ClearTTL -Passthru:$Passthru
+                $Record | Set-IBDNSCNameRecord -Canonical $Canonical -Comment $Comment -TTL $TTL -ClearTTL:$ClearTTL -Passthru:$Passthru
             }
 			
         }else {

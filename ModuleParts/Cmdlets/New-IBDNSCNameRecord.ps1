@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	New-DNSCNameRecord creates an object of type DNSCNameRecord in the Infoblox database.
+	New-IBDNSCNameRecord creates an object of type DNSCNameRecord in the Infoblox database.
 .DESCRIPTION
-	New-DNSCNameRecord creates an object of type DNSCNameRecord in the Infoblox database.  If creation is successful an object of type IB_DNSCNameRecord is returned.
+	New-IBDNSCNameRecord creates an object of type DNSCNameRecord in the Infoblox database.  If creation is successful an object of type IB_DNSCNameRecord is returned.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -18,7 +18,7 @@
 .PARAMETER TTL
 	Optional parameter to specify a record-specific TTL.  If not specified the record inherits the Grid TTL
 .EXAMPLE
-	New-DNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name testalias.domain.com -Canonical testrecord.domain.com
+	New-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name testalias.domain.com -Canonical testrecord.domain.com
 
 		Name      : testalias.domain.com
 		Canonical : testrecord.domain.com
@@ -32,7 +32,7 @@
 	-----------
 	This example creates a dns record with no comment, in the default view, and no record-specific TTL
 .EXAMPLE
-	New-DNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name Testalias2.domain.com -canonical testrecord2.domain.com -comment 'new record' -view default -ttl 100
+	New-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name Testalias2.domain.com -canonical testrecord2.domain.com -comment 'new record' -view default -ttl 100
 
 		Name      : testalias2.domain.com
 		Canonical : testrecord2.domain.com
@@ -52,7 +52,7 @@
 .OUTPUTS
 	IB_DNSCNameRecord
 #>
-Function New-DNSCNameRecord {
+Function New-IBDNSCNameRecord {
     [CmdletBinding(SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
         [Parameter(Mandatory=$True)]
@@ -84,7 +84,7 @@ Function New-DNSCNameRecord {
         write-verbose "$FunctionName`:  Beginning Function"
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
         Try {
-             $IBViews = Get-InfobloxView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
+             $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
         } Catch {
             Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
         }

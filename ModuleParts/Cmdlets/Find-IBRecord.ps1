@@ -18,19 +18,19 @@
 .PARAMETER RecordType
 	A filter for record searching.  By default this cmdlet will search all record types.  Use this parameter to search for only a specific record type.  Can only be used with a string search.  Note this parameter is not validated, so value must be the correct syntax for the infoblox to retrieve it.
 .EXAMPLE
-	Find-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -IPAddress '192.168.101.1'
+	Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -IPAddress '192.168.101.1'
 
 	This example retrieves all records with IP Address of 192.168.101.1
 .EXAMPLE
-	Find-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString 'Test' -Strict
+	Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString 'Test' -Strict
 
 	This example retrieves all records with the exact name 'Test'
 .EXAMPLE
-	Find-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString 'Test' -RecordType 'record:a'
+	Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString 'Test' -RecordType 'record:a'
 
 	This example retrieves all dns a records that have 'test' in the name.
 .EXAMPLE
-	Find-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -RecordType 'fixedaddress'
+	Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -RecordType 'fixedaddress'
 
 	This example retrieves all fixedaddress records in the infoblox database
 .INPUTS
@@ -44,7 +44,7 @@
 	IB_DNSPTRRecord
 	IB_ReferenceObject
 #>
-Function Find-InfobloxRecord {
+Function Find-IBRecord {
     [CmdletBinding(DefaultParameterSetName = 'globalSearchbyIP')]
     Param(
         [Parameter(Mandatory=$True)]
@@ -78,7 +78,7 @@ Function Find-InfobloxRecord {
         write-verbose "$FunctionName`:  Beginning Function"
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
         Try {
-            $IBViews = Get-InfobloxView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
+            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
         } Catch {
             Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
         }
@@ -118,7 +118,7 @@ Function Find-InfobloxRecord {
 			write-verbose "`t`t$($item._ref)"
 		}
 		Foreach ($item in $output){
-			Get-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -_ref $item._ref
+			Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_ref $item._ref
 		}
 
     }

@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	Remove-InfobloxRecord removes the specified record from the Infoblox database.
+	Remove-IBRecord removes the specified record from the Infoblox database.
 .DESCRIPTION
-	Remove-InfobloxRecord removes the specified record from the Infoblox database.  This is a generalized version of the Remove-DNSARecord, Remove-DNSCNameRecord, etc.  If deletion is successful the reference string of the deleted record is returned.
+	Remove-IBRecord removes the specified record from the Infoblox database.  This is a generalized version of the Remove-IBDNSARecord, Remove-IBDNSCNameRecord, etc.  If deletion is successful the reference string of the deleted record is returned.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -10,11 +10,11 @@
 .PARAMETER _Ref
 	The unique reference string representing the record.  String is in format <recordtype>/<uniqueString>:<Name>/<view>.  Value is assigned by the Infoblox appliance and returned with and find- or get- command.
 .EXAMPLE
-	Remove-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -_ref fixedaddress/ZG5zLmJpbmRfYSQuX2RlZmF1bHQuY29tLmVwcm9kLHBkYWR1dGwwMWNvcnAsMTAuOTYuMTA1LjE5MQ:192.168.1.1/default
+	Remove-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_ref fixedaddress/ZG5zLmJpbmRfYSQuX2RlZmF1bHQuY29tLmVwcm9kLHBkYWR1dGwwMWNvcnAsMTAuOTYuMTA1LjE5MQ:192.168.1.1/default
 
 	This example deletes the fixed address record with the specified unique reference string.  If successful, the reference string will be returned as output.
 .EXAMPLE
-	Get-FixedAddress -Gridmaster $Gridmaster -Credential $Credential -name Server01 | Remove-InfobloxRecord
+	Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -name Server01 | Remove-IBRecord
 
 	This example retrieves the address reservation for Server01, and deletes it from the infoblox database.  If successful, the reference string will be returned as output.
 .EXAMPLE
@@ -22,7 +22,7 @@
 
 	This example deletes the DNS A record with the specified unique reference string.  If successful, the reference string will be returned as output.
 .EXAMPLE
-	Get-DNSARecord -Gridmaster $Gridmaster -Credential $Credential -name Testrecord.domain.com | Remove-InfobloxRecord
+	Get-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -name Testrecord.domain.com | Remove-IBRecord
 
 	This example retrieves the dns record with name testrecord.domain.com, and deletes it from the infoblox database.  If successful, the reference string will be returned as output.
 .INPUTS
@@ -32,7 +32,7 @@
 .OUTPUTS
 	IB_ReferenceObject
 #>
-Function Remove-InfobloxRecord{
+Function Remove-IBRecord{
     [CmdletBinding(DefaultParameterSetName='byObject',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]

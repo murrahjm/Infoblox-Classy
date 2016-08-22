@@ -1,6 +1,6 @@
 <#
 .Synopsis
-	Remove-ExtensibleAttribute adds or updates an extensible attribute to an existing infoblox record.
+	Remove-IBExtensibleAttribute adds or updates an extensible attribute to an existing infoblox record.
 .DESCRIPTION
 	Removes the specified extensible attribute from the provided Infoblox object.  A valid infoblox object must be provided either through parameter or pipeline.  Pipeline supports multiple objects, to allow adding/updating the extensible attribute on multiple records at once.
 .PARAMETER Gridmaster
@@ -10,7 +10,7 @@
 .PARAMETER _Ref
 	The unique reference string representing the Infoblox object.  String is in format <recordtype>/<uniqueString>:<Name>/<view>.  Value is assigned by the Infoblox appliance and returned with and find- or get- command.
 .PARAMETER Record
-	An object of type IB_xxx representing the Infoblox object.  This parameter is typically for passing an object in from the pipeline, likely from Get-DNSARecord.
+	An object of type IB_xxx representing the Infoblox object.  This parameter is typically for passing an object in from the pipeline, likely from Get-IBDNSARecord.
 .PARAMETER EAName
 	The name of the extensible attribute to remove from the provided infoblox object.
 .PARAMETER RemoveAll
@@ -18,20 +18,20 @@
 .PARAMETER Passthru
 	Switch parameter to return the provided object(s) with the new values after updating the Infoblox.  The default behavior is to return nothing on successful record edit.
 .EXAMPLE
-	Remove-ExtensibleAttribute -gridmaster $gridmaster -credential $credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default' -EAName Site
+	Remove-IBExtensibleAttribute -gridmaster $gridmaster -credential $credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default' -EAName Site
 	
 	This example removes the extensible attribute 'site' from the specified infoblox object.
 .EXAMPLE
-	Get-DNSARecord  -gridmaster $gridmaster -credential $credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default' | `
-		Remove-ExtensibleAttribute -EAName Site
+	Get-IBDNSARecord  -gridmaster $gridmaster -credential $credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default' | `
+		Remove-IBExtensibleAttribute -EAName Site
 	
-	This example retrieves the DNS record using Get-DNSARecord, then passes that object through the pipeline to Remove-ExtensibleAttribute, which removes the extensible attribute 'Site' from the object.
+	This example retrieves the DNS record using Get-IBDNSARecord, then passes that object through the pipeline to Remove-IBExtensibleAttribute, which removes the extensible attribute 'Site' from the object.
 .EXAMPLE
-	Get-FixedAddress -gridmaster $gridmaster -credential $credential -ExtAttributeQuery {Site -eq 'OldSite'} | Remove-ExtensibleAttribute -RemoveAll
+	Get-IBFixedAddress -gridmaster $gridmaster -credential $credential -ExtAttributeQuery {Site -eq 'OldSite'} | Remove-IBExtensibleAttribute -RemoveAll
 	
 	This example retrieves all Fixed Address objects with a defined Extensible attribute of 'Site' with value 'OldSite' and removes all extensible attributes defined on the objects.
 #>
-Function Remove-ExtensibleAttribute {
+Function Remove-IBExtensibleAttribute {
     [CmdletBinding(DefaultParameterSetName='byObjectEAName',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
         [Parameter(Mandatory=$True,ParameterSetName='byRefEAName')]
@@ -72,17 +72,17 @@ Function Remove-ExtensibleAttribute {
     PROCESS{
         If ($pscmdlet.ParameterSetName -eq "byRefEAName"){
 			Write-Verbose "$FunctionName`:  Refstring passed, querying infoblox for record"
-			$Record = Get-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_Ref
+			$Record = Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_Ref
             If ($Record){
 				Write-Verbose "$FunctionName`: object found, passing to cmdlet through pipeline"
-                $Record | Remove-ExtensibleAttribute -EAName $EAName -passthru:$Passthru
+                $Record | Remove-IBExtensibleAttribute -EAName $EAName -passthru:$Passthru
             }	
         } elseif($pscmdlet.ParameterSetName -eq "byRefAll"){
 			Write-Verbose "$FunctionName`:  Refstring passed, querying infoblox for record"
-			$Record = Get-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_Ref
+			$Record = Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_Ref
             If ($Record){
 				Write-Verbose "$FunctionName`: object found, passing to cmdlet through pipeline"
-                $Record | Remove-ExtensibleAttribute -RemoveAll:$RemoveAll -passthru:$Passthru
+                $Record | Remove-IBExtensibleAttribute -RemoveAll:$RemoveAll -passthru:$Passthru
             }	
 		} else {
 			Foreach ($Item in $Record){

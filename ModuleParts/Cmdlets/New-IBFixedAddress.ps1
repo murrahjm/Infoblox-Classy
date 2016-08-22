@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	New-FixedAddress creates an object of type FixedAddress in the Infoblox database.
+	New-IBFixedAddress creates an object of type FixedAddress in the Infoblox database.
 .DESCRIPTION
-	New-FixedAddress creates an object of type FixedAddress in the Infoblox database.  If creation is successful an object of type IB_FixedAddress is returned.
+	New-IBFixedAddress creates an object of type FixedAddress in the Infoblox database.  If creation is successful an object of type IB_FixedAddress is returned.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -18,7 +18,7 @@
 .PARAMETER Comment
 	Optional comment field for the record.  Can be used for notation and keyword searching by Get- cmdlets.
 .EXAMPLE
-	New-FixedAddress -Gridmaster $Gridmaster -Credential $Credential Name Server01 -IPAddress 192.168.1.1
+	New-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential Name Server01 -IPAddress 192.168.1.1
 
 		Name        : Server01
 		IPAddress   : 192.168.1.1
@@ -31,7 +31,7 @@
 	-----------
 	This example creates an IP reservation for 192.168.1.1 with no comment in the default view
 .EXAMPLE
-	New-FixedAddress -Gridmaster $Gridmaster -Credential $Credential -Name Server02.domain.com -IPAddress 192.168.1.2 -comment 'Reservation for Server02' -view default -MAC '11:11:11:11:11:11'
+	New-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -Name Server02.domain.com -IPAddress 192.168.1.2 -comment 'Reservation for Server02' -view default -MAC '11:11:11:11:11:11'
 
 		Name      : Server02
 		IPAddress : 192.168.1.2
@@ -50,7 +50,7 @@
 .OUTPUTS
 	IB_FixedAddress
 #>
-Function New-FixedAddress {
+Function New-IBFixedAddress {
     [CmdletBinding(SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
         [Parameter(Mandatory=$True)]
@@ -80,7 +80,7 @@ Function New-FixedAddress {
         write-verbose "$FunctionName`:  Beginning Function"
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
         Try {
-            $IBViews = Get-InfobloxView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView
+            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView
         } Catch {
             Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
         }

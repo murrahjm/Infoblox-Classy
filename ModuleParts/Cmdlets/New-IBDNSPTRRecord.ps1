@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	New-DNSPTRRecord creates an object of type DNSPTRRecord in the Infoblox database.
+	New-IBDNSPTRRecord creates an object of type DNSPTRRecord in the Infoblox database.
 .DESCRIPTION
-	New-DNSPTRRecord creates an object of type DNSPTRRecord in the Infoblox database.  If creation is successful an object of type IB_DNSPTRRecord is returned.
+	New-IBDNSPTRRecord creates an object of type DNSPTRRecord in the Infoblox database.  If creation is successful an object of type IB_DNSPTRRecord is returned.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -18,7 +18,7 @@
 .PARAMETER TTL
 	Optional parameter to specify a record-specific TTL.  If not specified the record inherits the Grid TTL
 .EXAMPLE
-	New-DNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName testrecord.domain.com -IPAddress 192.168.1.1
+	New-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName testrecord.domain.com -IPAddress 192.168.1.1
 
 		Name      : 1.1.168.192.in-addr.arpa
 		PTRDName  : testrecord.domain.com
@@ -33,7 +33,7 @@
 	-----------
 	This example creates a dns record with no comment, in the default view, and no record-specific TTL
 .EXAMPLE
-	New-DNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName TestRecord2.domain.com -IPAddress 192.168.1.2 -comment 'new record' -view default -ttl 100
+	New-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName TestRecord2.domain.com -IPAddress 192.168.1.2 -comment 'new record' -view default -ttl 100
 
 		Name      : 2.1.168.192.in-addr.arpa
 		PTRDName  : testrecord2.domain.com
@@ -54,7 +54,7 @@
 .OUTPUTS
 	IB_DNSPTRRecord
 #>
-Function New-DNSPTRRecord {
+Function New-IBDNSPTRRecord {
     [CmdletBinding(SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
         [Parameter(Mandatory=$True)]
@@ -86,7 +86,7 @@ Function New-DNSPTRRecord {
         write-verbose "$FunctionName`:  Beginning Function"
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
         Try {
-            $IBViews = Get-InfobloxView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
+            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
         } Catch {
             Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
         }

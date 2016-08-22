@@ -1,18 +1,16 @@
 <#
 .Synopsis
-	Get-DNSPTRRecord retreives objects of type DNSPTRRecord from the Infoblox database.
+	Get-IBDNSCNameRecord retreives objects of type DNSCNameRecord from the Infoblox database.
 .DESCRIPTION
-	Get-DNSPTRRecord retreives objects of type DNSPTRRecord from the Infoblox database.  Parameters allow searching by Name, IPAddress, View, Zone or Comment  Also allows retrieving a specific record by reference string.  Returned object is of class type DNSPTRRecord.
+	Get-IBDNSCNameRecord retreives objects of type DNSCNameRecord from the Infoblox database.  Parameters allow searching by Name, Canonical, View, Zone or Comment  Also allows retrieving a specific record by reference string.  Returned object is of class type DNSCNameRecord.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
 	Powershell credential object for use in authentication to the specified gridmaster.  This username/password combination needs access to the WAPI interface.
 .PARAMETER Name
-	The record name to search for.  This is usually something like '1.1.168.192.in-addr.arpa'.  To search for a hostname that the PTR record resolves to, use the PTRDName parameter.  Can be fqdn or partial name match depending on use of the -Strict switch
-.PARAMETER PTRDName
-	The hostname to search for.  Note this is not the name of the PTR record, but rather the name that the ptr record points to.  Can be fqdn or partial name match depending on use of the -Strict switch
-.PARAMETER IPAddress
-	The IP Address to search for.  Standard IPv4 notation applies, and a string value must be castable to an IPAddress object.
+	The dns name to search for.  Can be fqdn or partial name match depending on use of the -Strict switch
+.PARAMETER Canonical
+	The canonical name to search for.  This is the record that the Alias(name) resolves to.  Can be fqdn or partial name match depending on use of the -Strict switch
 .PARAMETER Zone
 	The DNS zone to search for records in.  Note that specifying a zone will also restrict the searching to a specific view.  The default view will be used if none is specified.
 .PARAMETER MaxResults
@@ -22,41 +20,49 @@
 .PARAMETER Comment
 	A string to search for in the comment field of the DNS record.  Will return any record with the matching string anywhere in the comment field.  Use with -Strict to match only the exact string in the comment.
 .PARAMETER Strict
-	A switch to specify whether the search of the Name, PTRDname or comment fields should be exact, or allow partial word searches or regular expression matching.
+	A switch to specify whether the search of the name, canonical or comment field should be exact, or allow partial word searches or regular expression matching.
 .PARAMETER _Ref
 	The unique reference string representing the DNS record.  String is in format <recordtype>/<uniqueString>:<Name>/<view>.  Value is assigned by the Infoblox appliance and returned with and find- or get- command.
 .EXAMPLE
-	Get-DNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -IPAddress '192.168.101.1'
+	Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Canonical 'testrecord.domain.com'
 
-	This example retrieves all DNS PTR records with IP Address of 192.168.101.1
+	This example retrieves all DNS records with Canonical of testrecord.domain.com
 .EXAMPLE
-	Get-DNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'Test Comment' -Strict
+	Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'Test Comment' -Strict
 
-	This example retrieves all DNS PTR records with the exact comment 'test comment'
+	This example retrieves all DNS records with the exact comment 'test comment'
 .EXAMPLE
-	Get-DNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'record:ptr/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:1.1.168.192.in-addr.arpa/default'
+	Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'record:cname/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testalias.domain.com/default'
 
-	This example retrieves the single DNS PTR record with the assigned reference string
+	This example retrieves the single DNS record with the assigned reference string
 .EXAMPLE
-	Get-DNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName Testrecord.domain.com | Remove-DNSPTRRecord
+	Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -name testalias.domain.com | Remove-IBDNSCNameRecord
 
-	This example retrieves the DNS PTR record with PTRDName testrecord.domain.com, and deletes it from the infoblox database.
+	This example retrieves the dns record with name testalias.domain.com, and deletes it from the infoblox database.
 .EXAMPLE
-	Get-DNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'old comment' -Strict | Set-DNSPTRRecord -comment 'new comment'
+	Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'old comment' -Strict | Set-IBDNSCNameRecord -comment 'new comment'
 	
-	This example retrieves all DNS PTR records with a comment of 'old comment' and replaces it with 'new comment'
+	This example retrieves all dns records with a comment of 'old comment' and replaces it with 'new comment'
 .EXAMPLE
-	Get-DNSPTRRecord -gridmaster $gridmaster -credential $credential -ExtAttributeQuery {Site -eq 'OldSite'}
+	Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Canonical 'oldserver.domain.com' -Strict | Set-IBDNSCNameRecord -canonical 'newserver.fqdn.com'
+
+	This example retrieves all dns cname records pointing to an old server, and replaces the value with the fqdn of a new server.
+.EXAMPLE
+	Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Canonical 'oldserver.domain.com' -Strict | Remove-IBDNSCNameRecord
+
+	This example retrieves all dns cname records pointing to an old server, and deletes them.
+.EXAMPLE
+	Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $credential -ExtAttributeQuery {Site -eq 'OldSite'}
 
 	This example retrieves all dns records with an extensible attribute defined for 'Site' with value of 'OldSite'
 .INPUTS
-	System.Net.IPAddress[]
+	System.Net.Canonical[]
 	System.String
 	IB_ReferenceObject
 .OUTPUTS
-	IB_DNSPTRRecord
+	IB_DNSCNameRecord
 #>
-Function Get-DNSPTRRecord {
+Function Get-IBDNSCNameRecord {
 	[CmdletBinding(DefaultParameterSetName = 'byQuery')]
 	Param(
         [Parameter(Mandatory=$True)]
@@ -72,10 +78,7 @@ Function Get-DNSPTRRecord {
 		[String]$Name,
 
 		[Parameter(ParameterSetName='byQuery')]
-		[IPAddress]$IPAddress,
-
-		[Parameter(ParameterSetName='byQuery')]
-		[String]$PTRDName,
+		[String]$Canonical,
 
 		[Parameter(ParameterSetName='byQuery')]
 		[String]$View,
@@ -102,7 +105,7 @@ Function Get-DNSPTRRecord {
         write-verbose "$FunctionName`:  Beginning Function"
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
         Try {
-            $IBViews = Get-InfobloxView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
+            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
         } Catch {
             Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
         }
@@ -116,11 +119,11 @@ Function Get-DNSPTRRecord {
     }
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
-			Write-Verbose "$FunctionName`:  Performing query search for PTR Records"
-			[IB_DNSPTRRecord]::Get($Gridmaster,$Credential,$Name,$IPAddress,$PTRDName,$Comment,$ExtAttributeQuery,$Zone,$View,$Strict,$MaxResults)
+			Write-Verbose "$FunctionName`:  Performing query search for CName Records"
+			[IB_DNSCNameRecord]::Get($Gridmaster,$Credential,$Name,$Canonical,$Comment,$ExtAttributeQuery,$Zone,$View,$Strict,$MaxResults)
 		} else {
-			Write-Verbose "$FunctionName`: Querying $gridmaster for PTR record with reference string $_ref"
-			[IB_DNSPTRRecord]::Get($Gridmaster, $Credential, $_ref)
+			Write-Verbose "$FunctionName`: Querying $gridmaster for CName record with reference string $_ref"
+			[IB_DNSCNameRecord]::Get($Gridmaster, $Credential, $_ref)
 		}
 	}
 	END{}

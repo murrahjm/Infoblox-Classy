@@ -1,6 +1,6 @@
 <#
 .Synopsis
-	Add-ExtensibleAttribute adds or updates an extensible attribute to an existing infoblox record.
+	Add-IBExtensibleAttribute adds or updates an extensible attribute to an existing infoblox record.
 .DESCRIPTION
 	Updates the provided infoblox record with an extensible attribute as defined in the ExtensibleAttributeDefinition of the Infoblox.  If the extensible attribute specified already exists the value will be updated.  A valid infoblox object must be provided either through parameter or pipeline.  Pipeline supports multiple objects, to allow adding/updating the extensible attribute on multiple records at once.
 .PARAMETER Gridmaster
@@ -18,20 +18,20 @@
 .PARAMETER Passthru
 	Switch parameter to return the provided object(x) with the new values after updating the Infoblox.  The default behavior is to return nothing on successful record edit.
 .EXAMPLE
-	Add-ExtensibleAttribute -gridmaster $gridmaster -credential $credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default' -EAName Site -EAValue Corp
+	Add-IBExtensibleAttribute -gridmaster $gridmaster -credential $credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default' -EAName Site -EAValue Corp
 	
 	This example create a new extensible attribute for 'Site' with value of 'Corp' on the provided extensible attribute
 .EXAMPLE
 	Get-DNSARecord  -gridmaster $gridmaster -credential $credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default' | `
-		Add-ExtensibleAttribute -EAName Site -EAValue DR
+		Add-IBExtensibleAttribute -EAName Site -EAValue DR
 	
-	This example retrieves the DNS record using Get-DNSARecord, then passes that object through the pipeline to Add-ExtensibleAttribute, which updates the previously created extensible attribute 'Site' to value 'DR'
+	This example retrieves the DNS record using Get-DNSARecord, then passes that object through the pipeline to Add-IBExtensibleAttribute, which updates the previously created extensible attribute 'Site' to value 'DR'
 .EXAMPLE
-	Get-FixedAddress -gridmaster $gridmaster -credential $credential -ExtAttributeQuery {Site -eq 'OldSite'} | Add-ExtensibleAttribute -EAName Site -EAValue NewSite
+	Get-IBFixedAddress -gridmaster $gridmaster -credential $credential -ExtAttributeQuery {Site -eq 'OldSite'} | Add-IBExtensibleAttribute -EAName Site -EAValue NewSite
 	
 	This example retrieves all Fixed Address objects with a defined Extensible attribute of 'Site' with value 'OldSite' and updates the value to 'NewSite'
 #>
-Function Add-ExtensibleAttribute {
+Function Add-IBExtensibleAttribute {
     [CmdletBinding(DefaultParameterSetName='byObject',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
@@ -68,10 +68,10 @@ Function Add-ExtensibleAttribute {
 		If ($pscmdlet.ParameterSetName -eq 'byRef'){
 			Write-Verbose "$FunctionName`:  Refstring passed, querying infoblox for record"
             $Record = [IB_DNSARecord]::Get($Gridmaster,$Credential,$_Ref)
-			$Record = Get-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_Ref
+			$Record = Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_Ref
             If ($Record){
  				Write-Verbose "$FunctionName`: object found, passing to cmdlet through pipeline"
-               $Record | Add-ExtensibleAttribute -EAName $EAName -EAValue $EAValue -Passthru:$Passthru
+               $Record | Add-IBExtensibleAttribute -EAName $EAName -EAValue $EAValue -Passthru:$Passthru
             }
 			
         } else {

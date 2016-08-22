@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	Get-FixedAddress retreives objects of type FixedAddress from the Infoblox database.
+	Get-IBFixedAddress retreives objects of type FixedAddress from the Infoblox database.
 .DESCRIPTION
-	Get-FixedAddress retreives objects of type FixedAddress from the Infoblox database.  Parameters allow searching by ip address, mac address, network view or comment.  Also allows retrieving a specific record by reference string.  Returned object is of class type FixedAddress.
+	Get-IBFixedAddress retreives objects of type FixedAddress from the Infoblox database.  Parameters allow searching by ip address, mac address, network view or comment.  Also allows retrieving a specific record by reference string.  Returned object is of class type FixedAddress.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -22,19 +22,19 @@
 .PARAMETER _Ref
 	The unique reference string representing the fixed address record.  String is in format <recordtype>/<uniqueString>:<IPAddress>/<networkview>.  Value is assigned by the Infoblox appliance and returned with and find- or get- command.
 .EXAMPLE
-	Get-FixedAddress -Gridmaster $Gridmaster -Credential $Credential -IPAddress '192.168.101.1'
+	Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -IPAddress '192.168.101.1'
 
 	This example retrieves all fixed address records with IP Address of 192.168.101.1
 .EXAMPLE
-	Get-FixedAddress -Gridmaster $Gridmaster -Credential $Credential -comment 'Test Comment' -Strict
+	Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -comment 'Test Comment' -Strict
 
 	This example retrieves all fixed address records with the exact comment 'test comment'
 .EXAMPLE
-	Get-FixedAddress -Gridmaster $Gridmaster -Credential $Credential -MAC '00:00:00:00:00:00' -comment 'Delete'
+	Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -MAC '00:00:00:00:00:00' -comment 'Delete'
 
 	This example retrieves all fixed address records with a mac address of all zeroes and the word 'Delete' anywhere in the comment text.
 .EXAMPLE
-	Get-FixedAddress -gridmaster $gridmaster -credential $credential -ExtAttributeQuery {Site -eq 'OldSite'}
+	Get-IBFixedAddress -gridmaster $gridmaster -credential $credential -ExtAttributeQuery {Site -eq 'OldSite'}
 
 	This example retrieves all dns records with an extensible attribute defined for 'Site' with value of 'OldSite'
 .INPUTS
@@ -44,7 +44,7 @@
 .OUTPUTS
 	IB_FixedAddress
 #>
-Function Get-FixedAddress {
+Function Get-IBFixedAddress {
 	[CmdletBinding(DefaultParameterSetName = 'byQuery')]
 	Param(
         [Parameter(Mandatory=$True)]
@@ -85,7 +85,7 @@ Function Get-FixedAddress {
         write-verbose "$FunctionName`:  Beginning Function"
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
         Try {
-            $IBViews = Get-InfobloxView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView
+            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView
         } Catch {
             Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
         }

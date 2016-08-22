@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	New-DNSARecord creates an object of type DNSARecord in the Infoblox database.
+	New-IBDNSARecord creates an object of type DNSARecord in the Infoblox database.
 .DESCRIPTION
-	New-DNSARecord creates an object of type DNSARecord in the Infoblox database.  If creation is successful an object of type IB_DNSARecord is returned.
+	New-IBDNSARecord creates an object of type DNSARecord in the Infoblox database.  If creation is successful an object of type IB_DNSARecord is returned.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -18,7 +18,7 @@
 .PARAMETER TTL
 	Optional parameter to specify a record-specific TTL.  If not specified the record inherits the Grid TTL
 .EXAMPLE
-	New-DNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name testrecord.domain.com -IPAddress 192.168.1.1
+	New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name testrecord.domain.com -IPAddress 192.168.1.1
 
 		Name      : testrecord.domain.com
 		IPAddress : 192.168.1.1
@@ -32,7 +32,7 @@
 	-----------
 	This example creates a dns record with no comment, in the default view, and no record-specific TTL
 .EXAMPLE
-	New-DNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name TestRecord2.domain.com -IPAddress 192.168.1.2 -comment 'new record' -view default -ttl 100
+	New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name TestRecord2.domain.com -IPAddress 192.168.1.2 -comment 'new record' -view default -ttl 100
 
 		Name      : testrecord2.domain.com
 		IPAddress : 192.168.1.2
@@ -52,7 +52,7 @@
 .OUTPUTS
 	IB_DNSARecord
 #>
-Function New-DNSARecord {
+Function New-IBDNSARecord {
     [CmdletBinding(SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
         [Parameter(Mandatory=$True)]
@@ -84,7 +84,7 @@ Function New-DNSARecord {
         write-verbose "$FunctionName`:  Beginning Function"
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
         Try {
-            $IBViews = Get-InfobloxView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
+            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
         } Catch {
             Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
         }

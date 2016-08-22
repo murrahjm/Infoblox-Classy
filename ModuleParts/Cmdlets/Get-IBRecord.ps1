@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	Get-InfobloxRecord retreives objects from the Infoblox database.
+	Get-IBRecord retreives objects from the Infoblox database.
 .DESCRIPTION
-	Get-InfobloxRecord retreives objects from the Infoblox database.  Queries the Infoblox database for records matching the provided reference string.  Returns defined objects for class-defined record types, and IB_ReferenceObjects for undefined types.
+	Get-IBRecord retreives objects from the Infoblox database.  Queries the Infoblox database for records matching the provided reference string.  Returns defined objects for class-defined record types, and IB_ReferenceObjects for undefined types.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -10,7 +10,7 @@
 .PARAMETER _Ref
 	The unique reference string representing the record.  String is in format <recordtype>/<uniqueString>:<Name>/<view>.  Value is assigned by the Infoblox appliance and returned with and find- or get- command.
 .EXAMPLE
-	Get-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default'
+	Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'record:a/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:testrecord.domain.com/default'
 
 		Name	  : testrecord.domain.com
 		IPAddress : 192.168.1.1
@@ -24,7 +24,7 @@
 	-----------
 	This example retrieves the single DNS record with the assigned reference string
 .EXAMPLE
-	Get-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'network/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:192.168.1.0/default'
+	Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'network/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:192.168.1.0/default'
 
 		_ref      : network/2ifnkqoOKFNOFkldfjqfko3fjksdfjld:192.168.1.0/default
 
@@ -32,11 +32,11 @@
 	-----------
 	This example returns an IB_ReferenceObject object for the undefined object type.  The object exists on the infoblox and is valid, but no class is defined for it in the cmdlet class definition.
 .EXAMPLE
-	Get-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -name Testrecord.domain.com | Remove-DNSARecord
+	Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -name Testrecord.domain.com | Remove-IBDNSARecord
 
 	This example retrieves the dns record with name testrecord.domain.com, and deletes it from the infoblox database.
 .EXAMPLE
-	Get-InfobloxRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'old comment' -Strict | Set-DNSARecord -comment 'new comment'
+	Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'old comment' -Strict | Set-IBDNSARecord -comment 'new comment'
 	
 	This example retrieves all dns records with a comment of 'old comment' and replaces it with 'new comment'
 .INPUTS
@@ -46,7 +46,7 @@
 .OUTPUTS
 	IB_DNSARecord
 #>
-Function Get-InfobloxRecord{
+Function Get-IBRecord{
     [CmdletBinding(DefaultParameterSetName='byObject')]
     Param(
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]

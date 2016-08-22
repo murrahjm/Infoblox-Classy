@@ -1,8 +1,8 @@
 <#
 .Synopsis
-	Remove-FixedAddress removes the specified fixed Address record from the Infoblox database.
+	Remove-IBFixedAddress removes the specified fixed Address record from the Infoblox database.
 .DESCRIPTION
-	Remove-FixedAddress removes the specified fixed address record from the Infoblox database.  If deletion is successful the reference string of the deleted record is returned.
+	Remove-IBFixedAddress removes the specified fixed address record from the Infoblox database.  If deletion is successful the reference string of the deleted record is returned.
 .PARAMETER Gridmaster
 	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
 .PARAMETER Credential
@@ -10,13 +10,13 @@
 .PARAMETER _Ref
 	The unique reference string representing the record.  String is in format <recordtype>/<uniqueString>:<Name>/<view>.  Value is assigned by the Infoblox appliance and returned with and find- or get- command.
 .PARAMETER Record
-	An object of type IB_FixedAddress representing the record.  This parameter is typically for passing an object in from the pipeline, likely from Get-FixedAddress.
+	An object of type IB_FixedAddress representing the record.  This parameter is typically for passing an object in from the pipeline, likely from Get-IBFixedAddress.
 .EXAMPLE
-	Remove-FixedAddress -Gridmaster $Gridmaster -Credential $Credential -_Ref fixedaddress/ZG5zLmJpbmRfYSQuX2RlZmF1bHQuY29tLmVwcm9kLHBkYWR1dGwwMWNvcnAsMTAuOTYuMTA1LjE5MQ:192.168.1.1/default
+	Remove-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -_Ref fixedaddress/ZG5zLmJpbmRfYSQuX2RlZmF1bHQuY29tLmVwcm9kLHBkYWR1dGwwMWNvcnAsMTAuOTYuMTA1LjE5MQ:192.168.1.1/default
 
 	This example deletes the fixed address record with the specified unique reference string.  If successful, the reference string will be returned as output.
 .EXAMPLE
-	Get-FixedAddress -Gridmaster $Gridmaster -Credential $Credential -name Server01 | Remove-FixedAddress
+	Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -name Server01 | Remove-IBFixedAddress
 
 	This example retrieves the address reservation for Server01, and deletes it from the infoblox database.  If successful, the reference string will be returned as output.
 .INPUTS
@@ -26,7 +26,7 @@
 .OUTPUTS
 	IB_ReferenceObject
 #>
-Function Remove-FixedAddress{
+Function Remove-IBFixedAddress{
     [CmdletBinding(DefaultParameterSetName='byObject',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
@@ -53,7 +53,7 @@ Function Remove-FixedAddress{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
             $Record = [IB_FixedAddress]::Get($Gridmaster,$Credential,$_Ref)
             If ($Record){
-                $Record | Remove-FixedAddress
+                $Record | Remove-IBFixedAddress
             }
         }else {
 			Foreach ($Item in $Record){
