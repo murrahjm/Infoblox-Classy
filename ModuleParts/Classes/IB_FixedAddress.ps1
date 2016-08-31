@@ -7,7 +7,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
 	[String]$MAC
 	[Object]$ExtAttrib
 #region Methods
-    #region Create method
+#region Create method
     static [IB_FixedAddress] Create(
         [String]$GridMaster,
         [PSCredential]$Credential,
@@ -35,7 +35,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
     }
     #endregion
     #region Get methods
-		static [IB_FixedAddress] Get (
+	static [IB_FixedAddress] Get (
 		[String]$Gridmaster,
 		[PSCredential]$Credential,
 		[String]$_ref
