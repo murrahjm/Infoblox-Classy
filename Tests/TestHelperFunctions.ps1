@@ -51,11 +51,12 @@ Function Mock-InfobloxGet {
     $RecordType = $uri.segments[3]
     $Filters = $uri.query.replace('?','').split('&')
     If ($RecordType -eq 'search'){
-		$ref = $Null
+		$Return = $Script:recordlist
     } else {
-        $ref = $uri.segments[3..5] -join ''
+        $ref = $uri.segments[3..6] -join ''
+    	$Return = $script:recordlist | Where-Object{($_._ref -like "$ref/*") -or ($_._ref -eq $ref)}
     }
-    $Return = $script:recordlist | Where-Object{$_._ref -like "$ref*"}
+	
     $ReturnFields = @('_ref')
     Foreach ($filter in $Filters){
         If ($filter -like "_return_fields=*"){
@@ -110,6 +111,14 @@ Function Mock-InfobloxGet {
 						continue
 					}
                 '~:=' {
+						If ($QueryField -match "^\*"){
+							$Return = $Return | ?{$_.extattrs.$($QueryField.replace('*','')).value -ilike "*$QueryValue*"}
+						} else {
+							$Return = $Return | ?{$_.$QueryField -ilike "*$QueryValue*"}
+						}
+						continue
+					}
+                ':~=' {
 						If ($QueryField -match "^\*"){
 							$Return = $Return | ?{$_.extattrs.$($QueryField.replace('*','')).value -ilike "*$QueryValue*"}
 						} else {

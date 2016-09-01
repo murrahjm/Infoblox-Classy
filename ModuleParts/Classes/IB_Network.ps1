@@ -31,11 +31,14 @@ Class IB_Network : IB_ReferenceObject {
         $Return = Invoke-RestMethod -Uri $URIstring -Credential $Credential
         If ($Return){
             return [IB_Network]::New($Return.Network,
-                                     $Return.NetworkView,
-                                     $Return.NetworkContainer,
-                                     $Return.Comment,
-                                     $($Return.extattrs | Convertto-ExtAttrsArray)
-                                    )
+                                         $return.Network_View,
+                                         $return.Network_Container,
+                                         $return.Comment,
+                                         $($return.extattrs | convertto-ExtAttrsArray),
+                                         $return._ref,
+                                         $Gridmaster,
+                                         $Credential
+            )
         } else {
             return $Null
         }
@@ -78,8 +81,8 @@ Class IB_Network : IB_ReferenceObject {
         $output = @()
         Foreach ($Item in $Return){
             $output += [IB_Network]::New($item.Network,
-                                         $item.NetworkView,
-                                         $item.NetworkContainer,
+                                         $item.Network_View,
+                                         $item.Network_Container,
                                          $item.Comment,
                                          $($item.extattrs | convertto-ExtAttrsArray),
                                          $item._ref,

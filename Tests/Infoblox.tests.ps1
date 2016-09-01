@@ -2451,6 +2451,132 @@ Describe "Get-IBView tests" {
 	}
 
 }
+Describe "IB_Network tests" {
+	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
+	Mock Test-Connection {$True}
+	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
+		Mock-InfobloxPut -uri $Uri -body $Body
+	}
+	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
+		Mock-InfobloxPost -uri $uri -body $Body
+	}
+	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
+		$URI | Mock-InfobloxGet
+	}
+	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
+	$uri | Mock-InfobloxDelete
+	}
+	Context 'Get Method' {
+		It "Throws error with invalid credential object" {
+			{[IB_Network]::Get($Gridmaster,'notacredential','refstring')} | should Throw
+			{[IB_Network]::Get($gridmaster,'notacredential',$null,$Null,$Null,$Null,$Null,$False,$Null)} | should throw
+		}
+		It "Throws error with invalid integer object" {
+			{[IB_Network]::Get($gridmaster,$Credential,'1.1.1.1',$Null,$Null,$Null,$Null,$False,'notanint')} | should throw		
+		}
+		It "Throws error with less than 3 parameters" {
+			{[IB_Network]::Get($Gridmaster,$Credential)} | should Throw
+		}
+		It "Throws error with more than 3 but less than 9 parameters" {
+			{[IB_Network]::Get($Gridmaster,$Credential,'refstring','extra')} | should Throw
+		}
+		It "Throws error with more than 9 parameters" {
+			{[IB_Network]::Get($gridmaster,$Credential,$null,$Null,$Null,$Null,$Null,$False,$Null,'extra')} | should throw
+		}
+		It "returns network from ref query" {
+			$Return = [IB_Network]::Get($Gridmaster,$Credential,"network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default")
+			$Return.GetType().Name | should be 'IB_Network'
+			$Return._ref | should be "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default"
+			$return.Network | should be '10.10.0.0/16'
+			$return.NetworkView | should be 'Default'
+			$Return.comment | should benullorempty
+			$Return.NetworkContainer | should be '10.0.0.0/8'
+		}
+		It "returns all networks from null query" {
+			$Return = [IB_Network]::Get($gridmaster, $Credential, $Null,$Null,$Null,$Null,$Null,$False,$Null)
+			$Return.GetType().Name | should be 'IB_Network[]'
+			$Return.Count | should be 3
+			#
+			$Return[0].GetType().Name | should be 'IB_Network'
+			$Return[0]._ref | should be "network/asdkfjofweofew:10.0.0.0/8/Default"
+			$return[0].Network | should be '10.0.0.0/8'
+			$return[0].NetworkView | should be 'Default'
+			$Return[0].comment | should be 'network 1'
+			$Return[0].NetworkContainer | should benullorempty
+			#
+			$Return[1].GetType().Name | should be 'IB_Network'
+			$Return[1]._ref | should be "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default"
+			$return[1].Network | should be '10.10.0.0/16'
+			$return[1].NetworkView | should be 'Default'
+			$Return[1].comment | should benullorempty
+			$Return[1].NetworkContainer | should be '10.0.0.0/8'
+			#
+			$Return[2].GetType().Name | should be 'IB_Network'
+			$Return[2]._ref | should be "network/qt4i9q4hf9344h4h4h:192.168.1.0/24/view2"
+			$return[2].Network | should be '192.168.1.0/24'
+			$return[2].NetworkView | should be 'view2'
+			$Return[2].comment | should be 'view2 comment'
+			$Return[2].NetworkContainer | should be '192.168.0.0/16'
+		}
+		It "returns network from network query" {
+			$Return = [IB_Network]::Get($gridmaster,$credential,'192.168.1.0/24',$Null,$Null,$Null,$Null,$False,$Null)
+			$Return.GetType().Name | should be 'IB_Network[]'
+			$Return._ref | should be "network/qt4i9q4hf9344h4h4h:192.168.1.0/24/view2"
+			$return.Network | should be '192.168.1.0/24'
+			$return.NetworkView | should be 'view2'
+			$Return.comment | should be 'view2 comment'
+			$Return.NetworkContainer | should be '192.168.0.0/16'
+		}
+		It "returns networks from networkview query" {
+			$Return = [IB_Network]::Get($gridmaster,$Credential,$Null,'Default',$Null,$Null,$Null,$False,$Null)
+			$Return.GetType().Name | should be 'IB_Network[]'
+			$Return.Count | should be 2
+			#
+			$Return[0].GetType().Name | should be 'IB_Network'
+			$Return[0]._ref | should be "network/asdkfjofweofew:10.0.0.0/8/Default"
+			$return[0].Network | should be '10.0.0.0/8'
+			$return[0].NetworkView | should be 'Default'
+			$Return[0].comment | should be 'network 1'
+			$Return[0].NetworkContainer | should benullorempty
+			#
+			$Return[1].GetType().Name | should be 'IB_Network'
+			$Return[1]._ref | should be "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default"
+			$return[1].Network | should be '10.10.0.0/16'
+			$return[1].NetworkView | should be 'Default'
+			$Return[1].comment | should benullorempty
+			$Return[1].NetworkContainer | should be '10.0.0.0/8'
+		}
+		It "returns network from networkcontainer query" {
+			$Return = [IB_Network]::Get($gridmaster,$credential,$Null,$Null,'10.0.0.0/8',$Null,$Null,$False,$Null)
+			$Return.GetType().Name | should be 'IB_Network[]'
+			$Return._ref | should be "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default"
+			$return.Network | should be '10.10.0.0/16'
+			$return.NetworkView | should be 'Default'
+			$Return.comment | should benullorempty
+			$Return.NetworkContainer | should be '10.0.0.0/8'
+		}
+		It "returns network from strict comment query" {
+			$Return = [IB_Network]::Get($gridmaster,$Credential,$Null,$Null,$Null,'view2 comment',$Null,$True,$Null)
+			$Return.GetType().Name | should be 'IB_Network[]'
+			$Return._ref | should be "network/qt4i9q4hf9344h4h4h:192.168.1.0/24/view2"
+			$return.Network | should be '192.168.1.0/24'
+			$return.NetworkView | should be 'view2'
+			$Return.comment | should be 'view2 comment'
+			$Return.NetworkContainer | should be '192.168.0.0/16'
+		}
+		It "returns network from non-strict comment query" {
+			$Return = [IB_Network]::Get($gridmaster,$Credential,$Null,$Null,$Null,'view2 comment',$Null,$False,$Null)
+			$Return.GetType().Name | should be 'IB_Network[]'
+			$Return._ref | should be "network/qt4i9q4hf9344h4h4h:192.168.1.0/24/view2"
+			$return.Network | should be '192.168.1.0/24'
+			$return.NetworkView | should be 'view2'
+			$Return.comment | should be 'view2 comment'
+			$Return.NetworkContainer | should be '192.168.0.0/16'
+		}
+	}
+}
+
+#
 Describe "Find-IBRecord" {
 	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
 	Mock Test-Connection {$True}

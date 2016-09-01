@@ -267,5 +267,30 @@
         "view":  "default",
         "zone":  "",
         "name":  "1.0.0.0.in-addr.arpa"
+    },
+    {
+        "_ref":  "network/asdkfjofweofew:10.0.0.0/8/Default",
+        "network":  "10.0.0.0/8",
+        "network_view":  "Default",
+		"extattrs":  {
+			"Site":  {
+						"value":  "corp"
+					 }
+        },
+        "comment":  "network 1"
+    },
+    {
+        "_ref":  "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default",
+        "network":  "10.10.0.0/16",
+        "network_view":  "Default",
+        "comment":  "",
+        "network_container":  "10.0.0.0/8"
+    },
+    {
+        "_ref":  "network/qt4i9q4hf9344h4h4h:192.168.1.0/24/view2",
+        "network":  "192.168.1.0/24",
+        "network_view":  "view2",
+        "comment":  "view2 comment",
+        "network_container":  "192.168.0.0/16"
     }
 ]}
