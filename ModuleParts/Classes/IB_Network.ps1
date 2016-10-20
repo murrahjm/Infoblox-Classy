@@ -70,7 +70,7 @@ Class IB_Network : IB_ReferenceObject {
             $URI += "comment`:$operator$comment&"
         }
         If ($ExtAttribFilter){
-            $URI += SearchStringttoIBQuery -searchstring $ExtAttribFilter
+            $URI += SearchStringtoIBQuery -searchstring $ExtAttribFilter
         }
         If ($MaxResults){
             $URI += "_max_results=$MaxResults&"

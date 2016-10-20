@@ -2503,6 +2503,8 @@ Describe "IB_Network tests" {
 			$return[0].NetworkView | should be 'Default'
 			$Return[0].comment | should be 'network 1'
 			$Return[0].NetworkContainer | should benullorempty
+			$Return[0].extattrib.Name | should be 'Site'
+			$Return[0].extattrib.Value | should be 'corp'
 			#
 			$Return[1].GetType().Name | should be 'IB_Network'
 			$Return[1]._ref | should be "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default"
@@ -2538,6 +2540,8 @@ Describe "IB_Network tests" {
 			$return[0].NetworkView | should be 'Default'
 			$Return[0].comment | should be 'network 1'
 			$Return[0].NetworkContainer | should benullorempty
+			$Return[0].extattrib.Name | should be 'Site'
+			$Return[0].extattrib.Value | should be 'corp'
 			#
 			$Return[1].GetType().Name | should be 'IB_Network'
 			$Return[1]._ref | should be "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default"
@@ -2572,6 +2576,107 @@ Describe "IB_Network tests" {
 			$return.NetworkView | should be 'view2'
 			$Return.comment | should be 'view2 comment'
 			$Return.NetworkContainer | should be '192.168.0.0/16'
+		}
+		It "returns network from no query but resultscount set to 1" {
+			$return = [IB_Network]::Get($gridmaster,$Credential,$null,$Null,$Null,$Null,$Null,$False,1)
+			$Return.GetType().Name | should be 'IB_Network[]'
+			$Return._ref | should be "network/asdkfjofweofew:10.0.0.0/8/Default"
+			$return.Network | should be '10.0.0.0/8'
+			$return.NetworkView | should be 'Default'
+			$Return.comment | should be 'network 1'
+			$Return.NetworkContainer | should benullorempty
+			$Return.extattrib.Name | should be 'Site'
+			$Return.extattrib.Value | should be 'corp'
+		}
+		It "returns network from extattrib query" {
+			$Return = [IB_Network]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,{site -eq 'corp'},$False,$Null)
+			$Return.GetType().Name | should be 'IB_Network[]'
+			$Return._ref | should be "network/asdkfjofweofew:10.0.0.0/8/Default"
+			$return.Network | should be '10.0.0.0/8'
+			$return.NetworkView | should be 'Default'
+			$Return.comment | should be 'network 1'
+			$Return.extattrib.Name | should be 'Site'
+			$Return.extattrib.Value | should be 'corp'
+			$Return.NetworkContainer | should benullorempty
+		}
+	}
+	Context 'Set Method' {
+		It "throws error with less than 3 parameters" {
+			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
+			{$TestRecord.Set($Null,$Null)} | should Throw
+		}
+		It "throws error with more than 3 parameters" {
+			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
+			{$TestRecord.Set($Null,$Null,$Null,$Null)} | should Throw
+		}
+		It "Sets comment on object with empty comment field" {
+			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
+			$TestRecord.Set('new comment')
+			$TestRecord.Comment | should be 'new comment'
+		}
+		It "Changes comment text on existing record" {
+			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
+			$TestRecord.Set('comment 2')
+			$TestRecord.Comment | should be 'comment 2'
+		}
+		It "Clears comment field on existing record" {
+			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
+			$TestRecord.Set($Null)
+			$TestRecord.Comment | should benullorempty
+		}
+	}
+	Context 'Create Method' {
+		It "Throws error with invalid credential object" {
+			{[IB_Network]::Create($Gridmaster,'notacredential','10.10.10.0/24',$Null,$Null)} | should throw
+		}
+		It "Throws error with less than 5 properties" {
+			{[IB_Network]::Create($Gridmaster,$Credential,'10.10.10.0/24',$Null)} | should throw
+		}
+		It "Throws error with more than 5 properties" {
+			{[IB_Network]::Create($Gridmaster,$Credential,'10.10.10.0/24',$Null,$Null,$Null)} | should throw
+		}
+		It "Creates network in default view" {
+			$TestRecord = [IB_Network]::Create($gridmaster,$Credential,'10.10.10.0/24',$Null,$Null)
+			$TestRecord.GetType().Name | should be IB_Network
+			$TestRecord.Network | should be '10.10.10.0/24'
+			$TestRecord.networkview | should be 'default'
+			$TestRecord.Comment | should benullorempty
+		}
+		It "Creates network in alternate view with comment" {
+			$TestRecord = [IB_Network]::Create($gridmaster,$Credential,'10.10.20.0/24','view2','test comment')
+			$TestRecord.GetType().Name | should be IB_Network
+			$TestRecord.Network | should be '10.10.20.0/24'
+			$TestRecord.networkview | should be 'view2'
+			$TestRecord.Comment | should be 'test comment'
+		}
+	}
+	Context "AddExtAttrib Method" {
+		It "Adds extensible attribute" {
+			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
+			$TestRecord.AddExtAttrib('Site','corp')
+			$TestRecord.ExtAttrib.Name | should be 'Site'
+			$TestRecord.ExtAttrib.value | should be 'corp'
+		}
+		It "Updates the value of an existing extensible attribute" {
+			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
+			$TestRecord.AddExtAttrib('Site','gulf')
+			$TestRecord.AddExtAttrib | measure-object | select -ExpandProperty Count | should be 1
+			$TestRecord.ExtAttrib.Name | should be 'Site'
+			$TestRecord.ExtAttrib.value | should be 'gulf'
+		}
+	}
+	Context "RemoveExtAttrib Method" {
+		It "Removes extensible attribute" {
+			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
+			$TestRecord.RemoveExtAttrib('Site')
+			$TestRecord.ExtAttrib | should benullorempty
+		}	
+	}
+	Context 'Delete Method' {
+		$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
+		It "Deletes record with refstring network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default" {
+			$TestRecord.Delete() | should be 'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default'
+			[IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default') | should benullorempty
 		}
 	}
 }

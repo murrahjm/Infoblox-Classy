@@ -38,6 +38,13 @@ Function MatchAnyValue {
     }
     END{}
 }
+Function GetNextAvailableIP {
+	Param(
+		[uint32]$Count,
+		[string[]]$Exclude,
+		[String]$Network
+	)
+}
 Function Mock-InfobloxGet {
     Param(
         [Parameter(Mandatory=$True,ValueFromPipeline=$True)]
@@ -154,9 +161,9 @@ Function Mock-InfobloxDelete {
 	)
 	BEGIN{}
 	PROCESS{
-		If ($URI -eq "https://$script:gridmaster/wapi/$script:wapiversion/$($URI.Segments[3..5] -join '')"){
-			$Script:Recordlist = $Script:Recordlist | where-object{$_._ref -ne $($URI.Segments[3..5] -join '')}
-			return $($URI.Segments[3..5] -join '')
+		If ($URI -eq "https://$script:gridmaster/wapi/$script:wapiversion/$($URI.Segments[3..6] -join '')"){
+			$Script:Recordlist = $Script:Recordlist | where-object{$_._ref -ne $($URI.Segments[3..6] -join '')}
+			return $($URI.Segments[3..6] -join '')
 		} else {
 			Throw $URI
 		}
@@ -177,8 +184,13 @@ Function Mock-InfobloxPost {
 	$RecordType = $uri.segments[3]
 	$Refcode = $('abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'.ToCharArray() | get-random -count 20) -join ''
 	$properties = $Body
-
-	If ($RecordType -eq 'fixedaddress'){
+	If ($uri -like "_function=next_available_ip"){
+        $ref = $uri.segments[3..6] -join ''
+    	$Return = $script:recordlist | Where-Object{($_._ref -like "$ref/*") -or ($_._ref -eq $ref)}
+		GetNextAvailableIP -count $body.count -Exclude $body.exclude -network $Return.Network
+		return
+	}
+	If (($RecordType -eq 'fixedaddress') -or ($RecordType -eq 'network')){
 		If(! $properties.Network_View){$properties.network_view = 'default'}
 	} else {
 		If (! $properties.View){$properties.View = 'default'}
@@ -196,11 +208,6 @@ Function Mock-InfobloxPost {
 						If($properties.match_client -eq 'RESERVED'){$properties.MAC = '00:00:00:00:00:00'}
 			          }
 
-	}
-	If ((! $Properties.NetworkView) -and ($recordtype -eq 'fixedaddress')){
-		$properties.networkview = 'default'
-	} elseif (! $Properties.view){
-		$Properties.view = 'default'
 	}
 	If ((! $properties.Name) -and ($Recordtype -eq 'record:ptr')){
 		$Parts = $properties.ipv4addr.split('.')
