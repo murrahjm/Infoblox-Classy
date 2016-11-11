@@ -5,4 +5,4 @@ Powershell module project to interface with Infoblox REST API.  Makes use of new
 
 The basic structure of the class definitions mirrors the REST API object definitions, with various methods also mirroring the REST API documentation.  Due to the nature of the class structure, the multiple class and cmdlet files cannot just be dot-sourced from a central module file.  All the files must be concatenated together into one large psm1 file to function.  
 
-Pester tests are included with mocking functions to simulate and infoblox device.  More thorough testing should be done against an actual infoblox appliance, but the mocking functions provide basic validation.
+Pester tests are performed against an infoblox appliance in Azure.  Test script connects to azure and provisions appliance through the use of BuildTestEnvironment.ps1 and AzureDeploy.json.  Appliance dns name and admin credentials are passed back to main test script for use by cmdlets in pester tests.  Note that the test script does not destroy the environment after completion, that must be done manually if no longer needed.
