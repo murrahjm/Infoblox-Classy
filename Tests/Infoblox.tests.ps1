@@ -9,2210 +9,398 @@ $Scripts | get-content | out-file -FilePath "$($env:TEMP)\infoblox.ps1"
 . "$($env:TEMP)\infoblox.ps1"
 remove-item "$($env:TEMP)\infoblox.ps1"
 $scripts | %{. $_.FullName}
-. "$scriptlocation\TestHelperFunctions.ps1"
-$Gridmaster = 'FakeInfobloxGridmaster'
-$Username = 'pass'
-$password = 'pass' | ConvertTo-SecureString -Force -AsPlainText
-$Credential = New-Object System.Management.Automation.PSCredential ($Username,$password)
 #
-Describe "IB_DNSARecord Tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
-		Mock-InfobloxPut -uri $Uri -body $Body
+Try {
+	Get-AzureRmContext -ea 'Stop'
+} Catch {
+	Login-AzureRmAccount -SubscriptionName 'MSDN Platforms'
+}
+#If (!(get-azurermcontext -ea 'SilentlyContinue')){Login-AzureRmAccount -SubscriptionName 'MSDN Platforms'}
+$output = & "$scriptlocation\BuildTestEnvironment.ps1"
+$Gridmaster = $output.GridmasterFQDN
+$Credential = $output.AdminCredential
+#order tests as below
+#create extensible attribute definitions
+#create dns views
+#create network views
+#create dns zones
+#create ipam networks
+#create dns records
+#create fixed address records
+#all get tests
+#all set tests
+#all delete tests
+$Recordlist = @()
+Describe "New-IBExtensibleAttributeDefinition tests" {
+	It "Creates new extensible attribute definition with value type String" {
+		$Record = New-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Credential $Credential -Name 'EA2' -Type 'String' -DefaultValue 'Corp' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_ExtAttrsDef'
+		$Record.Name | should be 'EA2'
+		$Record.Type | should be 'String'
+		$Record.Comment | should benullorempty
+		$Record.DefaultValue | should be 'Corp'
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
-		Mock-InfobloxPost -uri $uri -body $Body
+	It "Creates new extensible attribute definition with value type String" {
+		$Record = New-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Credential $Credential -Name 'EA3' -Type 'String' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_ExtAttrsDef'
+		$Record.Name | should be 'EA3'
+		$Record.Type | should be 'String'
+		$Record.Comment | should benullorempty
+		$Record.DefaultValue | should benullorempty
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-	$uri | Mock-InfobloxDelete
-	}
-	Context "Get Method" {
-
-		It "Throws error with invalid credential object" {
-			{[IB_DNSARecord]::Get($Gridmaster,'notacredential','refstring')} | should throw
-			{[IB_DNSARecord]::Get($Gridmaster,'notacredential','name','1.1.1.1','comment','domain.com','view',$False,0)} | should throw
-		}
-		It "Throws error with invalid IP Address object" {
-			{[IB_DNSARecord]::Get($Gridmaster,$Credential,'name','notanipaddress','comment','zone','view',$False,0)} | should throw
-		}
-		It "Throws error with invalid boolean object" {
-			{[IB_DNSARecord]::Get($Gridmaster,$Credential,'name','1.1.1.1','comment','zone','view','notabool',0)} | should throw
-		}
-		It "Throws error with invalid integer object" {
-			{[IB_DNSARecord]::Get($gridmaster,$Credential,'name','1.1.1.1','comment','zone','view',$False,'notanint')} | should throw
-		}
-		It "Throws error with less than 3 parameters" {
-			{[IB_DNSARecord]::Get($gridmaster,$Credential)} | should throw
-		}
-		It "Throws error with more than 3 but less than 10 parameters" {
-			{[IB_DNSARecord]::Get($gridmaster,$Credential,'param1','param2')} | should throw
-		}
-		It "Throws errror with more than 10 parameters" {
-			{[IB_DNSARecord]::Get($Gridmaster,$Credential,'name','1.1.1.1','comment','extattrib','zone','view',$False,0,'param10')} | should throw
-		}
-		It "Returns A record from ref query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord.Name | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns A record from strict name query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,'testrecord.domain.com',$Null,$Null,$Null,$Null,$Null,$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.Name | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns multiple A records from non-strict name query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,'testrecord',$Null,$Null,$Null,$Null,$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.count | should be 3
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord[0].Name | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '1.1.1.1'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord[1].Name | should be 'testrecord3.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '1.1.1.1'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-			#
-			$TestRecord[2].GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord[2].Name | should be 'testrecord2.domain.com'
-			$TestRecord[2].View | should be 'view3'
-			$TestRecord[2].IPAddress | should be '2.2.2.2'
-			$TestRecord[2].Comment | should benullorempty
-			$TestRecord[2]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
-			$TestRecord[2].TTL | should be 0
-			$TestRecord[2].Use_TTL | should be $False
-
-		}
-		It "Returns multiple A records from zone query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,'domain.com',$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.count | should be 3
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord[0].Name | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '1.1.1.1'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord[1].Name | should be 'testrecord3.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '1.1.1.1'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-			#
-			$TestRecord[2].GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord[2].Name | should be 'testrecord2.domain.com'
-			$TestRecord[2].View | should be 'view3'
-			$TestRecord[2].IPAddress | should be '2.2.2.2'
-			$TestRecord[2].Comment | should benullorempty
-			$TestRecord[2]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
-			$TestRecord[2].TTL | should be 0
-			$TestRecord[2].Use_TTL | should be $False
-
-		}
-		It "Returns multiple A records from IP Address query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,$Null,'1.1.1.1',$Null,$Null,$Null,$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.count | should be 2
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord[0].Name | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '1.1.1.1'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord[1].Name | should be 'testrecord3.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '1.1.1.1'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-
-		}
-		It "Returns A record from view query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$Null,'view3',$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.Name | should be 'testrecord2.domain.com'
-			$TestRecord.View | should be 'view3'
-			$TestRecord.IPAddress | should be '2.2.2.2'
-			$TestRecord.Comment | should benullorempty
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $False
-
-		}
-		It "Returns A record from strict comment query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,$Null,$Null,'test comment',$Null,$Null,$Null,$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.Name | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-
-		}
-		It "Returns A record from non-strict comment query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,$Null,$Null,'test comment',$Null,$Null,$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.count | should be 2
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord[0].Name | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '1.1.1.1'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord[1].Name | should be 'testrecord3.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '1.1.1.1'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-		}
-		It "Returns A record from non-strict name and comment query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,'testrecord',$Null,'test comment 2',$Null,$Null,$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.Name | should be 'testrecord3.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Comment | should be 'test comment 2'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns A record from strict name and IP Address query" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'testrecord.domain.com','1.1.1.1',$Null,$Null,$Null,$Null,$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.Name | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns A record from strict name and view query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,'testrecord.domain.com',$Null,$Null,$Null,$Null,'default',$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.Name | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns A record from strict name and zone query" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,'testrecord.domain.com',$Null,$Null,$Null,'domain.com',$Null,$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.Name | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-
-		}
-		It "Returns A record from non-strict name query with results count of 1" {
-			$TestRecord = [IB_DNSARecord]::Get($Gridmaster,$Credential,'testrecord',$Null,$Null,$Null,$Null,$Null,$False,1)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord[]'
-			$TestRecord.Name | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-
-		}
-	}
-	Context "Set Method" {
-		It "Throws an error with an invalid IP Address parameter" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			{$TestRecord.Set('NotanIPAddress',$Null,$Null,$Null)} | should throw
-		}
-		It "Throws an error with an invalid TTL parameter" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			{$TestRecord.Set('1.1.1.1',$Null,'NotATTL',$Null)} | should Throw
-		}
-		It "Throws an error with less than 4 parameters" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			{$TestRecord.Set('1.1.1.1','comment','TTL')} | Should Throw
-		}
-		It "Throws an error with more than 4 parameters" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			{$TestRecord.Set('l.l.l.l','comment','ttl',$True,'5thparameter')} | should Throw
-		}
-		It "Sets the comment and IPAddress on an existing DNS Record" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			$TestRecord.Set('2.2.2.2','new comment',0,$False)
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord.Name | should be  'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '2.2.2.2'
-			$TestRecord.Comment | should be 'new comment'
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $False
-		}
-		It "Sets the TTL on an existing record" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			$TestRecord.Set('2.2.2.2','new comment',100,$True)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.Name | should be  'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '2.2.2.2'
-			$TestRecord.Comment | should be 'new comment'
-			$TestRecord.TTL | should be 100
-			$TestRecord.Use_TTL | should be $True
-
-		}
-		It "Sets the Use_TTL flag with a null TTL value, resulting in a 0 TTL" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			$TestRecord.Set('1.1.1.1','test comment',$Null,$True)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord.Name | should be 'testrecord.domain.com'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Sets the TTL but sets Use_TTL to False, which results in a null TTL" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			$TestRecord.Set('1.1.1.1','test comment',100,$False)
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord.name | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.comment | should be 'test comment'
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $False
-		}
-		It "Sets the comment to null" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			$TestRecord.Set('2.2.2.2',$Null,0,$False)
-			$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-			$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			$TestRecord.Name | should be  'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '2.2.2.2'
-			$TestRecord.Comment | should benullorempty
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $False
-		}
-	}
-	Context "Create Method" {
-		It "Throws error with invalid credential paramter" {
-			{[IB_DNSARecord]::Create($Gridmaster,"notacredential",'name','1.1.1.1',$Null,$Null,$Null,$Null)} | should throw
-		}
-		It "Throws error with invalid IP address parameter" {
-			{[IB_DNSARecord]::Create($Gridmaster,$Credential,'name','notanipaddress',$Null,$Null,$Null,$Null)} | should throw
-		}
-		It "Throws error with invalid TTL parameter" {
-			{[IB_DNSARecord]::Create($Gridmaster,$Credential,'name','notanipaddress',$Null,$Null,'NotATTL',$Null)} | should throw
-		}
-		It "Throws error with less than 8 parameters" {
-			{[IB_DNSARecord]::Create($Gridmaster,$credential)} | should throw
-		}
-		It "Throws error with more than 8 parameters" {
-			{[IB_DNSARecord]::Create($gridmaster,$Credential,'name','ipaddress',$Null,$Null,$Null,$Null,'9thproperty')} | should throw
-		}
-		It "Creates dns A record in default view with no comment or TTL" {
-			$record = [IB_DNSARecord]::Create($Gridmaster,$Credential,'newtestrecord.domain.com','1.1.1.1',$Null,$Null,$Null,$False)
-			$Record.GetType().Name | should be 'IB_DNSARecord'
-			$Record.View | should be 'default'
-			$Record.Name | should be 'newtestrecord.domain.com'
-			$Record.IPAddress | should be '1.1.1.1'
-			$Record.comment | should benullorempty
-			$Record.TTL | should be 0
-			$Record.Use_TTL | should be $False
-		}
-		It "Creates dns A record in default view with comment and TTL" {
-			$record = [IB_DNSARecord]::Create($Gridmaster,$Credential,'newtestrecord2.domain.com','1.1.1.1','test comment',$Null,100,$True)
-			$Record.GetType().Name | should be 'IB_DNSARecord'
-			$Record.View | should be 'default'
-			$Record.Name | should be 'newtestrecord2.domain.com'
-			$Record.IPAddress | should be '1.1.1.1'
-			$Record.comment | should be 'test comment'
-			$Record.TTL | should be 100
-			$Record.Use_TTL | should be $True
-		}
-		It "Creates dns A record in default view with TTL = 100 but Use_TTL = False, resulting in no TTL" {
-			$record = [IB_DNSARecord]::Create($Gridmaster,$Credential,'newtestrecord3.domain.com','1.1.1.1',$Null,$Null,100,$False)
-			$Record.GetType().Name | should be 'IB_DNSARecord'
-			$Record.View | should be 'default'
-			$Record.Name | should be 'newtestrecord3.domain.com'
-			$Record.IPAddress | should be '1.1.1.1'
-			$Record.comment | should benullorempty
-			$Record.TTL | should be 0
-			$Record.Use_TTL | should be $False
-		}
-		It "Creates dns A record in specified view with no comment or TTL" {
-			$record = [IB_DNSARecord]::Create($Gridmaster,$Credential,'newtestrecord4.domain.com','1.1.1.1',$Null,'view2',$Null,$False)
-			$Record.GetType().Name | should be 'IB_DNSARecord'
-			$Record.View | should be 'view2'
-			$Record.Name | should be 'newtestrecord4.domain.com'
-			$Record.IPAddress | should be '1.1.1.1'
-			$Record.comment | should benullorempty
-			$Record.TTL | should be 0
-			$Record.Use_TTL | should be $False
-		}
-	}
-	Context "AddExtAttrib Method" {
-		It "Adds extensible attribute" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3')
-			$TestRecord.AddExtAttrib('Site','corp')
-			$TestRecord.ExtAttrib.Name | should be 'Site'
-			$TestRecord.ExtAttrib.value | should be 'corp'
-		}
-		It "Updates the value of an existing extensible attribute" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			$TestRecord.AddExtAttrib('Site','gulf')
-			$TestRecord.ExtAttrib | measure-object | select -ExpandProperty Count | should be 1
-			$TestRecord.ExtAttrib.Name | should be 'Site'
-			$TestRecord.ExtAttrib.value | should be 'gulf'
-		}
-		It "Adds second extensible attribte to existing record" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			$TestRecord.AddExtAttrib('EA2','value2')
-			$TestRecord.AddExtAttrib('EA3','value3')
-			$TestRecord.ExtAttrib | measure-object | select -ExpandProperty Count | should be 3
-			$TestRecord.ExtAttrib[0].Name | should be 'EA2'
-			$TestRecord.ExtAttrib[0].value | should be 'value2'
-			$TestRecord.ExtAttrib[1].Name | should be 'EA3'
-			$TestRecord.ExtAttrib[1].value | should be 'value3'
-			$TestRecord.ExtAttrib[2].Name | should be 'Site'
-			$TestRecord.ExtAttrib[2].value | should be 'gulf'
-		}
-	}
-	Context "RemoveExtAttrib Method" {
-		It "Removes extensible attribute" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			$TestRecord.RemoveExtAttrib('Site')
-			$TestRecord.ExtAttrib.Site | should benullorempty
-			$TestRecord.ExtAttrib | measure-object | % Count | should be 2
-		}
-	}
-	Context "Delete Method" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-		It "Deletes record with refstring record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default" {
-			$TestRecord.Delete() | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-			[IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default') |
-				should benullorempty
-		}
+	It "Creates new extensible attribute with value type Int and comment" {
+		$Record = New-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Credential $Credential -Name 'extattr2' -Type 'Integer' -comment 'test comment' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_ExtAttrsDef'
+		$Record.Name | should be 'extattr2'
+		$Record.Type | should be 'Integer'
+		$Record.Comment | should be 'test comment'
+		$Record.DefaultValue | should benullorempty
 	}
 }
-Describe "IB_DNSCNameRecord Tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
-		Mock-InfobloxPut -uri $Uri -body $Body
+Describe "New-IBView tests" {
+	It "Creates new dns view" {
+		$Record = New-IBView -Gridmaster $Gridmaster -credential $Credential -Name 'view2' -comment 'Second View' -Type 'DNSView' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_View'
+		$Record.Name | should be 'view2'
+		$Record.Comment | should be 'Second View'
+		$Record.is_default | should be $False
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
-		Mock-InfobloxPost -uri $uri -body $Body
+	It "Creates dns view with no comment" {
+		$Record = New-IBView -Gridmaster $Gridmaster -credential $Credential -Name 'view3' -Type 'DNSView' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_View'
+		$Record.Name | should be 'view3'
+		$Record.Comment | should benullorempty
+		$Record.is_default | should be $False
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-	$uri | Mock-InfobloxDelete
+	It "Creates new network view" {
+		$Record = New-IBView -Gridmaster $Gridmaster -credential $Credential -Name 'networkview2' -comment 'Second networkview' -Type 'NetworkView' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_NetworkView'
+		$Record.Name | should be 'networkview2'
+		$Record.Comment | should be 'Second networkview'
+		$Record.is_default | should be $False
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
+	It "Creates network view with no comment" {
+		$Record = New-IBView -Gridmaster $Gridmaster -credential $Credential -Name 'networkview3' -Type 'NetworkView' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_NetworkView'
+		$Record.Name | should be 'networkview3'
+		$Record.Comment | should benullorempty
+		$Record.is_default | should be $False
 	}
-	Context "Get Method" {
 
-		It "Throws error with invalid credential object" {
-			{[IB_DNSCNameRecord]::Get($Gridmaster,'notacredential','refstring')} | should throw
-			{[IB_DNSCNameRecord]::Get($Gridmaster,'notacredential','name','testrecord.domain.com','comment','domain.com','view',$False,0)} | should throw
-		}
-		It "Throws error with invalid boolean object" {
-			{[IB_DNSCNameRecord]::Get($Gridmaster,$Credential,'name','testrecord.domain.com','comment','zone','view','notabool',0)} | should throw
-		}
-		It "Throws error with invalid integer object" {
-			{[IB_DNSCNameRecord]::Get($gridmaster,$Credential,'name','testrecord.domain.com','comment','zone','view',$False,'notanint')} | should throw
-		}
-		It "Throws error with less than 3 parameters" {
-			{[IB_DNSCNameRecord]::Get($gridmaster,$Credential)} | should throw
-		}
-		It "Throws error with more than 3 but less than 10 parameters" {
-			{[IB_DNSCNameRecord]::Get($gridmaster,$Credential,'param1','param2')} | should throw
-		}
-		It "Throws errror with more than 10 parameters" {
-			{[IB_DNSCNameRecord]::Get($Gridmaster,$Credential,'name','testrecord.domain.com','comment','extattrib','zone','view',$False,0,'param10')} | should throw
-		}
-		It "Returns CName Record from ref query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias.Name | should be 'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
-		}
-		It "Returns CName Record from strict name query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,'testalias.domain.com',$Null,$Null,$Null,$Null,$Null,$True,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.Name | should be 'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
-		}
-		It "Returns multiple CName Records from non-strict name query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,'testalias',$Null,$Null,$Null,$Null,$Null,$False,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.count | should be 3
-			#
-			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[0].Name | should be 'testalias.domain.com'
-			$testalias[0].View | should be 'default'
-			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
-			#
-			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
-			$testalias[1].View | should be 'default'
-			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
-			$testalias[1].TTL | should be 1200
-			$testalias[1].Use_TTL | should be $True
-			#
-			$testalias[2].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[2].Name | should be 'testalias2.domain.com'
-			$testalias[2].View | should be 'view3'
-			$testalias[2].canonical | should be 'testrecord2.domain.com'
-			$testalias[2].Comment | should benullorempty
-			$testalias[2]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3'
-			$testalias[2].TTL | should be 0
-			$testalias[2].Use_TTL | should be $False
-
-		}
-		It "Returns multiple CName Records from non-strict canonical query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,$Null,'testrecord',$Null,$Null,$Null,$Null,$False,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.count | should be 3
-			#
-			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[0].Name | should be 'testalias.domain.com'
-			$testalias[0].View | should be 'default'
-			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
-			#
-			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
-			$testalias[1].View | should be 'default'
-			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
-			$testalias[1].TTL | should be 1200
-			$testalias[1].Use_TTL | should be $True
-			#
-			$testalias[2].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[2].Name | should be 'testalias2.domain.com'
-			$testalias[2].View | should be 'view3'
-			$testalias[2].canonical | should be 'testrecord2.domain.com'
-			$testalias[2].Comment | should benullorempty
-			$testalias[2]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3'
-			$testalias[2].TTL | should be 0
-			$testalias[2].Use_TTL | should be $False
-
-		}
-		It "Returns multiple CName Records from zone query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,'domain.com',$Null,$False,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.count | should be 3
-			#
-			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[0].Name | should be 'testalias.domain.com'
-			$testalias[0].View | should be 'default'
-			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
-			#
-			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
-			$testalias[1].View | should be 'default'
-			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
-			$testalias[1].TTL | should be 1200
-			$testalias[1].Use_TTL | should be $True
-			#
-			$testalias[2].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[2].Name | should be 'testalias2.domain.com'
-			$testalias[2].View | should be 'view3'
-			$testalias[2].canonical | should be 'testrecord2.domain.com'
-			$testalias[2].Comment | should benullorempty
-			$testalias[2]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3'
-			$testalias[2].TTL | should be 0
-			$testalias[2].Use_TTL | should be $False
-
-		}
-		It "Returns multiple CName Records from strict canonical query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,$Null,'testrecord.domain.com',$Null,$Null,$Null,$Null,$True,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.count | should be 2
-			#
-			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[0].Name | should be 'testalias.domain.com'
-			$testalias[0].View | should be 'default'
-			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
-			#
-			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
-			$testalias[1].View | should be 'default'
-			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
-			$testalias[1].TTL | should be 1200
-			$testalias[1].Use_TTL | should be $True
-
-		}
-		It "Returns CName Record from view query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$Null,'view3',$False,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.Name | should be 'testalias2.domain.com'
-			$testalias.View | should be 'view3'
-			$testalias.canonical | should be 'testrecord2.domain.com'
-			$testalias.Comment | should benullorempty
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3'
-			$testalias.TTL | should be 0
-			$testalias.Use_TTL | should be $False
-
-		}
-		It "Returns CName Record from strict comment query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,$Null,$Null,'test comment',$Null,$Null,$Null,$True,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.Name | should be 'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
-
-		}
-		It "Returns CName Record from non-strict comment query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,$Null,$Null,'test comment',$Null,$Null,$Null,$False,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.count | should be 2
-			#
-			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[0].Name | should be 'testalias.domain.com'
-			$testalias[0].View | should be 'default'
-			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
-			#
-			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
-			$testalias[1].View | should be 'default'
-			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
-			$testalias[1].TTL | should be 1200
-			$testalias[1].Use_TTL | should be $True
-		}
-		It "Returns CName Record from non-strict name and comment query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,'testalias',$Null,'test comment 2',$Null,$Null,$Null,$False,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.Name | should be 'testalias3.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment 2'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
-		}
-		It "Returns CName Record from strict name and canonical query" {
-			$testalias = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'testalias.domain.com','testrecord.domain.com',$Null,$Null,$Null,$Null,$True,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.Name | should be 'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
-		}
-		It "Returns CName Record from strict name and view query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,'testalias.domain.com',$Null,$Null,$Null,$Null,'default',$True,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.Name | should be 'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
-		}
-		It "Returns CName Record from strict name and zone query" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,'testalias.domain.com',$Null,$Null,$Null,'domain.com',$Null,$True,$Null)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.Name | should be 'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
-
-		}
-		It "Returns CName Record from non-strict name query with results count of 1" {
-			$testalias = [IB_DNSCNameRecord]::Get($Gridmaster,$Credential,'testalias',$Null,$Null,$Null,$Null,$Null,$False,1)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord[]'
-			$testalias.Name | should be 'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
-
-		}
+}
+Describe "New-IBDNSZone tests" {
+	It "Creates forward lookup DNS zone in default view" {
+		$Record = New-IBDNSZone -Gridmaster $Gridmaster -Credential $Credential -FQDN 'domain.com' -zoneFormat 'Forward' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_ZoneAuth'
+		$Record.FQDN | should be 'domain.com'
+		$Record.comment | should benullorempty
+		$Record.view | should be 'default'
+		$Record.zoneFormat | should be 'forward'
 	}
-	Context "Set Method" {
-		It "Throws an error with an invalid TTL parameter" {
-			$testalias = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
-			{$testalias.Set('testrecord.domain.com',$Null,'NotATTL',$Null)} | should Throw
-		}
-		It "Throws an error with less than 4 parameters" {
-			$testalias = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
-			{$testalias.Set('testrecord.domain.com','comment','TTL')} | Should Throw
-		}
-		It "Throws an error with more than 4 parameters" {
-			$testalias = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
-			{$testalias.Set('l.l.l.l','comment','ttl',$True,'5thparameter')} | should Throw
-		}
-		It "Sets the comment and canonical on an existing DNS Record" {
-			$testalias = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
-			$testalias.Set('testrecord2.domain.com','new comment',0,$False)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$TestAlias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.Name | should be  'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord2.domain.com'
-			$testalias.Comment | should be 'new comment'
-			$testalias.TTL | should be 0
-			$testalias.Use_TTL | should be $False
-		}
-		It "Sets the TTL on an existing record" {
-			$testalias = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
-			$testalias.Set('testrecord2.domain.com','new comment',100,$True)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$TestAlias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.Name | should be  'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord2.domain.com'
-			$testalias.Comment | should be 'new comment'
-			$testalias.TTL | should be 100
-			$testalias.Use_TTL | should be $True
-
-		}
-		It "Sets the Use_TTL flag with a null TTL value, resulting in a 0 TTL" {
-			$testalias = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
-			$testalias.Set('testrecord.domain.com','test comment',$Null,$True)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$TestAlias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.Name | should be 'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias.TTL | should be 0
-			$testalias.Use_TTL | should be $True
-		}
-		It "Sets the TTL but sets Use_TTL to False, which results in a null TTL" {
-			$testalias = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
-			$testalias.Set('testrecord.domain.com','test comment',100,$False)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$TestAlias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.name | should be 'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.comment | should be 'test comment'
-			$testalias.TTL | should be 0
-			$testalias.Use_TTL | should be $False
-		}
-		It "Sets the comment to null" {
-			$testalias = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
-			$testalias.Set('testrecord2.domain.com',$Null,0,$False)
-			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$TestAlias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			$testalias.Name | should be  'testalias.domain.com'
-			$testalias.View | should be 'default'
-			$testalias.canonical | should be 'testrecord2.domain.com'
-			$testalias.Comment | should benullorempty
-			$testalias.TTL | should be 0
-			$testalias.Use_TTL | should be $False
-		}
+	It "Creates forward lookup zone in second view with comment and default type (forward)" {
+		$Record = New-IBDNSZone -Gridmaster $Gridmaster -Credential $Credential -FQDN 'domain.com' -view 'view2' -comment 'test zone' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_ZoneAuth'
+		$Record.FQDN | should be 'domain.com'
+		$Record.comment | should be 'test zone'
+		$Record.view | should be 'view2'
+		$Record.zoneFormat | should be 'forward'
 	}
-	Context "Create Method" {
-		It "Throws error with invalid credential paramter" {
-			{[IB_DNSCNameRecord]::Create($Gridmaster,"notacredential",'name','testrecord.domain.com',$Null,$Null,$Null,$Null)} | should throw
-		}
-		It "Throws error with invalid TTL parameter" {
-			{[IB_DNSCNameRecord]::Create($Gridmaster,$Credential,'name','testrecord.domain.com',$Null,$Null,'NotATTL',$Null)} | should throw
-		}
-		It "Throws error with less than 8 parameters" {
-			{[IB_DNSCNameRecord]::Create($Gridmaster,$credential)} | should throw
-		}
-		It "Throws error with more than 8 parameters" {
-			{[IB_DNSCNameRecord]::Create($gridmaster,$Credential,'name','canonical',$Null,$Null,$Null,$Null,'9thproperty')} | should throw
-		}
-		It "Creates dns CName Record in default view with no comment or TTL" {
-			$record = [IB_DNSCNameRecord]::Create($Gridmaster,$Credential,'newtestalias.domain.com','testrecord.domain.com',$Null,$Null,$Null,$False)
-			$Record.GetType().Name | should be 'IB_DNSCNameRecord'
-			$Record.View | should be 'default'
-			$Record.Name | should be 'newtestalias.domain.com'
-			$Record.canonical | should be 'testrecord.domain.com'
-			$Record.comment | should benullorempty
-			$Record.TTL | should be 0
-			$Record.Use_TTL | should be $False
-		}
-		It "Creates dns CName Record in default view with comment and TTL" {
-			$record = [IB_DNSCNameRecord]::Create($Gridmaster,$Credential,'newtestalias2.domain.com','testrecord.domain.com','test comment',$Null,100,$True)
-			$Record.GetType().Name | should be 'IB_DNSCNameRecord'
-			$Record.View | should be 'default'
-			$Record.Name | should be 'newtestalias2.domain.com'
-			$Record.canonical | should be 'testrecord.domain.com'
-			$Record.comment | should be 'test comment'
-			$Record.TTL | should be 100
-			$Record.Use_TTL | should be $True
-		}
-		It "Creates dns CName Record in default view with TTL = 100 but Use_TTL = False, resulting in no TTL" {
-			$record = [IB_DNSCNameRecord]::Create($Gridmaster,$Credential,'newtestalias3.domain.com','testrecord.domain.com',$Null,$Null,100,$False)
-			$Record.GetType().Name | should be 'IB_DNSCNameRecord'
-			$Record.View | should be 'default'
-			$Record.Name | should be 'newtestalias3.domain.com'
-			$Record.canonical | should be 'testrecord.domain.com'
-			$Record.comment | should benullorempty
-			$Record.TTL | should be 0
-			$Record.Use_TTL | should be $False
-		}
-		It "Creates dns CName Record in specified view with no comment or TTL" {
-			$record = [IB_DNSCNameRecord]::Create($Gridmaster,$Credential,'newtestalias4.domain.com','testrecord.domain.com',$Null,'view2',$Null,$False)
-			$Record.GetType().Name | should be 'IB_DNSCNameRecord'
-			$Record.View | should be 'view2'
-			$Record.Name | should be 'newtestalias4.domain.com'
-			$Record.canonical | should be 'testrecord.domain.com'
-			$Record.comment | should benullorempty
-			$Record.TTL | should be 0
-			$Record.Use_TTL | should be $False
-		}
+	It "Creates forward lookup zone in third view with no comment and default type" {
+		$Record = New-IBDNSZone -Gridmaster $Gridmaster -Credential $Credential -FQDN 'domain.com' -view 'view3' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_ZoneAuth'
+		$Record.FQDN | should be 'domain.com'
+		$Record.comment | should benullorempty
+		$Record.view | should be 'view3'
+		$Record.zoneFormat | should be 'forward'
 	}
-	Context "AddExtAttrib Method" {
-		It "Adds extensible attribute" {
-			$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3')
-			$TestRecord.AddExtAttrib('Site','corp')
-			$TestRecord.ExtAttrib.Name | should be 'Site'
-			$TestRecord.ExtAttrib.value | should be 'corp'
-		}
-		It "Updates the value of an existing extensible attribute" {
-			$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default')
-			$TestRecord.AddExtAttrib('Site','gulf')
-			$TestRecord.AddExtAttrib | measure-object | select -ExpandProperty Count | should be 1
-			$TestRecord.ExtAttrib.Name | should be 'Site'
-			$TestRecord.ExtAttrib.value | should be 'gulf'
-		}
+	It "Creates reverse lookup zone in default view with no comment" {
+		$Record = New-IBDNSZone -Gridmaster $Gridmaster -Credential $Credential -FQDN '10.in-addr.arpa' -zoneformat 'IPv4' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_ZoneAuth'
+		$Record.FQDN | should be '10.in-addr.arpa'
+		$Record.comment | should benullorempty
+		$Record.view | should be 'default'
+		$Record.zoneFormat | should be 'ipv4'
 	}
-	Context "RemoveExtAttrib Method" {
-		It "Removes extensible attribute" {
-			$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default')
-			$TestRecord.RemoveExtAttrib('Site')
-			$TestRecord.ExtAttrib | should benullorempty
-		}	
-	}
-	Context "Delete Method" {
-		It "Deletes record with refstring record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default" {
-			$testalias = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
-			$testalias.Delete() | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-			[IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default') |
-				should benullorempty
-		}
+	It "Creates reverse lookup zone in default view with comment" {
+		$Record = New-IBDNSZone -Gridmaster $Gridmaster -Credential $Credential -FQDN '168.192.in-addr.arpa' -zoneformat 'IPv4' -comment "PTR Zone" -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_ZoneAuth'
+		$Record.FQDN | should be '168.192.in-addr.arpa'
+		$Record.comment | should be 'PTR Zone'
+		$Record.view | should be 'default'
+		$Record.zoneFormat | should be 'ipv4'
 	}
 }
-Describe "IB_DNSPTRRecord Tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
-		Mock-InfobloxPut -uri $Uri -body $Body
+Describe "New-IBNetwork tests" {
+	It "Creates network in the default view with comment" {
+		$Record = New-IBNetwork -Gridmaster $Gridmaster -Credential $Credential -Network '10.0.0.0/8' -comment 'network 1' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_Network'
+		$Record.Network | should be '10.0.0.0/8'
+		$Record.comment | should be 'network 1'
+		$Record.networkview | should be 'default'
+		$Record.networkcontainer | should benullorempty
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-		$uri | Mock-InfobloxDelete
+	It "Creates network with above network as container in default view with no comment" {
+		$Record = New-IBNetwork -Gridmaster $Gridmaster -Credential $Credential -Network '10.10.0.0/16' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_Network'
+		$Record.Network | should be '10.10.0.0/16'
+		$Record.comment | should benullorempty
+		$Record.networkview | should be 'default'
+		$Record.networkcontainer | should be '10.0.0.0/8'
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
-		Mock-InfobloxPost -uri $uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
-	Context "Get Method" {
-
-		It "Throws error with invalid credential object" {
-			{[IB_DNSPTRRecord]::Get($Gridmaster,'notacredential','refstring')} | should throw
-			{[IB_DNSPTRRecord]::Get($Gridmaster,'notacredential','name','1.1.1.1','ptrdname','comment','domain.com','view',$False,0)} | should throw
-		}
-		It "Throws error with invalid IP Address object" {
-			{[IB_DNSPTRRecord]::Get($Gridmaster,$Credential,'name','notanipaddress','ptrdname','comment','zone','view',$False,0)} | should throw
-		}
-		It "Throws error with invalid boolean object" {
-			{[IB_DNSPTRRecord]::Get($Gridmaster,$Credential,'name','1.1.1.1','ptrdname','comment','zone','view','notabool',0)} | should throw
-		}
-		It "Throws error with invalid integer object" {
-			{[IB_DNSPTRRecord]::Get($gridmaster,$Credential,'name','1.1.1.1','ptrdname','comment','zone','view',$False,'notanint')} | should throw
-		}
-		It "Throws error with less than 3 parameters" {
-			{[IB_DNSPTRRecord]::Get($gridmaster,$Credential)} | should throw
-		}
-		It "Throws error with more than 3 but less than 11 parameters" {
-			{[IB_DNSPTRRecord]::Get($gridmaster,$Credential,'param1','param2')} | should throw
-			{[IB_DNSPTRRecord]::Get($Gridmaster,$Credential,'name','1.1.1.1','comment','zone','view',$False,0)} | should throw
-		}
-		It "Throws errror with more than 11 parameters" {
-			{[IB_DNSPTRRecord]::Get($Gridmaster,$Credential,'name','1.1.1.1','ptrdname','comment','extattrib','zone','view',$False,0,'param10')} | should throw
-		}
-		It "Returns PTR Record from ref query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns PTR Record from strict name query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,'1.1.1.1.in-addr.arpa',$Null,$Null,$Null,$Null,$Null,$Null,$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns multiple PTR Records from non-strict name query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,'1.',$Null,$Null,$Null,$Null,$Null,$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.Count | should be 3
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '1.1.1.1'
-			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '1.2.3.4'
-			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-			#
-			$TestRecord[2].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[2].PTRDName | should be 'localhost'
-			$TestRecord[2].View | should be 'default'
-			$TestRecord[2].IPAddress | should benullorempty
-			$TestRecord[2].Name | should be '1.0.0.0.in-addr.arpa'
-			$TestRecord[2].Comment | should benullorempty
-			$TestRecord[2]._ref | should be 'record:ptr/adfwejfojvkalfpjqpe:1.0.0.0.in-addr.arpa/default'
-			$TestRecord[2].TTL | should be 1
-			$TestRecord[2].Use_TTL | should be $True
-		}
-		It "Returns PTR Record from strict ptrdname query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,$Null,$Null,'testrecord.domain.com',$Null,$Null,$Null,$Null,$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.count | should be 2
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '1.1.1.1'
-			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '1.2.3.4'
-			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-		}
-		It "Returns multiple PTR Records from non-strict ptrdname query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,$Null,$Null,'testrecord',$Null,$Null,$Null,$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.count | should be 3
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '1.1.1.1'
-			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '1.2.3.4'
-			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-			#
-			$TestRecord[2].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[2].PTRDName | should be 'testrecord2.domain.com'
-			$TestRecord[2].View | should be 'view3'
-			$TestRecord[2].IPAddress | should be '2.2.2.2'
-			$TestRecord[2].Name | should be '2.2.2.2.in-addr.arpa'
-			$TestRecord[2].Comment | should benullorempty
-			$TestRecord[2]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3'
-			$TestRecord[2].TTL | should be 0
-			$TestRecord[2].Use_TTL | should be $False
-
-		}
-		It "Returns multiple PTR Records from zone query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$Null,'domain.com',$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.count | should be 3
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '1.1.1.1'
-			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '1.2.3.4'
-			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-			#
-			$TestRecord[2].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[2].PTRDName | should be 'testrecord2.domain.com'
-			$TestRecord[2].View | should be 'view3'
-			$TestRecord[2].IPAddress | should be '2.2.2.2'
-			$TestRecord[2].Name | should be '2.2.2.2.in-addr.arpa'
-			$TestRecord[2].Comment | should benullorempty
-			$TestRecord[2]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3'
-			$TestRecord[2].TTL | should be 0
-			$TestRecord[2].Use_TTL | should be $False
-
-		}
-		It "Returns PTR Record from IP Address query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,$Null,'1.1.1.1',$Null,$Null,$Null,$Null,$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns PTR Record from view query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$Null,$Null,'view3',$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.PTRDName | should be 'testrecord2.domain.com'
-			$TestRecord.View | should be 'view3'
-			$TestRecord.IPAddress | should be '2.2.2.2'
-			$TestRecord.Name | should be '2.2.2.2.in-addr.arpa'
-			$TestRecord.Comment | should benullorempty
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3'
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $False
-
-		}
-		It "Returns PTR Record from strict comment query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,$Null,$Null,$Null,'test comment',$Null,$Null,$Null,$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-
-		}
-		It "Returns PTR Record from non-strict comment query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,$Null,$Null,$Null,'test comment',$Null,$Null,$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.count | should be 2
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '1.1.1.1'
-			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '1.2.3.4'
-			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-		}
-		It "Returns PTR Record from non-strict ptrdname and comment query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,$Null,$Null,'testrecord','test comment 2',$Null,$Null,$Null,$False,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.2.3.4'
-			$TestRecord.Name | should be '4.3.2.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment 2'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns PTR Record from strict ptrdname and IP Address query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Null,'1.1.1.1','testrecord.domain.com',$Null,$Null,$Null,$Null,$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns PTR Record from strict ptrdname and view query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,'1.1.1.1.in-addr.arpa',$Null,$Null,$Null,$Null,$Null,'default',$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns PTR Record from strict name and zone query" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,'1.1.1.1.in-addr.arpa',$Null,$Null,$Null,$Null,'domain.com',$Null,$True,$Null)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-
-		}
-		It "Returns PTR Record from non-strict ptrdname query with results count of 1" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($Gridmaster,$Credential,$Null,$Null,'testrecord',$Null,$Null,$Null,$Null,$False,1)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord[]'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-
-		}
-	}
-	Context "Set Method" {
-		It "Throws an error with an invalid TTL parameter" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
-			{$TestRecord.Set('testrecord.domain.com',$Null,'NotATTL',$Null)} | should Throw
-		}
-		It "Throws an error with less than 4 parameters" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
-			{$TestRecord.Set('testrecord.domain.com','comment','TTL')} | Should Throw
-		}
-		It "Throws an error with more than 4 parameters" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
-			{$TestRecord.Set('testrecord.domain.com','comment','ttl',$True,'5thparameter')} | should Throw
-		}
-		It "Sets the comment and PTRDName on an existing DNS Record" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
-			$TestRecord.Set('testrecord2.domain.com','new comment',0,$False)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.PTRDName | should be  'testrecord2.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'new comment'
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $False
-		}
-		It "Sets the TTL on an existing record" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.Set('testrecord2.domain.com','new comment',100,$True)
-			$TestRecord.PTRDName | should be  'testrecord2.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'new comment'
-			$TestRecord.TTL | should be 100
-			$TestRecord.Use_TTL | should be $True
-
-		}
-		It "Sets the Use_TTL flag with a null TTL value, resulting in a 0 TTL" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
-			$TestRecord.Set('testrecord.domain.com','test comment',$Null,$True)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Sets the TTL but sets Use_TTL to False, which results in a null TTL" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
-			$TestRecord.Set('testrecord.domain.com','test comment',100,$False)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.comment | should be 'test comment'
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $False
-		}
-		It "Sets the comment to null" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
-			$TestRecord.Set('testrecord2.domain.com',$Null,0,$False)
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.PTRDName | should be  'testrecord2.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-			$TestRecord.Comment | should benullorempty
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $False
-		}
-	}
-	Context "Create Method" {
-		It "Throws error with invalid credential paramter" {
-			{[IB_DNSPTRRecord]::Create($Gridmaster,"notacredential",'name','1.1.1.1',$Null,$Null,$Null,$Null)} | should throw
-		}
-		It "Throws error with invalid IP address parameter" {
-			{[IB_DNSPTRRecord]::Create($Gridmaster,$Credential,'name','notanipaddress',$Null,$Null,$Null,$Null)} | should throw
-		}
-		It "Throws error with invalid TTL parameter" {
-			{[IB_DNSPTRRecord]::Create($Gridmaster,$Credential,'name','notanipaddress',$Null,$Null,'NotATTL',$Null)} | should throw
-		}
-		It "Throws error with less than 8 parameters" {
-			{[IB_DNSPTRRecord]::Create($Gridmaster,$credential)} | should throw
-		}
-		It "Throws error with more than 8 parameters" {
-			{[IB_DNSPTRRecord]::Create($gridmaster,$Credential,'name','ipaddress',$Null,$Null,$Null,$Null,'9thproperty')} | should throw
-		}
-		It "Creates dns PTR record in default view with no comment or TTL" {
-			$record = [IB_DNSPTRRecord]::Create($Gridmaster,$Credential,'newtestrecord.domain.com','1.1.1.1',$Null,$Null,$Null,$False)
-			$Record.GetType().Name | should be 'IB_DNSPTRRecord'
-			$Record.View | should be 'default'
-			$Record.PTRDName | should be 'newtestrecord.domain.com'
-			$Record.IPAddress | should be '1.1.1.1'
-			$Record.Name | should be '1.1.1.1.in-addr.arpa'
-			$Record.comment | should benullorempty
-			$Record.TTL | should be 0
-			$Record.Use_TTL | should be $False
-		}
-		It "Creates dns PTR Record in default view with comment and TTL" {
-			$record = [IB_DNSPTRRecord]::Create($Gridmaster,$Credential,'newtestrecord2.domain.com','1.1.1.1','test comment',$Null,100,$True)
-			$Record.GetType().Name | should be 'IB_DNSPTRRecord'
-			$Record.View | should be 'default'
-			$Record.PTRDName | should be 'newtestrecord2.domain.com'
-			$Record.IPAddress | should be '1.1.1.1'
-			$Record.Name | should be '1.1.1.1.in-addr.arpa'
-			$Record.comment | should be 'test comment'
-			$Record.TTL | should be 100
-			$Record.Use_TTL | should be $True
-		}
-		It "Creates dns PTR Record in default view with TTL = 100 but Use_TTL = False, resulting in no TTL" {
-			$record = [IB_DNSPTRRecord]::Create($Gridmaster,$Credential,'newtestrecord.domain.com','1.1.1.1',$Null,$Null,100,$False)
-			$Record.GetType().Name | should be 'IB_DNSPTRRecord'
-			$Record.View | should be 'default'
-			$Record.PTRDName | should be 'newtestrecord.domain.com'
-			$Record.IPAddress | should be '1.1.1.1'
-			$Record.name | should be '1.1.1.1.in-addr.arpa'
-			$Record.comment | should benullorempty
-			$Record.TTL | should be 0
-			$Record.Use_TTL | should be $False
-		}
-		It "Creates dns PTR Record in specified view with no comment or TTL" {
-			$record = [IB_DNSPTRRecord]::Create($Gridmaster,$Credential,'newtestrecord4.domain.com','1.1.1.2',$Null,'view2',$Null,$False)
-			$Record.GetType().Name | should be 'IB_DNSPTRRecord'
-			$Record.View | should be 'view2'
-			$Record.PTRDName | should be 'newtestrecord4.domain.com'
-			$Record.IPAddress | should be '1.1.1.2'
-			$Record.Name | should be '2.1.1.1.in-addr.arpa'
-			$Record.comment | should benullorempty
-			$Record.TTL | should be 0
-			$Record.Use_TTL | should be $False
-		}
-	}
-	Context "AddExtAttrib Method" {
-		It "Adds extensible attribute" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3')
-			$TestRecord.AddExtAttrib('Site','corp')
-			$TestRecord.ExtAttrib.Name | should be 'Site'
-			$TestRecord.ExtAttrib.value | should be 'corp'
-		}
-		It "Updates the value of an existing extensible attribute" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default')
-			$TestRecord.AddExtAttrib('Site','gulf')
-			$TestRecord.AddExtAttrib | measure-object | select -ExpandProperty Count | should be 1
-			$TestRecord.ExtAttrib.Name | should be 'Site'
-			$TestRecord.ExtAttrib.value | should be 'gulf'
-		}
-	}
-	Context "RemoveExtAttrib Method" {
-		It "Removes extensible attribute" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default')
-			$TestRecord.RemoveExtAttrib('Site')
-			$TestRecord.ExtAttrib | should benullorempty
-		}	
-	}
-	Context "Delete Method" {
-		It "Deletes record with refstring record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default" {
-			$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
-			$TestRecord.Delete() | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-			[IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default') |
-				should benullorempty
-		}
+	It "Creates network with network container in a second view with a comment" {
+		$Record = New-IBNetwork -Gridmaster $Gridmaster -Credential $Credential -Network '192.168.1.0/24' -comment 'view2 comment' -networkview 'networkview2' -confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_Network'
+		$Record.Network | should be '192.168.1.0/24'
+		$Record.comment | should be 'view2 comment'
+		$Record.networkview | should be 'networkview2'
+		$Record.networkcontainer | should be '192.168.0.0/16'
 	}
 }
-Describe "IB_View tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
+Describe "New-IBDNSARecord tests" {
+	It "Throws error with invalid IP address parameter" {
+		{New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name 'testrecord' -IPAddress 'notanipaddress'} | should throw
+	}
+	It "Throws error with invalid TTL parameter" {
+		{New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name 'testrecord' -IPAddress '1.1.1.1' -TTL 'notaTTL'} | should Throw
+	}
+	It "Throws with empty gridmaster" {
+		{New-IBDNSARecord -Gridmaster '' -Credential $Credential -Name 'testrecord' -IPAddress '1.1.1.1'} | should throw
+	}
+	It "Throws with empty name" {
+		{New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name '' -IPAddress '1.1.1.1'} | should throw
+	}
+	It "Creates dns A record in default view with no comment or TTL" {
+		$Record = New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestrecord.domain.com' -IPAddress '1.1.1.1' -Confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_DNSARecord'
+		$Record.View | should be 'default'
+		$Record.Name | should be 'newtestrecord.domain.com'
+		$Record.IPAddress | should be '1.1.1.1'
+		$Record.comment | should benullorempty
+		$Record.TTL | should be 0
+		$Record.Use_TTL | should be $False
+	}
+	It "Creates dns A record in default view with comment and TTL" {
+		$Record = New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestrecord2.domain.com' -IPAddress '1.1.1.1' -Comment 'test comment' -TTL 100 -Confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_DNSARecord'
+		$Record.View | should be 'default'
+		$Record.Name | should be 'newtestrecord2.domain.com'
+		$Record.IPAddress | should be '1.1.1.1'
+		$Record.comment | should be 'test comment'
+		$Record.TTL | should be 100
+		$Record.Use_TTL | should be $True
+	}
+	It "Creates dns A record in specified view with no comment or TTL" {
+		$Record = New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestrecord4.domain.com' -IPAddress '1.1.1.1' -View 'view2' -Confirm:$False
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_DNSARecord'
+		$Record.View | should be 'view2'
+		$Record.Name | should be 'newtestrecord4.domain.com'
+		$Record.IPAddress | should be '1.1.1.1'
+		$Record.comment | should benullorempty
+		$Record.TTL | should be 0
+		$Record.Use_TTL | should be $False
 	}
 
-	Context 'Get Method' {
-		It "Throws error with invalid credential object" {
-			{[IB_View]::Get($Gridmaster,'notacredential','name',$True,'comment',$True,1)} | should throw
-		}
-		It "Throws error with invalid integer object" {
-			{[IB_View]::Get($Gridmaster,$credential,'name',$True,'comment',$True,'notanint')} | should throw
-		}
-		It "Throws error with less than 8 properties" {
-			{[IB_View]::Get($Gridmaster,$credential,'name',$True,'comment',$True)} | should throw
-		}
-		It "Throws error with more than 8 properties" {
-			{[IB_View]::Get($Gridmaster,$credential,'name',$True,'comment','extattrib',$True,1,'extra')} | should throw
-		}
-		It "Gets view by reference" {
-			$Result = [IB_View]::Get($Gridmaster,$Credential,'view/asdfioaweo3893jco:view2/False')
-			$Result.GetType().Name | should be 'IB_View'
-			$Result.Name | should be 'view2'
-			$Result.is_default | should be $False
-			$Result.comment | should be 'Second View'
-		}
-		It "Gets all views" {
-			$Result = [IB_View]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_View[]'
-			$Result.Count | should be 3
-			#
-			$Result[0].GetType().Name | should be 'IB_View'
-			$Result[0]._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result[0].Name | should be 'default'
-			$Result[0].comment | should be 'Default view'
-			$Result[0].is_default | should be $True
-			#
-			$Result[1].GetType().Name | should be 'IB_View'
-			$Result[1]._ref | should be 'view/asdfioaweo3893jco:view2/False'
-			$Result[1].Name | should be 'view2'
-			$Result[1].comment | should be 'Second View'
-			$Result[1].is_default | should be $False
-			#
-			$Result[2].GetType().Name | should be 'IB_View'
-			$Result[2]._ref | should be 'view/jkdfjover89345jh934:view3/False'
-			$Result[2].Name | should be 'view3'
-			$Result[2].comment | should be 'Third View'
-			$Result[2].is_default | should be $False
-		}
-		It "Gets default view" {
-			$Result = [IB_View]::Get($Gridmaster,$Credential,$Null,$True,$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_View[]'
-			$Result._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result.Name | should be 'default'
-			$Result.comment | should be 'Default view'
-			$Result.is_default | should be $True
-		}
-		It "gets view with strict name search" {
-			$Result = [IB_View]::Get($Gridmaster,$Credential,'default',$Null,$Null,$Null,$True,$Null)
-			$Result.GetType().Name | should be 'IB_View[]'
-			$Result._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result.Name | should be 'default'
-			$Result.comment | should be 'Default view'
-			$Result.is_default | should be $True
-		}
-		It "gets views with non-strict name search" {
-			$Result = [IB_View]::Get($Gridmaster,$Credential,'view',$Null,$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_View[]'
-			$Result.count | should be 2
-			#
-			$Result[0].GetType().Name | should be 'IB_View'
-			$Result[0]._ref | should be 'view/asdfioaweo3893jco:view2/False'
-			$Result[0].Name | should be 'view2'
-			$Result[0].comment | should be 'Second View'
-			$Result[0].is_default | should be $False
-			#
-			$Result[1].GetType().Name | should be 'IB_View'
-			$Result[1]._ref | should be 'view/jkdfjover89345jh934:view3/False'
-			$Result[1].Name | should be 'view3'
-			$Result[1].comment | should be 'Third View'
-			$Result[1].is_default | should be $False
-		}
-		It "gets non-default views with is_default search" {
-			$Result = [IB_View]::Get($gridmaster,$Credential,$Null,$False,$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_View[]'
-			$Result.count | should be 2
-			#
-			$Result[0].GetType().Name | should be 'IB_View'
-			$Result[0]._ref | should be 'view/asdfioaweo3893jco:view2/False'
-			$Result[0].Name | should be 'view2'
-			$Result[0].comment | should be 'Second View'
-			$Result[0].is_default | should be $False
-			#
-			$Result[1].GetType().Name | should be 'IB_View'
-			$Result[1]._ref | should be 'view/jkdfjover89345jh934:view3/False'
-			$Result[1].Name | should be 'view3'
-			$Result[1].comment | should be 'Third View'
-			$Result[1].is_default | should be $False
-		}
-		It "gets first view with no query but resultscount of 1" {
-			$Result = [IB_View]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$Null,1)
-			$Result.GetType().Name | should be 'IB_View[]'
-			$Result._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result.Name | should be 'default'
-			$Result.comment | should be 'Default view'
-			$Result.is_default | should be $True
-		}
-		It "gets view with strict comment search" {
-			$Result = [IB_View]::Get($Gridmaster,$Credential,$Null,$Null,'Second View',$Null,$True,$Null)
-			$Result.GetType().Name | should be 'IB_View[]'
-			$Result._ref | should be 'view/asdfioaweo3893jco:view2/False'
-			$Result.Name | should be 'view2'
-			$Result.comment | should be 'Second View'
-			$Result.is_default | should be $False
-		}
-		It "gets view with non-strict comment search" {
-			$Result = [IB_View]::Get($Gridmaster,$Credential,$Null,$Null,'Second View',$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_View[]'
-			$Result._ref | should be 'view/asdfioaweo3893jco:view2/False'
-			$Result.Name | should be 'view2'
-			$Result.comment | should be 'Second View'
-			$Result.is_default | should be $False
-		}
-		It "gets view with non-strict name and comment search" {
-			$Result = [IB_View]::Get($Gridmaster,$Credential,'default',$Null,'Default View',$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_View[]'
-			$Result._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result.Name | should be 'default'
-			$Result.comment | should be 'Default view'
-			$Result.is_default | should be $True
-		}
-		It "gets view with strict name, comment and is_default search" {
-			$Result = [IB_View]::Get($Gridmaster,$Credential,'default',$True,'Default View',$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_View[]'
-			$Result._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result.Name | should be 'default'
-			$Result.comment | should be 'Default view'
-			$Result.is_default | should be $True
-		}
-	}
-	Context 'ToString Method' {
-		$Result = [IB_View]::Get($Gridmaster,$Credential,'view/asdfioaweo3893jco:view2/False')
-		$Result.ToString() | should be 'view2'
-
-	}
 }
-Describe "IB_ExtAttributeDef tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
+Describe "New-IBDNSCNameRecord tests" {
+	It "Throws error with invalid TTL parameter" {
+		{New-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name 'testalias' -Canonical 'testrecord.domain.com' -TTL 'notaTTL'} | should throw
+	}
+	It "Throws error with empty gridmaster" {
+		{New-IBDNSCNameRecord -Gridmaster '' -Credential $Credential -Name 'testalias' -Canonical 'testrecord.domain.com'} | should throw
+	}
+	It "Throws error with empty name" {
+		{New-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name '' -Canonical 'testrecord.domain.com'} | should throw
+	}
+	It "Throws error with empty canonical" {
+		{New-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name 'testalias' -Canonical ''} | should throw
+	}
+	It "Creates dns CName Record in default view with no comment or TTL" {
+		$Record = New-IBDNSCNameRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestalias.domain.com' -Canonical 'testrecord.domain.com'
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_DNSCNameRecord'
+		$Record.View | should be 'default'
+		$Record.Name | should be 'newtestalias.domain.com'
+		$Record.canonical | should be 'testrecord.domain.com'
+		$Record.comment | should benullorempty
+		$Record.TTL | should be 0
+		$Record.Use_TTL | should be $False
+	}
+	It "Creates dns CName Record in default view with comment and TTL" {
+		$Record = New-IBDNSCNameRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestalias2.domain.com' -Canonical 'testrecord.domain.com' -Comment 'test comment' -TTL 100
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_DNSCNameRecord'
+		$Record.View | should be 'default'
+		$Record.Name | should be 'newtestalias2.domain.com'
+		$Record.canonical | should be 'testrecord.domain.com'
+		$Record.comment | should be 'test comment'
+		$Record.TTL | should be 100
+		$Record.Use_TTL | should be $True
+	}
+	It "Creates dns CName Record in specified view with no comment or TTL" {
+		$Record = New-IBDNSCNameRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestalias4.domain.com' -Canonical 'testrecord.domain.com' -View 'view2'
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_DNSCNameRecord'
+		$Record.View | should be 'view2'
+		$Record.Name | should be 'newtestalias4.domain.com'
+		$Record.canonical | should be 'testrecord.domain.com'
+		$Record.comment | should benullorempty
+		$Record.TTL | should be 0
+		$Record.Use_TTL | should be $False
 	}
 
-	Context 'Get Method' {
-		It "Throws error with invalid credential object" {
-			{[IB_ExtAttrsDef]::Get($Gridmaster,'notacredential','name','Type','comment','defaultvalue',$False,1)} | should throw
-		}
-		It "Throws error with invalid integer object" {
-			{[IB_ExtAttrsDef]::Get($Gridmaster,$credential,'name','Type','comment','defaultvalue',$False,'notanINT')} | should throw
-		}
-		It "Throws error with less than 8 properties" {
-			{[IB_ExtAttrsDef]::Get($Gridmaster,$credential,'name','Type','comment','defaultvalue',$False)} | should throw
-		}
-		It "Throws error with more than 8 properties" {
-			{[IB_ExtAttrsDef]::Get($Gridmaster,$credential,'name','Type','comment','defaultvalue',$False,1,'extraparam')} | should throw
-		}
-		It "Gets ExtensibleAttributeDef by reference" {
-			$Result = [IB_ExtAttrsDef]::Get($Gridmaster,$Credential,'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLkJ1aWxkaW5n:Building')
-			$Result.GetType().Name | should be 'IB_ExtAttrsDef'
-			$Result.Name | should be 'Building'
-			$Result.Type | should be 'STRING'
-			$Result.comment | should benullorempty
-		}
-		It "Gets all ExtensibleAttributeDefs" {
-			$Result = [IB_ExtAttrsDef]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_ExtAttrsDef[]'
-			$Result.Count | should be 10
-			#
-			$Result[0].GetType().Name | should be 'IB_ExtAttrsDef'
-			$Result[0]._ref | should be 'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLkJ1aWxkaW5n:Building'
-			$Result[0].Name | should be 'Building'
-			$Result[0].Type | should be 'STRING'
-			$Result[0].comment | should benullorempty
-			$Result[0].DefaultValue | should benullorempty
-		}
-		It "gets ExtensibleAttributeDef with strict name search" {
-			$Result = [IB_ExtAttrsDef]::Get($Gridmaster,$Credential,'IBScavenge',$Null,$Null,$Null,$True,$Null)
-			$Result.GetType().Name | should be 'IB_ExtAttrsDef[]'
-			$Result._ref | should be 'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLklCc2NhdmVuZ2U:IBscavenge'
-			$Result.Name | should be 'IBScavenge'
-			$Result.Type | should be 'ENUM'
-			$Result.comment | should be "Y = Yes\r\nN = No\r\nAttribute to scavenge record"
-			$Result.DefaultValue | should benullorempty
-		}
-		It "gets ExtensibleAttributeDefs with non-strict name search" {
-			$Result = [IB_ExtAttrsDef]::Get($Gridmaster,$Credential,'IBScavenge',$Null,$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_ExtAttrsDef[]'
-			$Result.count | should be 3
-			#
-			$Result[0].GetType().Name | should be 'IB_ExtAttrsDef'
-			$Result[0]._ref | should be 'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLklCc2NhdmVuZ2U:IBscavenge'
-			$Result[0].Name | should be 'IBScavenge'
-			$Result[0].Type | should be 'ENUM'
-			$Result[0].comment | should be "Y = Yes\r\nN = No\r\nAttribute to scavenge record"
-			$Result[0].DefaultValue | should benullorempty
-			#
-			$Result[1].GetType().Name | should be 'IB_ExtAttrsDef'
-			$Result[1]._ref | should be 'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLklCc2NhdmVuZ2VFeGNsdWRl:IBscavengeExclude'
-			$Result[1].Name | should be 'IBScavengeExclude'
-			$Result[1].Type | should be 'ENUM'
-			$Result[1].comment | should be "Y = Yes\r\nN = No\r\nAttribute for scavenging"
-			$Result[1].DefaultValue | should benullorempty
-			#
-			$Result[2].GetType().Name | should be 'IB_ExtAttrsDef'
-			$Result[2]._ref | should be 'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLklCc2NhdmVuZ2VVbmRpc2NvdmVyZWRDb3VudA:IBscavengeUndiscoveredCount'
-			$Result[2].Name | should be 'IBscavengeUndiscoveredCount'
-			$Result[2].Type | should be 'INTEGER'
-			$Result[2].comment | should be "Counter for devices identified by the scavenging script who have not ever been discovered by Network Discovery"
-			$Result[2].DefaultValue | should benullorempty
-		}
-		It "gets first ExtensibleAttributeDef with no query but resultscount of 1" {
-			$Result = [IB_ExtAttrsDef]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$Null,1)
-			$Result.GetType().Name | should be 'IB_ExtAttrsDef[]'
-			$Result._ref | should be 'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLkJ1aWxkaW5n:Building'
-			$Result.Name | should be 'Building'
-			$Result.Type | should be 'STRING'
-			$Result.comment | should benullorempty
-			$Result.DefaultValue | should benullorempty
-		}
-		It "gets ExtensibleAttributeDef with strict comment search" {
-			$Result = [IB_ExtAttrsDef]::Get($Gridmaster,$Credential,$Null,$Null,'Networks for IB Script Testing',$Null,$True,$Null)
-			$Result.GetType().Name | should be 'IB_ExtAttrsDef[]'
-			$Result._ref | should be 'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLlRlc3QgTmV0d29ya3M:Test%20Networks'
-			$Result.Name | should be 'Test Networks'
-			$Result.Type | should be 'ENUM'
-			$Result.comment | should be 'Networks for IB Script Testing'
-			$Result.DefaultValue | should benullorempty
-		}
-		It "gets ExtensibleAttributeDef with non-strict comment search" {
-			$Result = [IB_ExtAttrsDef]::Get($Gridmaster,$Credential,$Null,$Null,'IB Script Testing',$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_ExtAttrsDef[]'
-			$Result._ref | should be 'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLlRlc3QgTmV0d29ya3M:Test%20Networks'
-			$Result.Name | should be 'Test Networks'
-			$Result.Type | should be 'ENUM'
-			$Result.comment | should be 'Networks for IB Script Testing'
-			$Result.DefaultValue | should benullorempty
-		}
-		It "gets ExtensibleAttributeDef with non-strict name and comment search" {
-			$Result = [IB_ExtAttrsDef]::Get($Gridmaster,$Credential,'Undiscovered',$Null,'Scavenging',$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_ExtAttrsDef[]'
-			$Result._ref | should be 'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLklCc2NhdmVuZ2VVbmRpc2NvdmVyZWRDb3VudA:IBscavengeUndiscoveredCount'
-			$Result.Name | should be 'IBscavengeUndiscoveredCount'
-			$Result.Type | should be 'INTEGER'
-			$Result.comment | should be 'Counter for devices identified by the scavenging script who have not ever been discovered by Network Discovery'
-			$Result.DefaultValue | should benullorempty
-		}
-		It "gets ExtensibleAttributeDef with Type search" {
-			$Result = [IB_ExtAttrsDef]::Get($Gridmaster,$Credential,$Null,'INTEGER',$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_ExtAttrsDef[]'
-			$Result._ref | should be 'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLklCc2NhdmVuZ2VVbmRpc2NvdmVyZWRDb3VudA:IBscavengeUndiscoveredCount'
-			$Result.Name | should be 'IBscavengeUndiscoveredCount'
-			$Result.Type | should be 'INTEGER'
-			$Result.comment | should be 'Counter for devices identified by the scavenging script who have not ever been discovered by Network Discovery'
-			$Result.DefaultValue | should benullorempty
-
-		}
-	}
-	Context 'ToString Method' {
-		$Result = [IB_ExtAttrsDef]::Get($Gridmaster,$Credential,'extensibleattributedef/b25lLmV4dGVuc2libGVfYXR0cmlidXRlc19kZWYkLkJ1aWxkaW5n:Building')
-		$Result.ToString() | should be 'Building'
-
-	}
 }
-Describe "IB_networkview tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
+Describe "New-IBDNSPTRRecord tests" {
+	It "Throws error with invalid IP address parameter" {
+		{New-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'testrecord' -IPAddress 'notanIP'} | should throw
 	}
-	Context 'Get Method' {
-		It "Throws error with invalid credential object" {
-			{[IB_networkview]::Get($Gridmaster,'notacredential','name',$True,'comment',$True,1)} | should throw
-		}
-		It "Throws error with invalid integer object" {
-			{[IB_networkview]::Get($Gridmaster,$credential,'name',$True,'comment',$True,'notanint')} | should throw
-		}
-		It "Throws error with less than 8 properties" {
-			{[IB_networkview]::Get($Gridmaster,$credential,'name',$True,'comment',$True)} | should throw
-		}
-		It "Throws error with more than 8 properties" {
-			{[IB_networkview]::Get($Gridmaster,$credential,'name',$True,'comment','extattrib',$True,1,'extra')} | should throw
-		}
-		It "Gets networkview by reference" {
-			$Result = [IB_networkview]::Get($Gridmaster,$Credential,'networkview/asdfioaweo3893jco:networkview2/False')
-			$Result.GetType().Name | should be 'IB_NetworkView'
-			$Result.Name | should be 'networkview2'
-			$Result.is_default | should be $False
-			$Result.comment | should be 'Second networkview'
-		}
-		It "Gets all networkviews" {
-			$Result = [IB_networkview]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_NetworkView[]'
-			$Result.Count | should be 3
-			#
-			$Result[0].GetType().Name | should be 'IB_NetworkView'
-			$Result[0]._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result[0].Name | should be 'default'
-			$Result[0].comment | should be 'Default networkview'
-			$Result[0].is_default | should be $True
-			#
-			$Result[1].GetType().Name | should be 'IB_NetworkView'
-			$Result[1]._ref | should be 'networkview/asdfioaweo3893jco:networkview2/False'
-			$Result[1].Name | should be 'networkview2'
-			$Result[1].comment | should be 'Second networkview'
-			$Result[1].is_default | should be $False
-			#
-			$Result[2].GetType().Name | should be 'IB_NetworkView'
-			$Result[2]._ref | should be 'networkview/jkdfjover89345jh934:networkview3/False'
-			$Result[2].Name | should be 'networkview3'
-			$Result[2].comment | should be 'Third networkview'
-			$Result[2].is_default | should be $False
-		}
-		It "Gets default networkview" {
-			$Result = [IB_networkview]::Get($Gridmaster,$Credential,$Null,$True,$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_NetworkView[]'
-			$Result._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result.Name | should be 'default'
-			$Result.comment | should be 'Default networkview'
-			$Result.is_default | should be $True
-		}
-		It "gets networkview with strict name search" {
-			$Result = [IB_networkview]::Get($Gridmaster,$Credential,'default',$Null,$Null,$Null,$True,$Null)
-			$Result.GetType().Name | should be 'IB_NetworkView[]'
-			$Result._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result.Name | should be 'default'
-			$Result.comment | should be 'Default networkview'
-			$Result.is_default | should be $True
-		}
-		It "gets networkviews with non-strict name search" {
-			$Result = [IB_networkview]::Get($Gridmaster,$Credential,'networkview',$Null,$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_NetworkView[]'
-			$Result.count | should be 2
-			#
-			$Result[0].GetType().Name | should be 'IB_NetworkView'
-			$Result[0]._ref | should be 'networkview/asdfioaweo3893jco:networkview2/False'
-			$Result[0].Name | should be 'networkview2'
-			$Result[0].comment | should be 'Second networkview'
-			$Result[0].is_default | should be $False
-			#
-			$Result[1].GetType().Name | should be 'IB_NetworkView'
-			$Result[1]._ref | should be 'networkview/jkdfjover89345jh934:networkview3/False'
-			$Result[1].Name | should be 'networkview3'
-			$Result[1].comment | should be 'Third networkview'
-			$Result[1].is_default | should be $False
-		}
-		It "gets non-default networkviews with is_default search" {
-			$Result = [IB_networkview]::Get($gridmaster,$Credential,$Null,$False,$Null,$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_NetworkView[]'
-			$Result.count | should be 2
-			#
-			$Result[0].GetType().Name | should be 'IB_NetworkView'
-			$Result[0]._ref | should be 'networkview/asdfioaweo3893jco:networkview2/False'
-			$Result[0].Name | should be 'networkview2'
-			$Result[0].comment | should be 'Second networkview'
-			$Result[0].is_default | should be $False
-			#
-			$Result[1].GetType().Name | should be 'IB_NetworkView'
-			$Result[1]._ref | should be 'networkview/jkdfjover89345jh934:networkview3/False'
-			$Result[1].Name | should be 'networkview3'
-			$Result[1].comment | should be 'Third networkview'
-			$Result[1].is_default | should be $False
-		}
-		It "gets first networkview with no query but resultscount of 1" {
-			$Result = [IB_networkview]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$Null,1)
-			$Result.GetType().Name | should be 'IB_NetworkView[]'
-			$Result._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result.Name | should be 'default'
-			$Result.comment | should be 'Default networkview'
-			$Result.is_default | should be $True
-		}
-		It "gets networkview with strict comment search" {
-			$Result = [IB_networkview]::Get($Gridmaster,$Credential,$Null,$Null,'Second networkview',$Null,$True,$Null)
-			$Result.GetType().Name | should be 'IB_NetworkView[]'
-			$Result._ref | should be 'networkview/asdfioaweo3893jco:networkview2/False'
-			$Result.Name | should be 'networkview2'
-			$Result.comment | should be 'Second networkview'
-			$Result.is_default | should be $False
-		}
-		It "gets networkview with non-strict comment search" {
-			$Result = [IB_networkview]::Get($Gridmaster,$Credential,$Null,$Null,'Second networkview',$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_NetworkView[]'
-			$Result._ref | should be 'networkview/asdfioaweo3893jco:networkview2/False'
-			$Result.Name | should be 'networkview2'
-			$Result.comment | should be 'Second networkview'
-			$Result.is_default | should be $False
-		}
-		It "gets networkview with non-strict name and comment search" {
-			$Result = [IB_networkview]::Get($Gridmaster,$Credential,'default',$Null,'Default networkview',$Null,$False,$Null)
-			$Result.GetType().Name | should be 'IB_NetworkView[]'
-			$Result._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result.Name | should be 'default'
-			$Result.comment | should be 'Default networkview'
-			$Result.is_default | should be $True
-		}
-		It "gets networkview with strict name, comment and is_default search" {
-			$Result = [IB_networkview]::Get($Gridmaster,$Credential,'default',$True,'Default networkview',$Null,$True,$Null)
-			$Result.GetType().Name | should be 'IB_NetworkView[]'
-			$Result._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
-			$Result.Name | should be 'default'
-			$Result.comment | should be 'Default networkview'
-			$Result.is_default | should be $True
-		}
+	It "Throws error with invalid TTL parameter" {
+		{New-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'testrecord' -IPAddress '1.1.1.1' -TTL 'notaTTL'} | should throw
 	}
-	Context 'ToString Method' {
-		$Result = [IB_networkview]::Get($Gridmaster,$Credential,'networkview/asdfioaweo3893jco:networkview2/False')
-		$Result.ToString() | should be 'networkview2'
+	It "Throws error with empty gridmaster" {
+		{New-IBDNSPTRRecord -Gridmaster '' -Credential $Credential -PTRDName 'testrecord' -IPAddress '1.1.1.1'} | should throw
+	}
+	It "Throws error with empty PTRDName" {
+		{New-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName '' -IPAddress '1.1.1.1'} | should throw
+	}
+	It "Throws error with empty IPAddress" {
+		{New-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'testrecord' -IPAddress ''} | should throw
+	}
+	It "Creates dns PTR record in default view with no comment or TTL" {
+		$record = New-IBDNSPTRRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'newtestrecord.domain.com' -IPAddress '1.1.1.1'
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_DNSPTRRecord'
+		$Record.View | should be 'default'
+		$Record.PTRDName | should be 'newtestrecord.domain.com'
+		$Record.IPAddress | should be '1.1.1.1'
+		$Record.Name | should be '1.1.1.1.in-addr.arpa'
+		$Record.comment | should benullorempty
+		$Record.TTL | should be 0
+		$Record.Use_TTL | should be $False
+	}
+	It "Creates dns PTR Record in default view with comment and TTL" {
+		$record = New-IBDNSPTRRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'newtestrecord2.domain.com' -IPAddress '1.1.1.1' -Comment 'test comment' -TTL 100
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_DNSPTRRecord'
+		$Record.View | should be 'default'
+		$Record.PTRDName | should be 'newtestrecord2.domain.com'
+		$Record.IPAddress | should be '1.1.1.1'
+		$Record.Name | should be '1.1.1.1.in-addr.arpa'
+		$Record.comment | should be 'test comment'
+		$Record.TTL | should be 100
+		$Record.Use_TTL | should be $True
+	}
+	It "Creates dns PTR Record in specified view with no comment or TTL" {
+		$record = New-IBDNSPTRRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'newtestrecord4.domain.com' -IPAddress '1.1.1.1' -View 'view2'
+		$Script:Recordlist += $Record
+		$Record.GetType().Name | should be 'IB_DNSPTRRecord'
+		$Record.View | should be 'view2'
+		$Record.PTRDName | should be 'newtestrecord4.domain.com'
+		$Record.IPAddress | should be '1.1.1.1'
+		$Record.Name | should be '1.1.1.1.in-addr.arpa'
+		$Record.comment | should benullorempty
+		$Record.TTL | should be 0
+		$Record.Use_TTL | should be $False
+	}
 
-	}
 }
-Describe "IB_FixedAddress tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
-		Mock-InfobloxPut -uri $Uri -body $Body
+Describe "New-IBFixedAddress tests" {
+	It "Throws error with invalid IP Address object" {
+		{New-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -Name 'testrecord' -IPAddress 'notanIP'} | should Throw
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
-		Mock-InfobloxPost -uri $uri -body $Body
+	It "Throws error with empty gridmaster" {
+		{New-IBFixedAddress -Gridmaster '' -Credential $Credential -Name 'testrecord' -IPAddress '1.1.1.1'} | should Throw
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
+	It "Throws error with empty IP" {
+		{New-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -Name 'testrecord' -IPAddress ''} | should Throw
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-	$uri | Mock-InfobloxDelete
+	It "Creates fixedaddress with no name or comment and zero mac in default view" {
+		$TestRecord = New-IBFixedAddress -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -IPAddress '10.1.1.1'
+		$Script:Recordlist += $Record
+		$TestRecord.GetType().name | Should be 'IB_FixedAddress'
+		$TestRecord.IPAddress | should be '10.1.1.1'
+		$TestRecord.Name | should benullorempty
+		$TestRecord.Comment | should benullorempty
+		$TestRecord.mac | should be '00:00:00:00:00:00'
+		$TestRecord.NetworkView | should be 'default'
 	}
-	Context 'Get Method' {
-		It "Throws error with invalid credential object" {
-			{[IB_FixedAddress]::Get($Gridmaster,'notacredential','refstring')} | should Throw
-			{[IB_FixedAddress]::Get($gridmaster,'notacredential',$null,$Null,$Null,$Null,$False,$Null)} | should throw
-		}
-		It "Throws error with invalid IP Address object" {
-			{[IB_FixedAddress]::Get($gridmaster,$Credential,'notanIP',$Null,$Null,$Null,$False,$Null)} | should throw
-		}
-		It "Throws error with invalid integer object" {
-			{[IB_FixedAddress]::Get($gridmaster,$Credential,'1.1.1.1',$Null,$Null,$Null,$False,'notanint')} | should throw		
-		}
-		It "Throws error with less than 3 parameters" {
-			{[IB_FixedAddress]::Get($Gridmaster,$Credential)} | should Throw
-		}
-		It "Throws error with more than 3 but less than 9 parameters" {
-			{[IB_FixedAddress]::Get($Gridmaster,$Credential,'refstring','extra')} | should Throw
-		}
-		It "Throws error with more than 9 parameters" {
-			{[IB_FixedAddress]::Get($gridmaster,$Credential,$null,$Null,$Null,$Null,$Null,$False,$Null,'extra')} | should throw
+	It "Creates fixedaddress with no name or comment and non-zero mac in default view" {
+		$TestRecord = New-IBFixedAddress -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -IPAddress '10.1.1.2' -MAC '11:11:11:11:11:11'
+		$Script:Recordlist += $Record
+		$TestRecord.GetType().name | Should be 'IB_FixedAddress'
+		$TestRecord.IPAddress | should be '10.1.1.2'
+		$TestRecord.Name | should benullorempty
+		$TestRecord.Comment | should benullorempty
+		$TestRecord.mac | should be '11:11:11:11:11:11'
+		$TestRecord.NetworkView | should be 'default'
+	}
+	It "Creates fixedaddress with name, no comment and zero mac in default view" {
+		$TestRecord = New-IBFixedAddress -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestrecord' -IPAddress '10.1.1.3' -MAC "00:00:00:00:00:00"
+		$Script:Recordlist += $Record
+		$TestRecord.GetType().name | Should be 'IB_FixedAddress'
+		$TestRecord.IPAddress | should be '10.1.1.3'
+		$TestRecord.Name | should be 'newtestrecord'
+		$TestRecord.Comment | should benullorempty
+		$TestRecord.mac | should be '00:00:00:00:00:00'
+		$TestRecord.NetworkView | should be 'default'
+	}
+	It "Creates fixedaddress with name and comment and non-zero mac in default view" {
+		$TestRecord = New-IBFixedAddress -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestrecord' -IPAddress '10.1.1.4' -Comment 'comment' -MAC '11:11:11:11:11:11'
+		$Script:Recordlist += $Record
+		$TestRecord.GetType().name | Should be 'IB_FixedAddress'
+		$TestRecord.IPAddress | should be '10.1.1.4'
+		$TestRecord.Name | should be 'newtestrecord'
+		$TestRecord.Comment | should be 'comment'
+		$TestRecord.mac | should be '11:11:11:11:11:11'
+		$TestRecord.NetworkView | should be 'default'
+	}
+	It "Creates fixedaddress with comment, no name and non-zero mac in specified view" {
+		$TestRecord = New-IBFixedAddress -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Comment 'comment' -NetworkView 'networkview3' -IPAddress '10.1.1.5' -MAC '11:11:11:11:11:11'
+		$Script:Recordlist += $Record
+		$TestRecord.GetType().name | Should be 'IB_FixedAddress'
+		$TestRecord.IPAddress | should be '10.1.1.5'
+		$TestRecord.Name | should benullorempty
+		$TestRecord.Comment | should be 'comment'
+		$TestRecord.mac | should be '11:11:11:11:11:11'
+		$TestRecord.NetworkView | should be 'networkview3'
+	}
 
-		}
-		It "Returns fixed address from ref query" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
-			$Return.GetType().Name | should be 'IB_FixedAddress'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			$Return.name | should be 'testrecord.domain.com'
-			$Return.IPAddress | should be '1.1.1.1'
-			$Return.comment | should be 'test comment'
-			$Return.networkview | should be 'default'
-			$Return.MAC | should be '00:00:00:00:00:00'
-		}
-		It "Returns all fixed addresses from null query" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$Null,$Null,$Null)
-			$Return.GetType().Name | should be 'IB_FixedAddress[]'
-			$Return.Count | should be 3
-			#
-			$Return[0].GetType().Name | should be 'IB_FixedAddress'
-			$Return[0]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			$Return[0].name | should be 'testrecord.domain.com'
-			$Return[0].IPAddress | should be '1.1.1.1'
-			$Return[0].comment | should be 'test comment'
-			$Return[0].networkview | should be 'default'
-			$Return[0].MAC | should be '00:00:00:00:00:00'
-			#
-			$Return[1].GetType().Name | should be 'IB_FixedAddress'
-			$Return[1]._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
-			$Return[1].name | should be 'testrecord.domain.com'
-			$Return[1].IPAddress | should be '1.2.3.4'
-			$Return[1].comment | should be 'test comment 2'
-			$Return[1].networkview | should be 'default'
-			$Return[1].MAC | should be '00:00:00:00:00:00'
-			#
-			$Return[2].GetType().Name | should be 'IB_FixedAddress'
-			$Return[2]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2/networkview3'
-			$Return[2].name | should be 'testrecord2.domain.com'
-			$Return[2].IPAddress | should be '2.2.2.2'
-			$Return[2].comment | should benullorempty
-			$Return[2].networkview | should be 'networkview3'
-			$Return[2].MAC | should be '00:00:00:00:00:11'
-		}
-		It "Returns fixed address from IP Address query" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,'1.2.3.4',$Null,$Null,$Null,$Null,$Null,$Null)
-			$Return.GetType().Name | should be 'IB_FixedAddress[]'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
-			$Return.name | should be 'testrecord.domain.com'
-			$Return.IPAddress | should be '1.2.3.4'
-			$Return.comment | should be 'test comment 2'
-			$Return.networkview | should be 'default'
-			$Return.MAC | should be '00:00:00:00:00:00'
-		}
-		It "Returns fixed addresses from MAC address query" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,$Null,'00:00:00:00:00:00',$Null,$Null,$Null,$Null,$Null)
-			$Return.GetType().Name | should be 'IB_FixedAddress[]'
-			$Return.Count | should be 2
-			#
-			$Return[0].GetType().Name | should be 'IB_FixedAddress'
-			$Return[0]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			$Return[0].name | should be 'testrecord.domain.com'
-			$Return[0].IPAddress | should be '1.1.1.1'
-			$Return[0].comment | should be 'test comment'
-			$Return[0].networkview | should be 'default'
-			$Return[0].MAC | should be '00:00:00:00:00:00'
-			#
-			$Return[1].GetType().Name | should be 'IB_FixedAddress'
-			$Return[1]._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
-			$Return[1].name | should be 'testrecord.domain.com'
-			$Return[1].IPAddress | should be '1.2.3.4'
-			$Return[1].comment | should be 'test comment 2'
-			$Return[1].networkview | should be 'default'
-			$Return[1].MAC | should be '00:00:00:00:00:00'
-		}
-		It "Returns fixed addresses from non-strict comment query" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,$Null,$Null,'test comment',$Null,$Null,$False,$Null)
-			$Return.GetType().Name | should be 'IB_FixedAddress[]'
-			$Return.Count | should be 2
-			#
-			$Return[0].GetType().Name | should be 'IB_FixedAddress'
-			$Return[0]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			$Return[0].name | should be 'testrecord.domain.com'
-			$Return[0].IPAddress | should be '1.1.1.1'
-			$Return[0].comment | should be 'test comment'
-			$Return[0].networkview | should be 'default'
-			$Return[0].MAC | should be '00:00:00:00:00:00'
-			#
-			$Return[1].GetType().Name | should be 'IB_FixedAddress'
-			$Return[1]._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
-			$Return[1].name | should be 'testrecord.domain.com'
-			$Return[1].IPAddress | should be '1.2.3.4'
-			$Return[1].comment | should be 'test comment 2'
-			$Return[1].networkview | should be 'default'
-			$Return[1].MAC | should be '00:00:00:00:00:00'
-		}
-		It "Returns fixed address from strict comment query" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,$Null,$Null,'test comment',$Null,$Null,$True,$Null)
-			$Return.GetType().Name | should be 'IB_FixedAddress[]'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			$Return.name | should be 'testrecord.domain.com'
-			$Return.IPAddress | should be '1.1.1.1'
-			$Return.comment | should be 'test comment'
-			$Return.networkview | should be 'default'
-			$Return.MAC | should be '00:00:00:00:00:00'
-
-		}
-		It "Returns fixed addresses from networkview query" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,'default',$False,$Null)
-			$Return.GetType().Name | should be 'IB_FixedAddress[]'
-			$Return.Count | should be 2
-			#
-			$Return[0].GetType().Name | should be 'IB_FixedAddress'
-			$Return[0]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			$Return[0].name | should be 'testrecord.domain.com'
-			$Return[0].IPAddress | should be '1.1.1.1'
-			$Return[0].comment | should be 'test comment'
-			$Return[0].networkview | should be 'default'
-			$Return[0].MAC | should be '00:00:00:00:00:00'
-			#
-			$Return[1].GetType().Name | should be 'IB_FixedAddress'
-			$Return[1]._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
-			$Return[1].name | should be 'testrecord.domain.com'
-			$Return[1].IPAddress | should be '1.2.3.4'
-			$Return[1].comment | should be 'test comment 2'
-			$Return[1].networkview | should be 'default'
-			$Return[1].MAC | should be '00:00:00:00:00:00'
-		}
-		It "Returns fixed address from IP and MAC address query" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,'1.1.1.1','00:00:00:00:00:00',$Null,$Null,$Null,$False,$Null)
-			$Return.GetType().Name | should be 'IB_FixedAddress[]'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			$Return.name | should be 'testrecord.domain.com'
-			$Return.IPAddress | should be '1.1.1.1'
-			$Return.comment | should be 'test comment'
-			$Return.networkview | should be 'default'
-			$Return.MAC | should be '00:00:00:00:00:00'
-		}
-		It "Returns fixed address from IP and networkview query" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,'1.1.1.1',$Null,$Null,$Null,'default',$False,$Null)
-			$Return.GetType().Name | should be 'IB_FixedAddress[]'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			$Return.name | should be 'testrecord.domain.com'
-			$Return.IPAddress | should be '1.1.1.1'
-			$Return.comment | should be 'test comment'
-			$Return.networkview | should be 'default'
-			$Return.MAC | should be '00:00:00:00:00:00'
-		}
-		It "Returns fixed address from IP, comment and networkview query" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,'1.1.1.1',$Null,'test comment',$Null,'default',$False,$Null)
-			$Return.GetType().Name | should be 'IB_FixedAddress[]'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			$Return.name | should be 'testrecord.domain.com'
-			$Return.IPAddress | should be '1.1.1.1'
-			$Return.comment | should be 'test comment'
-			$Return.networkview | should be 'default'
-			$Return.MAC | should be '00:00:00:00:00:00'
-		}
-		It "Returns fixed address from no query but resultscount set to 1" {
-			$Return = [IB_FixedAddress]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,$Null,$False,1)
-			$Return.GetType().Name | should be 'IB_FixedAddress[]'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			$Return.name | should be 'testrecord.domain.com'
-			$Return.IPAddress | should be '1.1.1.1'
-			$Return.comment | should be 'test comment'
-			$Return.networkview | should be 'default'
-			$Return.MAC | should be '00:00:00:00:00:00'
-		}
-	}
-	Context 'Set Method' {
-		It "Throws error with less than 3 parameters" {
-			$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
-			{$TestRecord.Set($Null,$Null)} | should throw
-		}
-		It "Throws error with more than 3 parameters" {
-			$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
-			{$TestRecord.Set($Null,$Null,$Null,$Null)} | should throw
-
-		}
-		It "Sets name, comment and MAC on existing fixedaddress object" {
-			$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
-			$TestRecord.Set('newrecordname.domain.com','new record comment','00:00:00:00:00:00')
-			$TestRecord.GetType().Name | should be 'IB_FixedAddress'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be 'newrecordname.domain.com'
-			$TestRecord.comment | should be 'new record comment'
-			$TestRecord.MAC | should be '00:00:00:00:00:00'
-			$TestRecord.NetworkView | should be 'default'
-		}
-		It "Sets comment to null on existing fixedaddress object" {
-			$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
-			$TestRecord.Set('newrecordname.domain.com',$Null,'00:00:00:00:00:00')
-			$TestRecord.GetType().Name | should be 'IB_FixedAddress'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be 'newrecordname.domain.com'
-			$TestRecord.comment | should benullorempty
-			$TestRecord.MAC | should be '00:00:00:00:00:00'
-			$TestRecord.NetworkView | should be 'default'
-
-		}
-		It "Sets name to null on existing fixedaddress object" {
-			$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
-			$TestRecord.Set($Null,'new record comment','00:00:00:00:00:00')
-			$TestRecord.GetType().Name | should be 'IB_FixedAddress'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should benullorempty
-			$TestRecord.comment | should be 'new record comment'
-			$TestRecord.MAC | should be '00:00:00:00:00:00'
-			$TestRecord.NetworkView | should be 'default'
-		}
-		It "Sets MAC to non-zero value on existing fixedaddress object" {
-			$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
-			$TestRecord.Set('newrecordname.domain.com','new record comment','11:11:11:11:11:11')
-			$TestRecord.GetType().Name | should be 'IB_FixedAddress'
-			$TestRecord.IPAddress | should be '1.1.1.1'
-			$TestRecord.Name | should be 'newrecordname.domain.com'
-			$TestRecord.comment | should be 'new record comment'
-			$TestRecord.MAC | should be '11:11:11:11:11:11'
-			$TestRecord.NetworkView | should be 'default'
-		}
-		It "Sets MAC to zero value on existing fixedaddress object" {
-			$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2/networkview3')
-			$TestRecord.Set('newrecordname.domain.com','new record comment','00:00:00:00:00:00')
-			$TestRecord.GetType().Name | should be 'IB_FixedAddress'
-			$TestRecord.IPAddress | should be '2.2.2.2'
-			$TestRecord.Name | should be 'newrecordname.domain.com'
-			$TestRecord.comment | should be 'new record comment'
-			$TestRecord.MAC | should be '00:00:00:00:00:00'
-			$TestRecord.NetworkView | should be 'networkview3'
-		}
-	}
-	Context 'Create Method' {
-		It "Throws error with invalid credential object" {
-			{[IB_FixedAddress]::Create($Gridmaster,'notacredential','name','1.1.1.1',$Null,$Null,$Null)} | should throw
-		}
-		It "Throws error with invalid IP Address object" {
-			{[IB_FixedAddress]::Create($Gridmaster,$Credential,'name','notanIP',$Null,$Null,$Null)} | should throw
-		}
-		It "Throws error with less than 7 properties" {
-			{[IB_FixedAddress]::Create($Gridmaster,$Credential,'name','1.1.1.1',$Null,$Null)} | should throw
-		}
-		It "Throws error with more than 7 properties" {
-			{[IB_FixedAddress]::Create($Gridmaster,$Credential,'name','1.1.1.1',$Null,$Null,$Null,'extra')} | should throw
-		}
-		It "Creates fixedaddress with no name or comment and zero mac in default view" {
-			$TestRecord = [IB_FixedAddress]::Create($Gridmaster,$Credential,$Null,'10.1.1.1',$Null,$Null,$Null)
-			$TestRecord.GetType().name | Should be 'IB_FixedAddress'
-			$TestRecord.IPAddress | should be '10.1.1.1'
-			$TestRecord.Name | should benullorempty
-			$TestRecord.Comment | should benullorempty
-			$TestRecord.mac | should be '00:00:00:00:00:00'
-			$TestRecord.NetworkView | should be 'default'
-		}
-		It "Creates fixedaddress with no name or comment and non-zero mac in default view" {
-			$TestRecord = [IB_FixedAddress]::Create($Gridmaster,$Credential,$Null,'10.1.1.2',$Null,$Null,'11:11:11:11:11:11')
-			$TestRecord.GetType().name | Should be 'IB_FixedAddress'
-			$TestRecord.IPAddress | should be '10.1.1.2'
-			$TestRecord.Name | should benullorempty
-			$TestRecord.Comment | should benullorempty
-			$TestRecord.mac | should be '11:11:11:11:11:11'
-			$TestRecord.NetworkView | should be 'default'
-		}
-		It "Creates fixedaddress with name, no comment and zero mac in default view" {
-			$TestRecord = [IB_FixedAddress]::Create($Gridmaster,$Credential,'newtestrecord','10.1.1.3',$Null,$Null,'00:00:00:00:00:00')
-			$TestRecord.GetType().name | Should be 'IB_FixedAddress'
-			$TestRecord.IPAddress | should be '10.1.1.3'
-			$TestRecord.Name | should be 'newtestrecord'
-			$TestRecord.Comment | should benullorempty
-			$TestRecord.mac | should be '00:00:00:00:00:00'
-			$TestRecord.NetworkView | should be 'default'
-		}
-		It "Creates fixedaddress with name and comment and non-zero mac in default view" {
-			$TestRecord = [IB_FixedAddress]::Create($Gridmaster,$Credential,'newtestrecord','10.1.1.4','comment',$Null,'11:11:11:11:11:11')
-			$TestRecord.GetType().name | Should be 'IB_FixedAddress'
-			$TestRecord.IPAddress | should be '10.1.1.4'
-			$TestRecord.Name | should be 'newtestrecord'
-			$TestRecord.Comment | should be 'comment'
-			$TestRecord.mac | should be '11:11:11:11:11:11'
-			$TestRecord.NetworkView | should be 'default'
-		}
-		It "Creates fixedaddress with comment, no name and non-zero mac in specified view" {
-			$TestRecord = [IB_FixedAddress]::Create($Gridmaster,$Credential,$Null,'10.1.1.5','comment','networkview3','11:11:11:11:11:11')
-			$TestRecord.GetType().name | Should be 'IB_FixedAddress'
-			$TestRecord.IPAddress | should be '10.1.1.5'
-			$TestRecord.Name | should benullorempty
-			$TestRecord.Comment | should be 'comment'
-			$TestRecord.mac | should be '11:11:11:11:11:11'
-			$TestRecord.NetworkView | should be 'networkview3'
-		}
-	}
-	Context "AddExtAttrib Method" {
-		It "Adds extensible attribute" {
-			$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default')
-			$TestRecord.AddExtAttrib('Site','corp')
-			$TestRecord.ExtAttrib.Name | should be 'Site'
-			$TestRecord.ExtAttrib.value | should be 'corp'
-		}
-		It "Updates the value of an existing extensible attribute" {
-			$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
-			$TestRecord.AddExtAttrib('Site','gulf')
-			$TestRecord.AddExtAttrib | measure-object | select -ExpandProperty Count | should be 1
-			$TestRecord.ExtAttrib.Name | should be 'Site'
-			$TestRecord.ExtAttrib.value | should be 'gulf'
-		}
-	}
-	Context "RemoveExtAttrib Method" {
-		It "Removes extensible attribute" {
-			$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
-			$TestRecord.RemoveExtAttrib('Site')
-			$TestRecord.ExtAttrib | should benullorempty
-		}	
-	}
-	Context 'Delete Method' {
-		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
-		It "Deletes record with refstring fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default" {
-			$TestRecord.Delete() | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-			[IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default') |
-				should benullorempty
-		}
-	}
 }
-Describe "IB_ReferenceObject tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-		$uri | Mock-InfobloxDelete
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
-	Context 'Get Method' {
-		It 'Throws error with invalid credential property' {
-			{[IB_ReferenceObject]::Get($Gridmaster,'notacredential','record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')} |
-				Should Throw
-		}
-		It 'Throws error with less than 3 parameters' {
-			{[IB_ReferenceObject]::Get($gridmaster,$Credential)} | should Throw
-		}
-		It 'Throws error with more than 3 parameters' {
-			{[IB_ReferenceObject]::Get($Gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default','extra')} |
-				Should Throw
-		}
-		It 'returns ReferenceObject from Get by ref' {
-			$Return = [IB_ReferenceObject]::Get($Gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
-			$Return.GetType().Name | should be 'IB_ReferenceObject'
-			$Return._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		}
-	}
-	Context 'Delete Method' {
-		It "Deletes record with refstring record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default" {
-			$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default')
-			$TestRecord.Delete() | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
-			[IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default') |
-				should benullorempty
-		}
-
-	}
+Describe "Get-IBExtensibleAttributeDefinition tests" {
+	
 }
 Describe "Get-IBView tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
-
 	It "Returns dnsview with specified refstring" {
-		$Result = Get-IBView -Gridmaster $gridmaster -Credential $credential -_Ref 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
+		$ref = $script:Recordlist.where{$_._ref -like 'view/*/true'}._ref
+		$Result = Get-IBView -Gridmaster $gridmaster -Credential $credential -_Ref $ref
 		$Result.GetType().Name | should be 'IB_View'
+		$Result._ref | should be $ref
 		$Result.Name | should be 'default'
 		$Result.Comment | should be 'Default view'
 		$Result.is_default | should be $True
 	}
 	It "Returns networkview with specified refstring" {
-		$Result = Get-IBView -Gridmaster $gridmaster -Credential $credential -_Ref 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
+		$ref = $script:Recordlist.where{$_._ref -like 'networkview/*/true'}._ref
+		$Result = Get-IBView -Gridmaster $gridmaster -Credential $credential -_Ref $ref
 		$Result.GetType().Name | should be 'IB_networkView'
+		$Result._ref | shoule be $ref
 		$Result.Name | should be 'default'
 		$Result.Comment | should be 'Default networkview'
 		$Result.is_default | should be $True
@@ -2229,13 +417,11 @@ Describe "Get-IBView tests" {
 		$Result.count | should be 2
 		#
 		$Result[0].GetType().Name | should be 'IB_NetworkView'
-		$Result[0]._ref | should be 'networkview/asdfioaweo3893jco:networkview2/False'
 		$Result[0].Name | should be 'networkview2'
 		$Result[0].comment | should be 'Second networkview'
 		$Result[0].is_default | should be $False
 		#
 		$Result[1].GetType().Name | should be 'IB_NetworkView'
-		$Result[1]._ref | should be 'networkview/jkdfjover89345jh934:networkview3/False'
 		$Result[1].Name | should be 'networkview3'
 		$Result[1].comment | should be 'Third networkview'
 		$Result[1].is_default | should be $False
@@ -2273,19 +459,16 @@ Describe "Get-IBView tests" {
 		$Result.Count | should be 3
 		#
 		$Result[0].GetType().Name | should be 'IB_View'
-		$Result[0]._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
 		$Result[0].Name | should be 'default'
 		$Result[0].comment | should be 'Default view'
 		$Result[0].is_default | should be $True
 		#
 		$Result[1].GetType().Name | should be 'IB_View'
-		$Result[1]._ref | should be 'view/asdfioaweo3893jco:view2/False'
 		$Result[1].Name | should be 'view2'
 		$Result[1].comment | should be 'Second View'
 		$Result[1].is_default | should be $False
 		#
 		$Result[2].GetType().Name | should be 'IB_View'
-		$Result[2]._ref | should be 'view/jkdfjover89345jh934:view3/False'
 		$Result[2].Name | should be 'view3'
 		$Result[2].comment | should be 'Third View'
 		$Result[2].is_default | should be $False
@@ -2296,19 +479,16 @@ Describe "Get-IBView tests" {
 		$Result.Count | should be 3
 		#
 		$Result[0].GetType().Name | should be 'IB_NetworkView'
-		$Result[0]._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
 		$Result[0].Name | should be 'default'
 		$Result[0].comment | should be 'Default networkview'
 		$Result[0].is_default | should be $True
 		#
 		$Result[1].GetType().Name | should be 'IB_NetworkView'
-		$Result[1]._ref | should be 'networkview/asdfioaweo3893jco:networkview2/False'
 		$Result[1].Name | should be 'networkview2'
 		$Result[1].comment | should be 'Second networkview'
 		$Result[1].is_default | should be $False
 		#
 		$Result[2].GetType().Name | should be 'IB_NetworkView'
-		$Result[2]._ref | should be 'networkview/jkdfjover89345jh934:networkview3/False'
 		$Result[2].Name | should be 'networkview3'
 		$Result[2].comment | should be 'Third networkview'
 		$Result[2].is_default | should be $False
@@ -2316,7 +496,6 @@ Describe "Get-IBView tests" {
 	It "Returns dns view with specified name parameter" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView -Name 'default'
 		$Result.GetType().Name | should be 'IB_View'
-		$Result._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
 		$Result.Name | should be 'default'
 		$Result.comment | should be 'Default view'
 		$Result.is_default | should be $True
@@ -2324,7 +503,6 @@ Describe "Get-IBView tests" {
 	It "Returns network view with specified name parameter" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView -Name 'default'
 		$Result.GetType().Name | should be 'IB_NetworkView'
-		$Result._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
 		$Result.Name | should be 'default'
 		$Result.comment | should be 'Default networkview'
 		$Result.is_default | should be $True
@@ -2334,13 +512,11 @@ Describe "Get-IBView tests" {
 		$result.count | should be 2
 		#
 		$Result[0].GetType().Name | should be 'IB_View'
-		$Result[0]._ref | should be 'view/asdfioaweo3893jco:view2/False'
 		$Result[0].Name | should be 'view2'
 		$Result[0].comment | should be 'Second View'
 		$Result[0].is_default | should be $False
 		#
 		$Result[1].GetType().Name | should be 'IB_View'
-		$Result[1]._ref | should be 'view/jkdfjover89345jh934:view3/False'
 		$Result[1].Name | should be 'view3'
 		$Result[1].comment | should be 'Third View'
 		$Result[1].is_default | should be $False
@@ -2350,13 +526,11 @@ Describe "Get-IBView tests" {
 		$result.count | should be 2
 		#
 		$Result[0].GetType().Name | should be 'IB_NetworkView'
-		$Result[0]._ref | should be 'networkview/asdfioaweo3893jco:networkview2/False'
 		$Result[0].Name | should be 'networkview2'
 		$Result[0].comment | should be 'Second networkview'
 		$Result[0].is_default | should be $False
 		#
 		$Result[1].GetType().Name | should be 'IB_NetworkView'
-		$Result[1]._ref | should be 'networkview/jkdfjover89345jh934:networkview3/False'
 		$Result[1].Name | should be 'networkview3'
 		$Result[1].comment | should be 'Third networkview'
 		$Result[1].is_default | should be $False
@@ -2372,7 +546,6 @@ Describe "Get-IBView tests" {
 	It "gets first dnsview with no query but resultscount of 1" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView -MaxResults 1
 		$Result.GetType().Name | should be 'IB_View'
-		$Result._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
 		$Result.Name | should be 'default'
 		$Result.comment | should be 'Default view'
 		$Result.is_default | should be $True
@@ -2380,7 +553,6 @@ Describe "Get-IBView tests" {
 	It "gets dnsview with strict comment search" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView -Comment 'Second View' -Strict
 		$Result.GetType().Name | should be 'IB_View'
-		$Result._ref | should be 'view/asdfioaweo3893jco:view2/False'
 		$Result.Name | should be 'view2'
 		$Result.comment | should be 'Second View'
 		$Result.is_default | should be $False
@@ -2388,7 +560,6 @@ Describe "Get-IBView tests" {
 	It "gets dnsview with non-strict comment search" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView -Comment 'Second View'
 		$Result.GetType().Name | should be 'IB_View'
-		$Result._ref | should be 'view/asdfioaweo3893jco:view2/False'
 		$Result.Name | should be 'view2'
 		$Result.comment | should be 'Second View'
 		$Result.is_default | should be $False
@@ -2396,7 +567,6 @@ Describe "Get-IBView tests" {
 	It "gets dnsview with non-strict name and comment search" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView -Name 'default' -Comment 'Default View'
 		$Result.GetType().Name | should be 'IB_View'
-		$Result._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
 		$Result.Name | should be 'default'
 		$Result.comment | should be 'Default view'
 		$Result.is_default | should be $True
@@ -2404,7 +574,6 @@ Describe "Get-IBView tests" {
 	It "gets dnsview with strict name, comment and is_default search" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView -Name 'default' -Comment 'Default View' -IsDefault 'True'
 		$Result.GetType().Name | should be 'IB_View'
-		$Result._ref | should be 'view/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
 		$Result.Name | should be 'default'
 		$Result.comment | should be 'Default view'
 		$Result.is_default | should be $True
@@ -2412,7 +581,6 @@ Describe "Get-IBView tests" {
 	It "gets first networkview with no query but resultscount of 1" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView -MaxResults 1
 		$Result.GetType().Name | should be 'IB_NetworkView'
-		$Result._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
 		$Result.Name | should be 'default'
 		$Result.comment | should be 'Default networkview'
 		$Result.is_default | should be $True
@@ -2420,7 +588,6 @@ Describe "Get-IBView tests" {
 	It "gets networkview with strict comment search" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView -comment 'Second networkview' -strict
 		$Result.GetType().Name | should be 'IB_NetworkView'
-		$Result._ref | should be 'networkview/asdfioaweo3893jco:networkview2/False'
 		$Result.Name | should be 'networkview2'
 		$Result.comment | should be 'Second networkview'
 		$Result.is_default | should be $False
@@ -2428,7 +595,6 @@ Describe "Get-IBView tests" {
 	It "gets networkview with non-strict comment search" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView -Comment 'Second networkview'
 		$Result.GetType().Name | should be 'IB_NetworkView'
-		$Result._ref | should be 'networkview/asdfioaweo3893jco:networkview2/False'
 		$Result.Name | should be 'networkview2'
 		$Result.comment | should be 'Second networkview'
 		$Result.is_default | should be $False
@@ -2436,7 +602,6 @@ Describe "Get-IBView tests" {
 	It "gets networkview with non-strict name and comment search" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView -Name default -comment 'Default networkview'
 		$Result.GetType().Name | should be 'IB_NetworkView'
-		$Result._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
 		$Result.Name | should be 'default'
 		$Result.comment | should be 'Default networkview'
 		$Result.is_default | should be $True
@@ -2444,318 +609,106 @@ Describe "Get-IBView tests" {
 	It "gets networkview with strict name, comment and is_default search" {
 		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView -Name default -comment 'Default networkview' -Strict -isdefault True
 		$Result.GetType().Name | should be 'IB_NetworkView'
-		$Result._ref | should be 'networkview/ZG5zLm5ldHdvcmtfdmlldyQw:default/true'
 		$Result.Name | should be 'default'
 		$Result.comment | should be 'Default networkview'
 		$Result.is_default | should be $True
 	}
 
 }
-Describe "IB_Network tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
-		Mock-InfobloxPut -uri $Uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
-		Mock-InfobloxPost -uri $uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-	$uri | Mock-InfobloxDelete
-	}
-	Context 'Get Method' {
-		It "Throws error with invalid credential object" {
-			{[IB_Network]::Get($Gridmaster,'notacredential','refstring')} | should Throw
-			{[IB_Network]::Get($gridmaster,'notacredential',$null,$Null,$Null,$Null,$Null,$False,$Null)} | should throw
-		}
-		It "Throws error with invalid integer object" {
-			{[IB_Network]::Get($gridmaster,$Credential,'1.1.1.1',$Null,$Null,$Null,$Null,$False,'notanint')} | should throw		
-		}
-		It "Throws error with less than 3 parameters" {
-			{[IB_Network]::Get($Gridmaster,$Credential)} | should Throw
-		}
-		It "Throws error with more than 3 but less than 9 parameters" {
-			{[IB_Network]::Get($Gridmaster,$Credential,'refstring','extra')} | should Throw
-		}
-		It "Throws error with more than 9 parameters" {
-			{[IB_Network]::Get($gridmaster,$Credential,$null,$Null,$Null,$Null,$Null,$False,$Null,'extra')} | should throw
-		}
-		It "returns network from ref query" {
-			$Return = [IB_Network]::Get($Gridmaster,$Credential,"network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default")
-			$Return.GetType().Name | should be 'IB_Network'
-			$Return._ref | should be "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default"
-			$return.Network | should be '10.10.0.0/16'
-			$return.NetworkView | should be 'Default'
-			$Return.comment | should benullorempty
-			$Return.NetworkContainer | should be '10.0.0.0/8'
-		}
-		It "returns all networks from null query" {
-			$Return = [IB_Network]::Get($gridmaster, $Credential, $Null,$Null,$Null,$Null,$Null,$False,$Null)
-			$Return.GetType().Name | should be 'IB_Network[]'
-			$Return.Count | should be 3
-			#
-			$Return[0].GetType().Name | should be 'IB_Network'
-			$Return[0]._ref | should be "network/asdkfjofweofew:10.0.0.0/8/Default"
-			$return[0].Network | should be '10.0.0.0/8'
-			$return[0].NetworkView | should be 'Default'
-			$Return[0].comment | should be 'network 1'
-			$Return[0].NetworkContainer | should benullorempty
-			$Return[0].extattrib.Name | should be 'Site'
-			$Return[0].extattrib.Value | should be 'corp'
-			#
-			$Return[1].GetType().Name | should be 'IB_Network'
-			$Return[1]._ref | should be "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default"
-			$return[1].Network | should be '10.10.0.0/16'
-			$return[1].NetworkView | should be 'Default'
-			$Return[1].comment | should benullorempty
-			$Return[1].NetworkContainer | should be '10.0.0.0/8'
-			#
-			$Return[2].GetType().Name | should be 'IB_Network'
-			$Return[2]._ref | should be "network/qt4i9q4hf9344h4h4h:192.168.1.0/24/view2"
-			$return[2].Network | should be '192.168.1.0/24'
-			$return[2].NetworkView | should be 'view2'
-			$Return[2].comment | should be 'view2 comment'
-			$Return[2].NetworkContainer | should be '192.168.0.0/16'
-		}
-		It "returns network from network query" {
-			$Return = [IB_Network]::Get($gridmaster,$credential,'192.168.1.0/24',$Null,$Null,$Null,$Null,$False,$Null)
-			$Return.GetType().Name | should be 'IB_Network[]'
-			$Return._ref | should be "network/qt4i9q4hf9344h4h4h:192.168.1.0/24/view2"
-			$return.Network | should be '192.168.1.0/24'
-			$return.NetworkView | should be 'view2'
-			$Return.comment | should be 'view2 comment'
-			$Return.NetworkContainer | should be '192.168.0.0/16'
-		}
-		It "returns networks from networkview query" {
-			$Return = [IB_Network]::Get($gridmaster,$Credential,$Null,'Default',$Null,$Null,$Null,$False,$Null)
-			$Return.GetType().Name | should be 'IB_Network[]'
-			$Return.Count | should be 2
-			#
-			$Return[0].GetType().Name | should be 'IB_Network'
-			$Return[0]._ref | should be "network/asdkfjofweofew:10.0.0.0/8/Default"
-			$return[0].Network | should be '10.0.0.0/8'
-			$return[0].NetworkView | should be 'Default'
-			$Return[0].comment | should be 'network 1'
-			$Return[0].NetworkContainer | should benullorempty
-			$Return[0].extattrib.Name | should be 'Site'
-			$Return[0].extattrib.Value | should be 'corp'
-			#
-			$Return[1].GetType().Name | should be 'IB_Network'
-			$Return[1]._ref | should be "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default"
-			$return[1].Network | should be '10.10.0.0/16'
-			$return[1].NetworkView | should be 'Default'
-			$Return[1].comment | should benullorempty
-			$Return[1].NetworkContainer | should be '10.0.0.0/8'
-		}
-		It "returns network from networkcontainer query" {
-			$Return = [IB_Network]::Get($gridmaster,$credential,$Null,$Null,'10.0.0.0/8',$Null,$Null,$False,$Null)
-			$Return.GetType().Name | should be 'IB_Network[]'
-			$Return._ref | should be "network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default"
-			$return.Network | should be '10.10.0.0/16'
-			$return.NetworkView | should be 'Default'
-			$Return.comment | should benullorempty
-			$Return.NetworkContainer | should be '10.0.0.0/8'
-		}
-		It "returns network from strict comment query" {
-			$Return = [IB_Network]::Get($gridmaster,$Credential,$Null,$Null,$Null,'view2 comment',$Null,$True,$Null)
-			$Return.GetType().Name | should be 'IB_Network[]'
-			$Return._ref | should be "network/qt4i9q4hf9344h4h4h:192.168.1.0/24/view2"
-			$return.Network | should be '192.168.1.0/24'
-			$return.NetworkView | should be 'view2'
-			$Return.comment | should be 'view2 comment'
-			$Return.NetworkContainer | should be '192.168.0.0/16'
-		}
-		It "returns network from non-strict comment query" {
-			$Return = [IB_Network]::Get($gridmaster,$Credential,$Null,$Null,$Null,'view2 comment',$Null,$False,$Null)
-			$Return.GetType().Name | should be 'IB_Network[]'
-			$Return._ref | should be "network/qt4i9q4hf9344h4h4h:192.168.1.0/24/view2"
-			$return.Network | should be '192.168.1.0/24'
-			$return.NetworkView | should be 'view2'
-			$Return.comment | should be 'view2 comment'
-			$Return.NetworkContainer | should be '192.168.0.0/16'
-		}
-		It "returns network from no query but resultscount set to 1" {
-			$return = [IB_Network]::Get($gridmaster,$Credential,$null,$Null,$Null,$Null,$Null,$False,1)
-			$Return.GetType().Name | should be 'IB_Network[]'
-			$Return._ref | should be "network/asdkfjofweofew:10.0.0.0/8/Default"
-			$return.Network | should be '10.0.0.0/8'
-			$return.NetworkView | should be 'Default'
-			$Return.comment | should be 'network 1'
-			$Return.NetworkContainer | should benullorempty
-			$Return.extattrib.Name | should be 'Site'
-			$Return.extattrib.Value | should be 'corp'
-		}
-		It "returns network from extattrib query" {
-			$Return = [IB_Network]::Get($Gridmaster,$Credential,$Null,$Null,$Null,$Null,{site -eq 'corp'},$False,$Null)
-			$Return.GetType().Name | should be 'IB_Network[]'
-			$Return._ref | should be "network/asdkfjofweofew:10.0.0.0/8/Default"
-			$return.Network | should be '10.0.0.0/8'
-			$return.NetworkView | should be 'Default'
-			$Return.comment | should be 'network 1'
-			$Return.extattrib.Name | should be 'Site'
-			$Return.extattrib.Value | should be 'corp'
-			$Return.NetworkContainer | should benullorempty
-		}
-	}
-	Context 'Set Method' {
-		It "throws error with less than 3 parameters" {
-			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
-			{$TestRecord.Set($Null,$Null)} | should Throw
-		}
-		It "throws error with more than 3 parameters" {
-			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
-			{$TestRecord.Set($Null,$Null,$Null,$Null)} | should Throw
-		}
-		It "Sets comment on object with empty comment field" {
-			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
-			$TestRecord.Set('new comment')
-			$TestRecord.Comment | should be 'new comment'
-		}
-		It "Changes comment text on existing record" {
-			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
-			$TestRecord.Set('comment 2')
-			$TestRecord.Comment | should be 'comment 2'
-		}
-		It "Clears comment field on existing record" {
-			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
-			$TestRecord.Set($Null)
-			$TestRecord.Comment | should benullorempty
-		}
-	}
-	Context 'Create Method' {
-		It "Throws error with invalid credential object" {
-			{[IB_Network]::Create($Gridmaster,'notacredential','10.10.10.0/24',$Null,$Null)} | should throw
-		}
-		It "Throws error with less than 5 properties" {
-			{[IB_Network]::Create($Gridmaster,$Credential,'10.10.10.0/24',$Null)} | should throw
-		}
-		It "Throws error with more than 5 properties" {
-			{[IB_Network]::Create($Gridmaster,$Credential,'10.10.10.0/24',$Null,$Null,$Null)} | should throw
-		}
-		It "Creates network in default view" {
-			$TestRecord = [IB_Network]::Create($gridmaster,$Credential,'10.10.10.0/24',$Null,$Null)
-			$TestRecord.GetType().Name | should be IB_Network
-			$TestRecord.Network | should be '10.10.10.0/24'
-			$TestRecord.networkview | should be 'default'
-			$TestRecord.Comment | should benullorempty
-		}
-		It "Creates network in alternate view with comment" {
-			$TestRecord = [IB_Network]::Create($gridmaster,$Credential,'10.10.20.0/24','view2','test comment')
-			$TestRecord.GetType().Name | should be IB_Network
-			$TestRecord.Network | should be '10.10.20.0/24'
-			$TestRecord.networkview | should be 'view2'
-			$TestRecord.Comment | should be 'test comment'
-		}
-	}
-	Context "AddExtAttrib Method" {
-		It "Adds extensible attribute" {
-			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
-			$TestRecord.AddExtAttrib('Site','corp')
-			$TestRecord.ExtAttrib.Name | should be 'Site'
-			$TestRecord.ExtAttrib.value | should be 'corp'
-		}
-		It "Updates the value of an existing extensible attribute" {
-			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
-			$TestRecord.AddExtAttrib('Site','gulf')
-			$TestRecord.AddExtAttrib | measure-object | select -ExpandProperty Count | should be 1
-			$TestRecord.ExtAttrib.Name | should be 'Site'
-			$TestRecord.ExtAttrib.value | should be 'gulf'
-		}
-	}
-	Context "RemoveExtAttrib Method" {
-		It "Removes extensible attribute" {
-			$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
-			$TestRecord.RemoveExtAttrib('Site')
-			$TestRecord.ExtAttrib | should benullorempty
-		}	
-	}
-	Context 'Delete Method' {
-		$TestRecord = [IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default')
-		It "Deletes record with refstring network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default" {
-			$TestRecord.Delete() | should be 'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default'
-			[IB_Network]::Get($gridmaster,$Credential,'network/234gkomsdasdfoqdslarwewfkcnn3445:10.10.0.0/16/Default') | should benullorempty
-		}
-	}
+Describe "Get-IBDNSZone tests" {
+	
 }
-
-#
+Describe "Get-IBNetwork tests" {
+	
+}
 Describe "Find-IBRecord" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Returns records from non-strict Name search" {
 		$return = Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString testrecord
 		$Return.count | should be 12
 		#
 		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
+		$Return[0].name | should be 'testrecord.domain.com'
+		$Return[0].view | should be 'default'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
+		$Return[1].name | should be 'testrecord3.domain.com'
+		$Return[1].view | should be 'default'
 		#
 		$Return[2].GetType().Name | should be 'IB_DNSARecord'
-		$Return[2]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
+		$Return[2].name | should be 'testrecord2.domain.com'
+		$Return[2].view | should be 'view3'
 		#
 		$Return[3].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[3]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$Return[3].name | should be 'testalias.domain.com'
+		$Return[3].view | should be 'default'
 		#
 		$Return[4].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[4]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
+		$Return[4].name | should be 'testalias3.domain.com'
+		$Return[4].view | should be 'default'
 		#
 		$Return[5].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[5]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3'
+		$Return[5].name | should be 'testalias2.domain.com'
+		$Return[5].view | should be 'view3'
 		#
 		$Return[6].GetType().Name | should be 'IB_FixedAddress'
-		$Return[6]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$Return[6].IPAddress | should be '1.1.1.1'
+		$Return[6].networkview | should be 'default'
 		#
 		$Return[7].GetType().Name | should be 'IB_FixedAddress'
-		$Return[7]._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
+		$Return[7].IPAddress | should be '1.2.3.4'
+		$Return[7].networkview | should be 'default'
 		#
 		$Return[8].GetType().Name | should be 'IB_FixedAddress'
-		$Return[8]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2/networkview3'
+		$Return[8].IPAddress | should be '2.2.2.2'
+		$Return[8].networkview | should be 'networkview3'
 		#
 		$Return[9].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[9]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$Return[9].Name | should be '1.1.1.1.in-addr.arpa'
+		$Return[9].view | should be 'default'
 		#
 		$Return[10].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[10]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
+		$Return[10].name | should be '4.3.2.1.in-addr.arpa'
+		$Return[10].view | should be 'default'
 		#
 		$Return[11].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[11]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3'
+		$Return[11].name | should be '2.2.2.2.in-addr.arpa'
+		$Return[11].view | should be 'view3'
 	}
 	It "Returns a records with non-strict name and type search" {
 		$return = Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString testrecord -Recordtype 'record:a'
 		$return.count | should be 3
 		#
 		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
+		$Return[0].name | should be 'testrecord.domain.com'
+		$Return[0].view | should be 'default'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
+		$Return[1].name | should be 'testrecord3.domain.com'
+		$Return[1].view | should be 'default'
 		#
 		$Return[2].GetType().Name | should be 'IB_DNSARecord'
-		$Return[2]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
+		$Return[2]._name | should be 'testrecord2.domain.com'
+		$Return[2].view | should be 'view3'
 	}
 	It "Returns records from IPAddress search" {
 		$Return = Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -IPAddress '1.1.1.1'
 		$Return.count | should be 4
 		#
 		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
+		$Return[0].name | should be 'testrecord.domain.com'
+		$Return[0].view | should be 'default'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
+		$Return[1].name | should be 'testrecord3.domain.com'
+		$Return[1].view | should be 'default'
 		#
 		$Return[2].GetType().Name | should be 'IB_FixedAddress'
-		$Return[2]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$Return[2].ipaddress | should be '1.1.1.1'
+		$Return[2].networkview | should be 'default'
 		#
 		$Return[3].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[3]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$Return[3].name | should be '1.1.1.1.in-addr.arpa'
+		$Return[3].view | should be 'default'
 	}
 	It "Throws error from IPAddress and type search" {
 		{Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -IPAddress '1.1.1.1' -Recordtype fixedaddress} | should throw
@@ -2765,100 +718,126 @@ Describe "Find-IBRecord" {
 		$Return.count | should be 7
 		#
 		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
+		$Return[0].name | should be 'testrecord.domain.com'
+		$Return[0].view | should be 'default'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[1]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$Return[1].name | should be 'testalias.domain.com'
+		$Return[1].view | should be 'default'
 		#
 		$Return[2].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[2]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
+		$Return[2].name | should be 'testalias3.domain.com'
+		$Return[2].view | should be 'default'
 		#
 		$Return[3].GetType().Name | should be 'IB_FixedAddress'
-		$Return[3]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$Return[3].IPAddress | should be '1.1.1.1'
+		$Return[3].networkview | should be 'default'
 		#
 		$Return[4].GetType().Name | should be 'IB_FixedAddress'
-		$Return[4]._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
+		$Return[4].ipaddress | should be '1.2.3.4'
+		$Return[4].networkview | should be 'default'
 		#
 		$Return[5].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[5]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$Return[5].name | should be '1.1.1.1.in-addr.arpa'
+		$Return[5].view | should be 'default'
 		#
 		$Return[6].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[6]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
+		$Return[6].name | should be '4.3.2.1.in-addr.arpa'
+		$Return[6].view | should be 'default'
 	}
 	It "Returns cname records from strict name and type search" {
 		$return = Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString testrecord.domain.com -Strict -Recordtype 'record:cname'
 		$Return.count | should be 2
 		$Return[0].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$Return[0].name | should be 'testalias.domain.com'
+		$Return[0].view | should be 'default'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
+		$Return[1].name | should be 'testalias3.domain.com'
+		$Return[1].view | should be 'default'
 	}
 	It "Returns records from IPAddress search through the pipeline" {
 		$Return = '1.1.1.1' | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential
 		$Return.count | should be 4
 		#
 		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
+		$Return[0].name | should be 'testrecord.domain.com'
+		$Return[0].view | should be 'default'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
+		$Return[1].name | should be 'testrecord3.domain.com'
+		$Return[1].view | should be 'default'
 		#
 		$Return[2].GetType().Name | should be 'IB_FixedAddress'
-		$Return[2]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$Return[2].ipaddress | should be '1.1.1.1'
+		$Return[2].view | should be 'default'
 		#
 		$Return[3].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[3]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$Return[3].name | should be '1.1.1.1.in-addr.arpa'
+		$Return[3].view | should be 'default'
 	}
 	It "Returns records from multiple IPAddress search through the pipeline" {
 		$Return = @('1.1.1.1','2.2.2.2') | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential
 		$Return.count | should be 7
 		#
 		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
+		$Return[0].name | should be 'testrecord.domain.com'
+		$Return[0].view | should be 'default'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
+		$Return[1].name | should be 'testrecord3.domain.com'
+		$Return[1].view | should be 'default'
 		#
 		$Return[2].GetType().Name | should be 'IB_FixedAddress'
-		$Return[2]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$Return[2].ipaddress | should be '1.1.1.1'
+		$Return[2].networkview | should be 'default'
 		#
 		$Return[3].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[3]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$Return[3].name | should be '1.1.1.1.in-addr.arpa'
+		$Return[3].view | should be 'default'
 		#
 		$Return[4].GetType().Name | should be 'IB_DNSARecord'
-		$Return[4]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
+		$Return[4].name | should be 'testrecord2.domain.com'
+		$Return[4].view | should be 'view3'
 		#
 		$Return[5].GetType().Name | should be 'IB_FixedAddress'
-		$Return[5]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2/networkview3'
+		$Return[5].ipaddress | should be '2.2.2.2'
+		$Return[6].networkview | should be 'networkview3'
 		#
 		$Return[6].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[6]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3'
+		$Return[6].name | should be '2.2.2.2.in-addr.arpa'
+		$Return[6].view | should be 'view3'
 	}
 	It "Returns records from strict name search through the pipeline" {
 		$Return = 'testrecord3.domain.com' | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -Strict
 		$Return.Count | should be 1
 		$Return.GetType().Name | should be 'IB_DNSARecord'
-		$Return._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
+		$Return.name | should be 'testrecord3.domain.com'
+		$Return.view | should be 'default'
 	}
 	It "Returns records from multiple strict name search through the pipeline" {
 		$Return = @('testrecord3.domain.com','testrecord2.domain.com') | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -Strict
 		$Return.Count | should be 5
 		#
 		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
+		$Return[0].name | should be 'testrecord3.domain.com'
+		$Return[0].view | should be 'default'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
+		$Return[1].name | should be 'testrecord2.domain.com'
+		$Return[1].view | should be 'view3'
 		#
 		$Return[2].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[2]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3'
+		$Return[2].name | should be 'testalias2.domain.com'
+		$Return[2].view | should be 'view3'
 		#
 		$Return[3].GetType().Name | should be 'IB_FixedAddress'
-		$Return[3]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2/networkview3'
+		$Return[3].IPAddress | should be '2.2.2.2'
+		$Return[3].networkview | should be 'networkview3'
 		#
 		$Return[4].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[4]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3'
+		$Return[4].name | should be '2.2.2.2.in-addr.arpa'
+		$Return[4].view | should be 'view3'
 	}
 	It "Throws error with both name and IPAddress parameter" {
 		{Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -Name 'name' -ipaddress '1.1.1.1'} | should throw
@@ -2868,12 +847,7 @@ Describe "Find-IBRecord" {
 	}
 }
 Describe "Get-IBDNSARecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
 
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Throws error with invalid IP Address object" {
 		{Get-IBDNSARecord -gridmaster $gridmaster -credential $Credential -IPAddress 'notanIPAddress'} | should throw
 	}
@@ -2884,7 +858,8 @@ Describe "Get-IBDNSARecord tests" {
 		{Get-IBDNSARecord -gridmaster $Null -credential $Credential} | should throw
 	}
 	It "Returns A record from ref query" {
-		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -_Ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
@@ -2892,7 +867,7 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.extattrib.Value | should be 'corp'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
+		$TestRecord._ref | should be $Ref
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
 	}
@@ -2905,7 +880,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.extattrib.Value | should be 'corp'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
 	}
@@ -2920,7 +894,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '1.1.1.1'
 		$TestRecord[0].Comment | should be 'test comment'
-		$TestRecord[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord[0].TTL | should be 1200
 		$TestRecord[0].Use_TTL | should be $True
 		#
@@ -2931,7 +904,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[1].View | should be 'default'
 		$TestRecord[1].IPAddress | should be '1.1.1.1'
 		$TestRecord[1].Comment | should be 'test comment 2'
-		$TestRecord[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
 		$TestRecord[1].TTL | should be 1200
 		$TestRecord[1].Use_TTL | should be $True
 		#
@@ -2940,7 +912,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[2].View | should be 'view3'
 		$TestRecord[2].IPAddress | should be '2.2.2.2'
 		$TestRecord[2].Comment | should benullorempty
-		$TestRecord[2]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
 		$TestRecord[2].TTL | should be 0
 		$TestRecord[2].Use_TTL | should be $False
 
@@ -2956,7 +927,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '1.1.1.1'
 		$TestRecord[0].Comment | should be 'test comment'
-		$TestRecord[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord[0].TTL | should be 1200
 		$TestRecord[0].Use_TTL | should be $True
 		#
@@ -2967,7 +937,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[1].View | should be 'default'
 		$TestRecord[1].IPAddress | should be '1.1.1.1'
 		$TestRecord[1].Comment | should be 'test comment 2'
-		$TestRecord[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
 		$TestRecord[1].TTL | should be 1200
 		$TestRecord[1].Use_TTL | should be $True
 		#
@@ -2976,7 +945,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[2].View | should be 'view3'
 		$TestRecord[2].IPAddress | should be '2.2.2.2'
 		$TestRecord[2].Comment | should benullorempty
-		$TestRecord[2]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
 		$TestRecord[2].TTL | should be 0
 		$TestRecord[2].Use_TTL | should be $False
 
@@ -2992,7 +960,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '1.1.1.1'
 		$TestRecord[0].Comment | should be 'test comment'
-		$TestRecord[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord[0].TTL | should be 1200
 		$TestRecord[0].Use_TTL | should be $True
 		#
@@ -3003,7 +970,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[1].View | should be 'default'
 		$TestRecord[1].IPAddress | should be '1.1.1.1'
 		$TestRecord[1].Comment | should be 'test comment 2'
-		$TestRecord[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
 		$TestRecord[1].TTL | should be 1200
 		$TestRecord[1].Use_TTL | should be $True
 
@@ -3015,7 +981,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.View | should be 'view3'
 		$TestRecord.IPAddress | should be '2.2.2.2'
 		$TestRecord.Comment | should benullorempty
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
 
@@ -3029,7 +994,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
 
@@ -3045,7 +1009,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '1.1.1.1'
 		$TestRecord[0].Comment | should be 'test comment'
-		$TestRecord[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord[0].TTL | should be 1200
 		$TestRecord[0].Use_TTL | should be $True
 		#
@@ -3056,7 +1019,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[1].extattrib.Value | should be 'corp'
 		$TestRecord[1].IPAddress | should be '1.1.1.1'
 		$TestRecord[1].Comment | should be 'test comment 2'
-		$TestRecord[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
 		$TestRecord[1].TTL | should be 1200
 		$TestRecord[1].Use_TTL | should be $True
 	}
@@ -3071,7 +1033,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '1.1.1.1'
 		$TestRecord[0].Comment | should be 'test comment'
-		$TestRecord[0]._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord[0].TTL | should be 1200
 		$TestRecord[0].Use_TTL | should be $True
 		#
@@ -3082,7 +1043,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[1].extattrib.Value | should be 'corp'
 		$TestRecord[1].IPAddress | should be '1.1.1.1'
 		$TestRecord[1].Comment | should be 'test comment 2'
-		$TestRecord[1]._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
 		$TestRecord[1].TTL | should be 1200
 		$TestRecord[1].Use_TTL | should be $True
 	}
@@ -3095,7 +1055,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'test comment 2'
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
 	}
@@ -3108,7 +1067,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
 	}
@@ -3121,7 +1079,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
 	}
@@ -3134,7 +1091,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
 
@@ -3148,18 +1104,12 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
 
 	}
 }
 Describe "Get-IBDNSCNameRecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	Context "Get Method" {
 		It "Throws error with invalid integer object" {
 			{Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -maxResults 'notanInt'} | should throw
@@ -3168,7 +1118,8 @@ Describe "Get-IBDNSCNameRecord tests" {
 			{Get-IBDNSCNameRecord -gridmaster $Null -credential $Credential} | should throw
 		}
 		It "Returns CName Record from ref query" {
-			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -_Ref 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+			$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias.Name | should be 'testalias.domain.com'
 			$Testalias.extattrib.Name | should be 'Site'
@@ -3176,7 +1127,7 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+			$testalias._ref | should be $Ref
 			$testalias.TTL | should be 1200
 			$testalias.Use_TTL | should be $True
 		}
@@ -3189,7 +1140,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias.TTL | should be 1200
 			$testalias.Use_TTL | should be $True
 		}
@@ -3204,7 +1154,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias[0].TTL | should be 1200
 			$testalias[0].Use_TTL | should be $True
 			#
@@ -3215,7 +1164,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
 			$testalias[1].TTL | should be 1200
 			$testalias[1].Use_TTL | should be $True
 			#
@@ -3224,7 +1172,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[2].View | should be 'view3'
 			$testalias[2].canonical | should be 'testrecord2.domain.com'
 			$testalias[2].Comment | should benullorempty
-			$testalias[2]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3'
 			$testalias[2].TTL | should be 0
 			$testalias[2].Use_TTL | should be $False
 
@@ -3240,7 +1187,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias[0].TTL | should be 1200
 			$testalias[0].Use_TTL | should be $True
 			#
@@ -3251,7 +1197,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
 			$testalias[1].TTL | should be 1200
 			$testalias[1].Use_TTL | should be $True
 			#
@@ -3260,7 +1205,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[2].View | should be 'view3'
 			$testalias[2].canonical | should be 'testrecord2.domain.com'
 			$testalias[2].Comment | should benullorempty
-			$testalias[2]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3'
 			$testalias[2].TTL | should be 0
 			$testalias[2].Use_TTL | should be $False
 
@@ -3276,7 +1220,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias[0].TTL | should be 1200
 			$testalias[0].Use_TTL | should be $True
 			#
@@ -3287,7 +1230,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
 			$testalias[1].TTL | should be 1200
 			$testalias[1].Use_TTL | should be $True
 			#
@@ -3296,7 +1238,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[2].View | should be 'view3'
 			$testalias[2].canonical | should be 'testrecord2.domain.com'
 			$testalias[2].Comment | should benullorempty
-			$testalias[2]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3'
 			$testalias[2].TTL | should be 0
 			$testalias[2].Use_TTL | should be $False
 
@@ -3312,7 +1253,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias[0].TTL | should be 1200
 			$testalias[0].Use_TTL | should be $True
 			#
@@ -3323,7 +1263,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
 			$testalias[1].TTL | should be 1200
 			$testalias[1].Use_TTL | should be $True
 
@@ -3335,7 +1274,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.View | should be 'view3'
 			$testalias.canonical | should be 'testrecord2.domain.com'
 			$testalias.Comment | should benullorempty
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJfZGVmY2:testalias2.domain.com/view3'
 			$testalias.TTL | should be 0
 			$testalias.Use_TTL | should be $False
 
@@ -3349,7 +1287,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias.TTL | should be 1200
 			$testalias.Use_TTL | should be $True
 
@@ -3365,7 +1302,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias[0].TTL | should be 1200
 			$testalias[0].Use_TTL | should be $True
 			#
@@ -3376,7 +1312,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
 			$testalias[1].TTL | should be 1200
 			$testalias[1].Use_TTL | should be $True
 		}
@@ -3391,7 +1326,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
-			$testalias[0]._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias[0].TTL | should be 1200
 			$testalias[0].Use_TTL | should be $True
 			#
@@ -3402,7 +1336,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1]._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
 			$testalias[1].TTL | should be 1200
 			$testalias[1].Use_TTL | should be $True
 		}
@@ -3415,7 +1348,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment 2'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
 			$testalias.TTL | should be 1200
 			$testalias.Use_TTL | should be $True
 		}
@@ -3428,7 +1360,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias.TTL | should be 1200
 			$testalias.Use_TTL | should be $True
 		}
@@ -3441,7 +1372,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias.TTL | should be 1200
 			$testalias.Use_TTL | should be $True
 		}
@@ -3454,7 +1384,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias.TTL | should be 1200
 			$testalias.Use_TTL | should be $True
 
@@ -3468,7 +1397,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
-			$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
 			$testalias.TTL | should be 1200
 			$testalias.Use_TTL | should be $True
 
@@ -3476,11 +1404,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 	}
 }
 Describe "Get-IBDNSPTRRecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	Context "Get Method" {
 		It "Throws error with invalid IP Address object" {
 			{Get-IBDNSPTRRecord -gridmaster $gridmaster -credential $Credential -ipaddress 'notanipaddress'} | should throw
@@ -3492,7 +1415,8 @@ Describe "Get-IBDNSPTRRecord tests" {
 			{Get-IBDNSPTRRecord -gridmaster $Null -credential $credential} | should throw
 		}
 		It "Returns PTR Record from ref query" {
-			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+			$Ref = $Script:recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $Ref
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
 			$TestRecord.extattrib.Name | should be 'Site'
@@ -3501,7 +1425,7 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.IPAddress | should be '1.1.1.1'
 			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+			$TestRecord._ref | should be $Ref
 			$TestRecord.TTL | should be 1200
 			$TestRecord.Use_TTL | should be $True
 		}
@@ -3515,7 +1439,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.IPAddress | should be '1.1.1.1'
 			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord.TTL | should be 1200
 			$TestRecord.Use_TTL | should be $True
 		}
@@ -3531,7 +1454,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[0].IPAddress | should be '1.1.1.1'
 			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord[0].TTL | should be 1200
 			$TestRecord[0].Use_TTL | should be $True
 			#
@@ -3543,7 +1465,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[1].IPAddress | should be '1.2.3.4'
 			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
 			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
 			$TestRecord[1].TTL | should be 1200
 			$TestRecord[1].Use_TTL | should be $True
 			#
@@ -3553,7 +1474,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[2].IPAddress | should benullorempty
 			$TestRecord[2].Name | should be '1.0.0.0.in-addr.arpa'
 			$TestRecord[2].Comment | should benullorempty
-			$TestRecord[2]._ref | should be 'record:ptr/adfwejfojvkalfpjqpe:1.0.0.0.in-addr.arpa/default'
 			$TestRecord[2].TTL | should be 1
 			$TestRecord[2].Use_TTL | should be $True
 		}
@@ -3569,7 +1489,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[0].IPAddress | should be '1.1.1.1'
 			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord[0].TTL | should be 1200
 			$TestRecord[0].Use_TTL | should be $True
 			#
@@ -3581,7 +1500,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[1].IPAddress | should be '1.2.3.4'
 			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
 			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
 			$TestRecord[1].TTL | should be 1200
 			$TestRecord[1].Use_TTL | should be $True
 		}
@@ -3597,7 +1515,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[0].IPAddress | should be '1.1.1.1'
 			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord[0].TTL | should be 1200
 			$TestRecord[0].Use_TTL | should be $True
 			#
@@ -3609,7 +1526,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[1].IPAddress | should be '1.2.3.4'
 			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
 			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
 			$TestRecord[1].TTL | should be 1200
 			$TestRecord[1].Use_TTL | should be $True
 			#
@@ -3619,7 +1535,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[2].IPAddress | should be '2.2.2.2'
 			$TestRecord[2].Name | should be '2.2.2.2.in-addr.arpa'
 			$TestRecord[2].Comment | should benullorempty
-			$TestRecord[2]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3'
 			$TestRecord[2].TTL | should be 0
 			$TestRecord[2].Use_TTL | should be $False
 
@@ -3636,7 +1551,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[0].IPAddress | should be '1.1.1.1'
 			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord[0].TTL | should be 1200
 			$TestRecord[0].Use_TTL | should be $True
 			#
@@ -3648,7 +1562,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[1].IPAddress | should be '1.2.3.4'
 			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
 			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
 			$TestRecord[1].TTL | should be 1200
 			$TestRecord[1].Use_TTL | should be $True
 			#
@@ -3658,7 +1571,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[2].IPAddress | should be '2.2.2.2'
 			$TestRecord[2].Name | should be '2.2.2.2.in-addr.arpa'
 			$TestRecord[2].Comment | should benullorempty
-			$TestRecord[2]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3'
 			$TestRecord[2].TTL | should be 0
 			$TestRecord[2].Use_TTL | should be $False
 
@@ -3673,7 +1585,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.IPAddress | should be '1.1.1.1'
 			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord.TTL | should be 1200
 			$TestRecord.Use_TTL | should be $True
 		}
@@ -3685,7 +1596,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.IPAddress | should be '2.2.2.2'
 			$TestRecord.Name | should be '2.2.2.2.in-addr.arpa'
 			$TestRecord.Comment | should benullorempty
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2.in-addr.arpa/view3'
 			$TestRecord.TTL | should be 0
 			$TestRecord.Use_TTL | should be $False
 
@@ -3700,7 +1610,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.IPAddress | should be '1.1.1.1'
 			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord.TTL | should be 1200
 			$TestRecord.Use_TTL | should be $True
 
@@ -3717,7 +1626,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[0].IPAddress | should be '1.1.1.1'
 			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord[0].TTL | should be 1200
 			$TestRecord[0].Use_TTL | should be $True
 			#
@@ -3729,7 +1637,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[1].IPAddress | should be '1.2.3.4'
 			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
 			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
 			$TestRecord[1].TTL | should be 1200
 			$TestRecord[1].Use_TTL | should be $True
 		}
@@ -3745,7 +1652,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[0].IPAddress | should be '1.1.1.1'
 			$TestRecord[0].Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0]._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord[0].TTL | should be 1200
 			$TestRecord[0].Use_TTL | should be $True
 			#
@@ -3757,7 +1663,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[1].IPAddress | should be '1.2.3.4'
 			$TestRecord[1].Name | should be '4.3.2.1.in-addr.arpa'
 			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1]._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
 			$TestRecord[1].TTL | should be 1200
 			$TestRecord[1].Use_TTL | should be $True
 		}
@@ -3771,7 +1676,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.IPAddress | should be '1.2.3.4'
 			$TestRecord.Name | should be '4.3.2.1.in-addr.arpa'
 			$TestRecord.Comment | should be 'test comment 2'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbcHRyJC5fZGVmYX:4.3.2.1.in-addr.arpa/default'
 			$TestRecord.TTL | should be 1200
 			$TestRecord.Use_TTL | should be $True
 		}
@@ -3785,7 +1689,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.IPAddress | should be '1.1.1.1'
 			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord.TTL | should be 1200
 			$TestRecord.Use_TTL | should be $True
 		}
@@ -3799,7 +1702,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.IPAddress | should be '1.1.1.1'
 			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord.TTL | should be 1200
 			$TestRecord.Use_TTL | should be $True
 		}
@@ -3813,7 +1715,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.IPAddress | should be '1.1.1.1'
 			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord.TTL | should be 1200
 			$TestRecord.Use_TTL | should be $True
 
@@ -3828,7 +1729,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.IPAddress | should be '1.1.1.1'
 			$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
 			$TestRecord.Comment | should be 'test comment'
-			$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
 			$TestRecord.TTL | should be 1200
 			$TestRecord.Use_TTL | should be $True
 
@@ -3836,11 +1736,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 	}
 }
 Describe "Get-IBFixedAddress tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	Context 'Get Method' {
 		It "Throws error with invalid IP Address object" {
 			{Get-IBFixedAddress -gridmaster $gridmaster -credential $Credential -ipaddress 'notanIP'} | should Throw
@@ -3852,9 +1747,10 @@ Describe "Get-IBFixedAddress tests" {
 			{Get-IBFixedAddress -gridmaster '' -credential $Credential} | should throw
 		}
 		It "Returns fixed address from ref query" {
-			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -_Ref 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+			$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -_Ref $Ref
 			$Return.GetType().Name | should be 'IB_FixedAddress'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+			$Return._ref | should be $Ref
 			$Return.name | should be 'testrecord.domain.com'
 			$Return.extattrib.Name | should be 'Site'
 			$Return.extattrib.Value | should be 'corp'
@@ -3868,7 +1764,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return.Count | should be 3
 			#
 			$Return[0].GetType().Name | should be 'IB_FixedAddress'
-			$Return[0]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 			$Return[0].name | should be 'testrecord.domain.com'
 			$Return[0].IPAddress | should be '1.1.1.1'
 			$Return[0].extattrib.Name | should be 'Site'
@@ -3878,7 +1773,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return[0].MAC | should be '00:00:00:00:00:00'
 			#
 			$Return[1].GetType().Name | should be 'IB_FixedAddress'
-			$Return[1]._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
 			$Return[1].name | should be 'testrecord.domain.com'
 			$Return[1].IPAddress | should be '1.2.3.4'
 			$Return[1].comment | should be 'test comment 2'
@@ -3886,7 +1780,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return[1].MAC | should be '00:00:00:00:00:00'
 			#
 			$Return[2].GetType().Name | should be 'IB_FixedAddress'
-			$Return[2]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJfZGVmY2:2.2.2.2/networkview3'
 			$Return[2].name | should be 'testrecord2.domain.com'
 			$Return[2].IPAddress | should be '2.2.2.2'
 			$Return[2].comment | should benullorempty
@@ -3896,7 +1789,6 @@ Describe "Get-IBFixedAddress tests" {
 		It "Returns fixed address from IP Address query" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -IPAddress '1.2.3.4'
 			$Return.GetType().Name | should be 'IB_FixedAddress'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
 			$Return.name | should be 'testrecord.domain.com'
 			$Return.IPAddress | should be '1.2.3.4'
 			$Return.comment | should be 'test comment 2'
@@ -3908,7 +1800,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return.Count | should be 2
 			#
 			$Return[0].GetType().Name | should be 'IB_FixedAddress'
-			$Return[0]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 			$Return[0].name | should be 'testrecord.domain.com'
 			$Return[0].extattrib.Name | should be 'Site'
 			$Return[0].extattrib.Value | should be 'corp'
@@ -3918,7 +1809,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return[0].MAC | should be '00:00:00:00:00:00'
 			#
 			$Return[1].GetType().Name | should be 'IB_FixedAddress'
-			$Return[1]._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
 			$Return[1].name | should be 'testrecord.domain.com'
 			$Return[1].IPAddress | should be '1.2.3.4'
 			$Return[1].comment | should be 'test comment 2'
@@ -3930,7 +1820,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return.Count | should be 2
 			#
 			$Return[0].GetType().Name | should be 'IB_FixedAddress'
-			$Return[0]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 			$Return[0].name | should be 'testrecord.domain.com'
 			$Return[0].extattrib.Name | should be 'Site'
 			$Return[0].extattrib.Value | should be 'corp'
@@ -3940,7 +1829,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return[0].MAC | should be '00:00:00:00:00:00'
 			#
 			$Return[1].GetType().Name | should be 'IB_FixedAddress'
-			$Return[1]._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
 			$Return[1].name | should be 'testrecord.domain.com'
 			$Return[1].IPAddress | should be '1.2.3.4'
 			$Return[1].comment | should be 'test comment 2'
@@ -3950,7 +1838,6 @@ Describe "Get-IBFixedAddress tests" {
 		It "Returns fixed address from strict comment query" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -comment 'test comment' -Strict
 			$Return.GetType().Name | should be 'IB_FixedAddress'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 			$Return.name | should be 'testrecord.domain.com'
 			$Return.extattrib.Name | should be 'Site'
 			$Return.extattrib.Value | should be 'corp'
@@ -3962,7 +1849,6 @@ Describe "Get-IBFixedAddress tests" {
 		It "Returns fixed address from extensible attribute query" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -ExtAttributeQuery {Site -eq 'corp'}
 			$Return.GetType().Name | should be 'IB_FixedAddress'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 			$Return.name | should be 'testrecord.domain.com'
 			$Return.extattrib.Name | should be 'Site'
 			$Return.extattrib.Value | should be 'corp'
@@ -3976,7 +1862,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return.Count | should be 2
 			#
 			$Return[0].GetType().Name | should be 'IB_FixedAddress'
-			$Return[0]._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 			$Return[0].name | should be 'testrecord.domain.com'
 			$Return[0].extattrib.Name | should be 'Site'
 			$Return[0].extattrib.Value | should be 'corp'
@@ -3986,7 +1871,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return[0].MAC | should be '00:00:00:00:00:00'
 			#
 			$Return[1].GetType().Name | should be 'IB_FixedAddress'
-			$Return[1]._ref | should be 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
 			$Return[1].name | should be 'testrecord.domain.com'
 			$Return[1].IPAddress | should be '1.2.3.4'
 			$Return[1].comment | should be 'test comment 2'
@@ -3996,7 +1880,6 @@ Describe "Get-IBFixedAddress tests" {
 		It "Returns fixed address from IP and MAC address query" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -IPAddress '1.1.1.1' -mac '00:00:00:00:00:00'
 			$Return.GetType().Name | should be 'IB_FixedAddress'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 			$Return.name | should be 'testrecord.domain.com'
 			$Return.extattrib.Name | should be 'Site'
 			$Return.extattrib.Value | should be 'corp'
@@ -4008,7 +1891,6 @@ Describe "Get-IBFixedAddress tests" {
 		It "Returns fixed address from IP and networkview query" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -IPAddress '1.1.1.1' -networkview 'default'
 			$Return.GetType().Name | should be 'IB_FixedAddress'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 			$Return.name | should be 'testrecord.domain.com'
 			$Return.extattrib.Name | should be 'Site'
 			$Return.extattrib.Value | should be 'corp'
@@ -4020,7 +1902,6 @@ Describe "Get-IBFixedAddress tests" {
 		It "Returns fixed address from IP, comment and networkview query" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -IPAddress '1.1.1.1' -comment 'test comment' -Networkview 'default'
 			$Return.GetType().Name | should be 'IB_FixedAddress'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 			$Return.name | should be 'testrecord.domain.com'
 			$Return.extattrib.Name | should be 'Site'
 			$Return.extattrib.Value | should be 'corp'
@@ -4032,7 +1913,6 @@ Describe "Get-IBFixedAddress tests" {
 		It "Returns fixed address from no query but resultscount set to 1" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -maxresults 1
 			$Return.GetType().Name | should be 'IB_FixedAddress'
-			$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 			$Return.name | should be 'testrecord.domain.com'
 			$Return.extattrib.Name | should be 'Site'
 			$Return.extattrib.Value | should be 'corp'
@@ -4043,251 +1923,155 @@ Describe "Get-IBFixedAddress tests" {
 		}
 	}
 }
-Describe "New-IBDNSARecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
-		Mock-InfobloxPost -uri $uri -body $Body
+Describe "Get-IBRecord tests" {
+	It "Throws an error with an empty gridmaster" {
+		{Get-IBRecord -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
 	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
+	It "THrows an error with empty ref parameter" {
+		{Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref} | should throw
 	}
-	It "Throws error with invalid IP address parameter" {
-		{New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name 'testrecord' -IPAddress 'notanipaddress'} | should throw
+	It "Throws an error with pipeline input object missing a ref property" {
+		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Get-IBRecord -ea Stop} | should Throw
 	}
-	It "Throws error with invalid TTL parameter" {
-		{New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name 'testrecord' -IPAddress '1.1.1.1' -TTL 'notaTTL'} | should Throw
+	It "Returns A record from ref query" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = Get-IBRecord -gridmaster $Gridmaster -credential $Credential -_Ref $Ref
+		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
+		$TestRecord.Name | should be 'testrecord.domain.com'
+		$TestRecord.View | should be 'default'
+		$TestRecord.IPAddress | should be '1.1.1.1'
+		$TestRecord.Comment | should be 'test comment'
+		$TestRecord._ref | should be $Ref
+		$TestRecord.TTL | should be 1200
+		$TestRecord.Use_TTL | should be $True
 	}
-	It "Throws with empty gridmaster" {
-		{New-IBDNSARecord -Gridmaster '' -Credential $Credential -Name 'testrecord' -IPAddress '1.1.1.1'} | should throw
+	It "Returns CName Record from ref query" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$testalias = Get-IBRecord -gridmaster $gridmaster -credential $Credential -_Ref $Ref
+		$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
+		$testalias.Name | should be 'testalias.domain.com'
+		$testalias.View | should be 'default'
+		$testalias.canonical | should be 'testrecord.domain.com'
+		$testalias.Comment | should be 'test comment'
+		$testalias._ref | should be $Ref
+		$testalias.TTL | should be 1200
+		$testalias.Use_TTL | should be $True
 	}
-	It "Throws with empty name" {
-		{New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name '' -IPAddress '1.1.1.1'} | should throw
+	It "Returns PTR Record from ref query" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$TestRecord = Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $Ref
+		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
+		$TestRecord.PTRDName | should be 'testrecord.domain.com'
+		$TestRecord.View | should be 'default'
+		$TestRecord.IPAddress | should be '1.1.1.1'
+		$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
+		$TestRecord.Comment | should be 'test comment'
+		$TestRecord._ref | should be $ref
+		$TestRecord.TTL | should be 1200
+		$TestRecord.Use_TTL | should be $True
 	}
-	It "Creates dns A record in default view with no comment or TTL" {
-		$Record = New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestrecord.domain.com' -IPAddress '1.1.1.1' -Confirm:$False
-		$Record.GetType().Name | should be 'IB_DNSARecord'
-		$Record.View | should be 'default'
-		$Record.Name | should be 'newtestrecord.domain.com'
-		$Record.IPAddress | should be '1.1.1.1'
-		$Record.comment | should benullorempty
-		$Record.TTL | should be 0
-		$Record.Use_TTL | should be $False
+	It "Returns fixed address from ref query" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		$Return = Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $Ref
+		$Return.GetType().Name | should be 'IB_FixedAddress'
+		$Return._ref | should be $Ref
+		$Return.name | should be 'testrecord.domain.com'
+		$Return.IPAddress | should be '1.1.1.1'
+		$Return.comment | should be 'test comment'
+		$Return.networkview | should be 'default'
+		$Return.MAC | should be '00:00:00:00:00:00'
 	}
-	It "Creates dns A record in default view with comment and TTL" {
-		$Record = New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestrecord2.domain.com' -IPAddress '1.1.1.1' -Comment 'test comment' -TTL 100 -Confirm:$False
-		$Record.GetType().Name | should be 'IB_DNSARecord'
-		$Record.View | should be 'default'
-		$Record.Name | should be 'newtestrecord2.domain.com'
-		$Record.IPAddress | should be '1.1.1.1'
-		$Record.comment | should be 'test comment'
-		$Record.TTL | should be 100
-		$Record.Use_TTL | should be $True
+	It "Returns A record from ref query through pipeline" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$object = new-object PSObject -Property @{
+			gridmaster = $Gridmaster
+			credential = $Credential
+			_ref = $Ref
+		}
+		$TestRecord = $object | Get-IBRecord
+		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
+		$TestRecord.Name | should be 'testrecord.domain.com'
+		$TestRecord.View | should be 'default'
+		$TestRecord.IPAddress | should be '1.1.1.1'
+		$TestRecord.Comment | should be 'test comment'
+		$TestRecord._ref | should be $Ref
+		$TestRecord.TTL | should be 1200
+		$TestRecord.Use_TTL | should be $True
 	}
-	It "Creates dns A record in specified view with no comment or TTL" {
-		$Record = New-IBDNSARecord -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestrecord4.domain.com' -IPAddress '1.1.1.1' -View 'view2' -Confirm:$False
-		$Record.GetType().Name | should be 'IB_DNSARecord'
-		$Record.View | should be 'view2'
-		$Record.Name | should be 'newtestrecord4.domain.com'
-		$Record.IPAddress | should be '1.1.1.1'
-		$Record.comment | should benullorempty
-		$Record.TTL | should be 0
-		$Record.Use_TTL | should be $False
+	It "Returns CName Record from ref query through pipeline" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$object = new-object PSObject -Property @{
+			gridmaster = $Gridmaster
+			credential = $Credential
+			_ref = $Ref
+		}
+		$Testalias = $object | Get-IBRecord
+		$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
+		$testalias.Name | should be 'testalias.domain.com'
+		$testalias.View | should be 'default'
+		$testalias.canonical | should be 'testrecord.domain.com'
+		$testalias.Comment | should be 'test comment'
+		$testalias._ref | should be $Ref
+		$testalias.TTL | should be 1200
+		$testalias.Use_TTL | should be $True
 	}
-
+	It "Returns PTR Record from ref query through pipeline" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$object = new-object PSObject -Property @{
+			gridmaster = $Gridmaster
+			credential = $Credential
+			_ref = $Ref
+		}
+		$TestRecord = $object | Get-IBRecord
+		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
+		$TestRecord.PTRDName | should be 'testrecord.domain.com'
+		$TestRecord.View | should be 'default'
+		$TestRecord.IPAddress | should be '1.1.1.1'
+		$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
+		$TestRecord.Comment | should be 'test comment'
+		$TestRecord._ref | should be $Ref
+		$TestRecord.TTL | should be 1200
+		$TestRecord.Use_TTL | should be $True
+	}
+	It "Returns fixed address from ref query through pipeline" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		$object = new-object PSObject -Property @{
+			gridmaster = $Gridmaster
+			credential = $Credential
+			_ref = $Ref
+		}
+		$Return = $object | Get-IBRecord
+		$Return.GetType().Name | should be 'IB_FixedAddress'
+		$Return._ref | should be $Ref
+		$Return.name | should be 'testrecord.domain.com'
+		$Return.IPAddress | should be '1.1.1.1'
+		$Return.comment | should be 'test comment'
+		$Return.networkview | should be 'default'
+		$Return.MAC | should be '00:00:00:00:00:00'
+	}
 }
-Describe "New-IBDNSCNameRecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
-		Mock-InfobloxPost -uri $uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
-	It "Throws error with invalid TTL parameter" {
-		{New-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name 'testalias' -Canonical 'testrecord.domain.com' -TTL 'notaTTL'} | should throw
-	}
-	It "Throws error with empty gridmaster" {
-		{New-IBDNSCNameRecord -Gridmaster '' -Credential $Credential -Name 'testalias' -Canonical 'testrecord.domain.com'} | should throw
-	}
-	It "Throws error with empty name" {
-		{New-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name '' -Canonical 'testrecord.domain.com'} | should throw
-	}
-	It "Throws error with empty canonical" {
-		{New-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -Name 'testalias' -Canonical ''} | should throw
-	}
-	It "Creates dns CName Record in default view with no comment or TTL" {
-		$Record = New-IBDNSCNameRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestalias.domain.com' -Canonical 'testrecord.domain.com'
-		$Record.GetType().Name | should be 'IB_DNSCNameRecord'
-		$Record.View | should be 'default'
-		$Record.Name | should be 'newtestalias.domain.com'
-		$Record.canonical | should be 'testrecord.domain.com'
-		$Record.comment | should benullorempty
-		$Record.TTL | should be 0
-		$Record.Use_TTL | should be $False
-	}
-	It "Creates dns CName Record in default view with comment and TTL" {
-		$Record = New-IBDNSCNameRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestalias2.domain.com' -Canonical 'testrecord.domain.com' -Comment 'test comment' -TTL 100
-		$Record.GetType().Name | should be 'IB_DNSCNameRecord'
-		$Record.View | should be 'default'
-		$Record.Name | should be 'newtestalias2.domain.com'
-		$Record.canonical | should be 'testrecord.domain.com'
-		$Record.comment | should be 'test comment'
-		$Record.TTL | should be 100
-		$Record.Use_TTL | should be $True
-	}
-	It "Creates dns CName Record in specified view with no comment or TTL" {
-		$Record = New-IBDNSCNameRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestalias4.domain.com' -Canonical 'testrecord.domain.com' -View 'view2'
-		$Record.GetType().Name | should be 'IB_DNSCNameRecord'
-		$Record.View | should be 'view2'
-		$Record.Name | should be 'newtestalias4.domain.com'
-		$Record.canonical | should be 'testrecord.domain.com'
-		$Record.comment | should benullorempty
-		$Record.TTL | should be 0
-		$Record.Use_TTL | should be $False
-	}
-
+Describe "Set-IBExtensibleAttributeDefinition tests" {
+	
 }
-Describe "New-IBDNSPTRRecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
-		Mock-InfobloxPost -uri $uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
-	It "Throws error with invalid IP address parameter" {
-		{New-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'testrecord' -IPAddress 'notanIP'} | should throw
-	}
-	It "Throws error with invalid TTL parameter" {
-		{New-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'testrecord' -IPAddress '1.1.1.1' -TTL 'notaTTL'} | should throw
-	}
-	It "Throws error with empty gridmaster" {
-		{New-IBDNSPTRRecord -Gridmaster '' -Credential $Credential -PTRDName 'testrecord' -IPAddress '1.1.1.1'} | should throw
-	}
-	It "Throws error with empty PTRDName" {
-		{New-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName '' -IPAddress '1.1.1.1'} | should throw
-	}
-	It "Throws error with empty IPAddress" {
-		{New-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'testrecord' -IPAddress ''} | should throw
-	}
-	It "Creates dns PTR record in default view with no comment or TTL" {
-		$record = New-IBDNSPTRRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'newtestrecord.domain.com' -IPAddress '1.1.1.1'
-		$Record.GetType().Name | should be 'IB_DNSPTRRecord'
-		$Record.View | should be 'default'
-		$Record.PTRDName | should be 'newtestrecord.domain.com'
-		$Record.IPAddress | should be '1.1.1.1'
-		$Record.Name | should be '1.1.1.1.in-addr.arpa'
-		$Record.comment | should benullorempty
-		$Record.TTL | should be 0
-		$Record.Use_TTL | should be $False
-	}
-	It "Creates dns PTR Record in default view with comment and TTL" {
-		$record = New-IBDNSPTRRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'newtestrecord2.domain.com' -IPAddress '1.1.1.1' -Comment 'test comment' -TTL 100
-		$Record.GetType().Name | should be 'IB_DNSPTRRecord'
-		$Record.View | should be 'default'
-		$Record.PTRDName | should be 'newtestrecord2.domain.com'
-		$Record.IPAddress | should be '1.1.1.1'
-		$Record.Name | should be '1.1.1.1.in-addr.arpa'
-		$Record.comment | should be 'test comment'
-		$Record.TTL | should be 100
-		$Record.Use_TTL | should be $True
-	}
-	It "Creates dns PTR Record in specified view with no comment or TTL" {
-		$record = New-IBDNSPTRRecord -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -PTRDName 'newtestrecord4.domain.com' -IPAddress '1.1.1.1' -View 'view2'
-		$Record.GetType().Name | should be 'IB_DNSPTRRecord'
-		$Record.View | should be 'view2'
-		$Record.PTRDName | should be 'newtestrecord4.domain.com'
-		$Record.IPAddress | should be '1.1.1.1'
-		$Record.Name | should be '1.1.1.1.in-addr.arpa'
-		$Record.comment | should benullorempty
-		$Record.TTL | should be 0
-		$Record.Use_TTL | should be $False
-	}
-
+Describe "Set-IBView tests" {
+	
 }
-Describe "New-IBFixedAddress tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
-		Mock-InfobloxPost -uri $uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
-	It "Throws error with invalid IP Address object" {
-		{New-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -Name 'testrecord' -IPAddress 'notanIP'} | should Throw
-	}
-	It "Throws error with empty gridmaster" {
-		{New-IBFixedAddress -Gridmaster '' -Credential $Credential -Name 'testrecord' -IPAddress '1.1.1.1'} | should Throw
-	}
-	It "Throws error with empty IP" {
-		{New-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -Name 'testrecord' -IPAddress ''} | should Throw
-	}
-	It "Creates fixedaddress with no name or comment and zero mac in default view" {
-		$TestRecord = New-IBFixedAddress -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -IPAddress '10.1.1.1'
-		$TestRecord.GetType().name | Should be 'IB_FixedAddress'
-		$TestRecord.IPAddress | should be '10.1.1.1'
-		$TestRecord.Name | should benullorempty
-		$TestRecord.Comment | should benullorempty
-		$TestRecord.mac | should be '00:00:00:00:00:00'
-		$TestRecord.NetworkView | should be 'default'
-	}
-	It "Creates fixedaddress with no name or comment and non-zero mac in default view" {
-		$TestRecord = New-IBFixedAddress -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -IPAddress '10.1.1.2' -MAC '11:11:11:11:11:11'
-		$TestRecord.GetType().name | Should be 'IB_FixedAddress'
-		$TestRecord.IPAddress | should be '10.1.1.2'
-		$TestRecord.Name | should benullorempty
-		$TestRecord.Comment | should benullorempty
-		$TestRecord.mac | should be '11:11:11:11:11:11'
-		$TestRecord.NetworkView | should be 'default'
-	}
-	It "Creates fixedaddress with name, no comment and zero mac in default view" {
-		$TestRecord = New-IBFixedAddress -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestrecord' -IPAddress '10.1.1.3' -MAC "00:00:00:00:00:00"
-		$TestRecord.GetType().name | Should be 'IB_FixedAddress'
-		$TestRecord.IPAddress | should be '10.1.1.3'
-		$TestRecord.Name | should be 'newtestrecord'
-		$TestRecord.Comment | should benullorempty
-		$TestRecord.mac | should be '00:00:00:00:00:00'
-		$TestRecord.NetworkView | should be 'default'
-	}
-	It "Creates fixedaddress with name and comment and non-zero mac in default view" {
-		$TestRecord = New-IBFixedAddress -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Name 'newtestrecord' -IPAddress '10.1.1.4' -Comment 'comment' -MAC '11:11:11:11:11:11'
-		$TestRecord.GetType().name | Should be 'IB_FixedAddress'
-		$TestRecord.IPAddress | should be '10.1.1.4'
-		$TestRecord.Name | should be 'newtestrecord'
-		$TestRecord.Comment | should be 'comment'
-		$TestRecord.mac | should be '11:11:11:11:11:11'
-		$TestRecord.NetworkView | should be 'default'
-	}
-	It "Creates fixedaddress with comment, no name and non-zero mac in specified view" {
-		$TestRecord = New-IBFixedAddress -Confirm:$False -Gridmaster $Gridmaster -Credential $Credential -Comment 'comment' -NetworkView 'networkview3' -IPAddress '10.1.1.5' -MAC '11:11:11:11:11:11'
-		$TestRecord.GetType().name | Should be 'IB_FixedAddress'
-		$TestRecord.IPAddress | should be '10.1.1.5'
-		$TestRecord.Name | should benullorempty
-		$TestRecord.Comment | should be 'comment'
-		$TestRecord.mac | should be '11:11:11:11:11:11'
-		$TestRecord.NetworkView | should be 'networkview3'
-	}
-
+Describe "Set-IBDNSZone tests" {
+	
 }
+Describe "Set-IBNetwork tests" {
+	
+}
+
 Describe "Set-IBDNSARecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
-		Mock-InfobloxPut -uri $Uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Throws an error with an invalid IP Address parameter" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		{$TestRecord | Set-IBDNSARecord -IPAddress 'notanIP'} | should Throw
 	}
 	It "Throws an error with an invalid TTL parameter" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		{$TestRecord | Set-IBDNSARecord -TTL 'notaTTL'} | should Throw
 	}
 	It "Throws an error with an empty gridmaster" {
@@ -4300,14 +2084,16 @@ Describe "Set-IBDNSARecord tests" {
 		{Set-IBDNSARecord -Record 'notadnsrecord'} | should throw
 	}
 	It "Throws an error with parameters from both sets" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		{Set-IBDNSARecord -Gridmaster $Gridmaster -Record $TestRecord} | should Throw
 	}
 	It "Throws an error with pipeline input object missing a ref property" {
 		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Set-IBDNSARecord -ea Stop} | should Throw
 	}
 	It "Makes no changes when Set-IBDNSARecord is called with no parameters" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSARecord -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be  'testrecord.domain.com'
@@ -4318,7 +2104,8 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.Use_TTL | should be $True
 	}
 	It "Sets the comment and IPAddress on an existing DNS Record with passthru" {
-		$Record = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$Record = [IB_DNSARecord]::Get($gridmaster,$Credential,'$Ref')
 		$TestRecord = $Record | Set-IBDNSARecord -IPAddress '2.2.2.2' -Comment 'new comment' -Confirm:$False -Passthru
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be  'testrecord.domain.com'
@@ -4329,7 +2116,8 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.Use_TTL | should be $True
 	}
 	It "Sets the TTL on an existing record" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSARecord -TTL 100 -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be  'testrecord.domain.com'
@@ -4341,7 +2129,8 @@ Describe "Set-IBDNSARecord tests" {
 
 	}
 	It "Clears the TTL on an existing Record" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSARecord -ClearTTL -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be  'testrecord.domain.com'
@@ -4352,7 +2141,8 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.Use_TTL | should be $False
 	}
 	It "Sets the TTL to 0 with Use_TTL set to True" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSARecord -TTL 0 -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be 'testrecord.domain.com'
@@ -4363,7 +2153,8 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.Use_TTL | should be $True
 	}
 	It "Sets the TTL but also uses -clearTTL, which results in a null TTL" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSARecord -TTL 100 -ClearTTL -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.name | should be 'testrecord.domain.com'
@@ -4374,7 +2165,8 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.Use_TTL | should be $False
 	}
 	It "Sets the comment to null" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSARecord -Comment $Null -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be  'testrecord.domain.com'
@@ -4384,11 +2176,10 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
 	}
-#
 	It "Sets the comment and IPAddress on an existing DNS Record - using byRef method" {
-		$Refstring = 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		Set-IBDNSARecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring -IPAddress '2.2.2.2' -Comment 'new comment'
-		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		Set-IBDNSARecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref -IPAddress '2.2.2.2' -Comment 'new comment'
+		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be  'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4396,12 +2187,12 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be $Refstring
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL on an existing record - using byRef method" {
-		$RefString = 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		Set-IBDNSARecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring  -TTL 100
-		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		Set-IBDNSARecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref -TTL 100
+		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be  'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4409,13 +2200,13 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 100
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be $Refstring
+		$TestRecord._ref | should be $Ref
 
 	}
 	It "Clears the TTL on an existing Record - using byRef method" {
-		$Refstring = 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		Set-IBDNSARecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -ClearTTL
-		$TestRecord = Get-IBDNSARecord  -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		Set-IBDNSARecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Ref -ClearTTL
+		$TestRecord = Get-IBDNSARecord  -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be  'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4423,12 +2214,12 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be $Refstring
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL to 0 with Use_TTL set to True - using byRef method" {
-		$RefString = 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		Set-IBDNSARecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -TTL 0
-		$TestRecord = Get-IBDNSARecord  -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		Set-IBDNSARecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Ref -TTL 0
+		$TestRecord = Get-IBDNSARecord  -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4436,11 +2227,11 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be $Refstring
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL but also uses -clearTTL, which results in a null TTL - using byRef method and passthru" {
-		$RefString = 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		$TestRecord = Set-IBDNSARecord -Confirm:$False -PassThru -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -TTL 100 -ClearTTL
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = Set-IBDNSARecord -Confirm:$False -PassThru -gridmaster $gridmaster -credential $Credential -_Ref $Ref -TTL 100 -ClearTTL
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4448,12 +2239,12 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be $Refstring
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment to null - using byRef method" {
-		$Refstring = 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		Set-IBDNSARecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -Comment $Null
-		$TestRecord = Get-IBDNSARecord  -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		Set-IBDNSARecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Ref -Comment $Null
+		$TestRecord = Get-IBDNSARecord  -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be  'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4461,21 +2252,14 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord.Comment | should benullorempty
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be $Refstring
+		$TestRecord._ref | should be $Ref
 	}
 
 }
 Describe "Set-IBDNSCNameRecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
-		Mock-InfobloxPut -uri $Uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Throws an error with an invalid TTL parameter" {
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
 		{$TestRecord | Set-IBDNSCNameRecord -TTL 'notaTTL'} | should Throw
 	}
 	It "Throws an error with an empty gridmaster" {
@@ -4488,14 +2272,16 @@ Describe "Set-IBDNSCNameRecord tests" {
 		{Set-IBDNSCNameRecord -Record 'notadnsrecord'} | should throw
 	}
 	It "Throws an error with parameters from both sets" {
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
 		{Set-IBDNSCNameRecord -Gridmaster $Gridmaster -Record $TestRecord} | should Throw
 	}
 	It "Throws an error with pipeline input object missing a ref property" {
 		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Set-IBDNSCNameRecord -ea Stop} | should Throw
 	}
 	It "Makes no changes when Set-IBDNSCNameRecord is called with no parameters" {
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSCNameRecord -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.Canonical | should be  'testrecord.domain.com'
@@ -4504,10 +2290,11 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'test comment'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment and canonical on an existing DNS Record with passthru" {
-		$Record = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$Record = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord = $Record | Set-IBDNSCNameRecord -Canonical 'testrecord2.domain.com' -Comment 'new comment' -Confirm:$False -Passthru
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
@@ -4516,10 +2303,11 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL on an existing record" {
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSCNameRecord -TTL 100 -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
@@ -4528,10 +2316,11 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 100
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Clears the TTL on an existing Record" {
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSCNameRecord -ClearTTL -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
@@ -4540,10 +2329,11 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL to 0 with Use_TTL set to True" {
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSCNameRecord -TTL 0 -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
@@ -4552,10 +2342,11 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL but also uses -clearTTL, which results in a null TTL" {
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSCNameRecord -TTL 100 -ClearTTL -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
@@ -4564,10 +2355,11 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment to null" {
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSCNameRecord -Comment $Null -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
@@ -4576,13 +2368,12 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should benullorempty
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
-#
 	It "Sets the comment and canonical on an existing DNS Record - using byRef method" {
-		$Refstring = 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		Set-IBDNSCNameRecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring -canonical 'testrecord2.domain.com' -Comment 'new comment'
-		$TestRecord = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		Set-IBDNSCNameRecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref -canonical 'testrecord2.domain.com' -Comment 'new comment'
+		$TestRecord = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4590,12 +2381,12 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL on an existing record - using byRef method" {
-		$RefString = 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		Set-IBDNSCNameRecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring  -TTL 100
-		$TestRecord = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		Set-IBDNSCNameRecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref -TTL 100
+		$TestRecord = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4603,12 +2394,12 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 100
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Clears the TTL on an existing Record - using byRef method" {
-		$Refstring = 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		Set-IBDNSCNameRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -ClearTTL
-		$TestRecord = Get-IBDNSCNameRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		Set-IBDNSCNameRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Ref -ClearTTL
+		$TestRecord = Get-IBDNSCNameRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4616,12 +2407,12 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL to 0 with Use_TTL set to True - using byRef method" {
-		$RefString = 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		Set-IBDNSCNameRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -TTL 0
-		$TestRecord = Get-IBDNSCNameRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		Set-IBDNSCNameRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Ref -TTL 0
+		$TestRecord = Get-IBDNSCNameRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4629,11 +2420,11 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL but also uses -clearTTL, which results in a null TTL - using byRef method and passthru" {
-		$RefString = 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		$TestRecord = Set-IBDNSCNameRecord -Confirm:$False -PassThru -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -TTL 100 -ClearTTL
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$TestRecord = Set-IBDNSCNameRecord -Confirm:$False -PassThru -gridmaster $gridmaster -credential $Credential -_Ref $Ref -TTL 100 -ClearTTL
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4641,12 +2432,12 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment to null - using byRef method" {
-		$Refstring = 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		Set-IBDNSCNameRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -Comment $Null
-		$TestRecord = Get-IBDNSCNameRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		Set-IBDNSCNameRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Ref -Comment $Null
+		$TestRecord = Get-IBDNSCNameRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSCNameRecord'
 		$TestRecord.canonical | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4654,21 +2445,14 @@ Describe "Set-IBDNSCNameRecord tests" {
 		$TestRecord.Comment | should benullorempty
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$TestRecord._ref | should be $Ref
 	}
 
 }
 Describe "Set-IBDNSPTRRecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
-		Mock-InfobloxPut -uri $Uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Throws an error with an invalid TTL parameter" {
-		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
 		{$TestRecord | Set-IBDNSPTRRecord -TTL 'notaTTL'} | should Throw
 	}
 	It "Throws an error with an empty gridmaster" {
@@ -4681,14 +2465,16 @@ Describe "Set-IBDNSPTRRecord tests" {
 		{Set-IBDNSPTRRecord -Record 'notadnsrecord'} | should throw
 	}
 	It "Throws an error with parameters from both sets" {
-		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
 		{Set-IBDNSPTRRecord -Gridmaster $Gridmaster -Record $TestRecord} | should Throw
 	}
 	It "Throws an error with pipeline input object missing a ref property" {
 		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Set-IBDNSPTRRecord -ea Stop} | should Throw
 	}
 	It "Makes no changes when Set-IBDNSPTRRecord is called with no parameters" {
-		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSPTRRecord -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord.domain.com'
@@ -4698,10 +2484,11 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'test comment'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment and canonical on an existing DNS Record with passthru" {
-		$Record = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$Record = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord = $Record | Set-IBDNSPTRRecord -PTRDName 'testrecord2.domain.com' -Comment 'new comment' -Confirm:$False -Passthru
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
@@ -4711,10 +2498,11 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL on an existing record" {
-		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSPTRRecord -TTL 100 -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
@@ -4724,10 +2512,11 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 100
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Clears the TTL on an existing Record" {
-		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSPTRRecord -ClearTTL -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
@@ -4737,10 +2526,11 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL to 0 with Use_TTL set to True" {
-		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSPTRRecord -TTL 0 -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
@@ -4750,10 +2540,11 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL but also uses -clearTTL, which results in a null TTL" {
-		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSPTRRecord -TTL 100 -ClearTTL -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
@@ -4763,10 +2554,11 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment to null" {
-		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBDNSPTRRecord -Comment $Null -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
@@ -4776,12 +2568,12 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should benullorempty
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment and PTRDName on an existing DNS Record - using byRef method" {
-		$Refstring = 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-		Set-IBDNSPTRRecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring -PTRDName 'testrecord2.domain.com' -Comment 'new comment'
-		$TestRecord = Get-IBDNSPTRRecord -gridmaster $gridmaster -credential $credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		Set-IBDNSPTRRecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref -PTRDName 'testrecord2.domain.com' -Comment 'new comment'
+		$TestRecord = Get-IBDNSPTRRecord -gridmaster $gridmaster -credential $credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4790,12 +2582,12 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL on an existing record - using byRef method" {
-		$RefString = 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-		Set-IBDNSPTRRecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring  -TTL 100
-		$TestRecord = Get-IBDNSPTRRecord -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		Set-IBDNSPTRRecord -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref -TTL 100
+		$TestRecord = Get-IBDNSPTRRecord -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4804,12 +2596,12 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 100
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Clears the TTL on an existing Record - using byRef method" {
-		$Refstring = 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-		Set-IBDNSPTRRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -ClearTTL
-		$TestRecord = Get-IBDNSPTRRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		Set-IBDNSPTRRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Ref -ClearTTL
+		$TestRecord = Get-IBDNSPTRRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4818,12 +2610,12 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL to 0 with Use_TTL set to True - using byRef method" {
-		$RefString = 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-		Set-IBDNSPTRRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -TTL 0
-		$TestRecord = Get-IBDNSPTRRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		Set-IBDNSPTRRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Ref -TTL 0
+		$TestRecord = Get-IBDNSPTRRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4832,11 +2624,11 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $True
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the TTL but also uses -clearTTL, which results in a null TTL - using byRef method and passthru" {
-		$RefString = 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-		$TestRecord = Set-IBDNSPTRRecord -Confirm:$False -PassThru -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -TTL 100 -ClearTTL
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		$TestRecord = Set-IBDNSPTRRecord -Confirm:$False -PassThru -gridmaster $gridmaster -credential $Credential -_Ref $Ref -TTL 100 -ClearTTL
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4845,12 +2637,12 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should be 'new comment'
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment to null - using byRef method" {
-		$Refstring = 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-		Set-IBDNSPTRRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -Comment $Null
-		$TestRecord = Get-IBDNSPTRRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.1.1.in-addr.arpa/default"}._ref
+		Set-IBDNSPTRRecord -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Ref -Comment $Null
+		$TestRecord = Get-IBDNSPTRRecord  -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 		$TestRecord.PTRDName | should be  'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
@@ -4859,21 +2651,14 @@ Describe "Set-IBDNSPTRRecord tests" {
 		$TestRecord.Comment | should benullorempty
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
+		$TestRecord._ref | should be $Ref
 	}
 
 }
 Describe "Set-IBFixedAddress tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
-		Mock-InfobloxPut -uri $Uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Throws an error with an invalid TTL parameter" {
-		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)
 		{$TestRecord | Set-IBFixedAddress -TTL 'notaTTL'} | should Throw
 	}
 	It "Throws an error with an empty gridmaster" {
@@ -4886,14 +2671,16 @@ Describe "Set-IBFixedAddress tests" {
 		{Set-IBFixedAddress -Record 'notadnsrecord'} | should throw
 	}
 	It "Throws an error with parameters from both sets" {
-		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)
 		{Set-IBFixedAddress -Gridmaster $Gridmaster -Record $TestRecord} | should Throw
 	}
 	It "Throws an error with pipeline input object missing a ref property" {
 		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Set-IBFixedAddress -ea Stop} | should Throw
 	}
 	It "Makes no changes when Set-IBFixedAddress is called with no parameters" {
-		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBFixedAddress -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_FixedAddress'
 		$TestRecord.Name | should be 'testrecord.domain.com'
@@ -4901,10 +2688,11 @@ Describe "Set-IBFixedAddress tests" {
 		$TestRecord.MAC | should be '00:00:00:00:00:00'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment and Name on an existing DNS Record with passthru" {
-		$Record = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		$Record = [IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord = $Record | Set-IBFixedAddress -Name 'testrecord2.domain.com' -Comment 'new comment' -Confirm:$False -Passthru
 		$TestRecord.GetType().Name | should be 'IB_FixedAddress'
 		$TestRecord.Name | should be 'testrecord2.domain.com'
@@ -4912,10 +2700,11 @@ Describe "Set-IBFixedAddress tests" {
 		$TestRecord.MAC | should be '00:00:00:00:00:00'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'new comment'
-		$TestRecord._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the MAC on an existing record" {
-		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBFixedAddress -MAC '11:11:11:11:11:11' -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_FixedAddress'
 		$TestRecord.Name | should be 'testrecord2.domain.com'
@@ -4923,10 +2712,11 @@ Describe "Set-IBFixedAddress tests" {
 		$TestRecord.MAC | should be '11:11:11:11:11:11'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'new comment'
-		$TestRecord._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment to null" {
-		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default')
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)
 		$TestRecord | Set-IBFixedAddress -Comment $Null -Confirm:$False
 		$TestRecord.GetType().Name | should be 'IB_FixedAddress'
 		$TestRecord.Name | should be 'testrecord2.domain.com'
@@ -4934,56 +2724,122 @@ Describe "Set-IBFixedAddress tests" {
 		$TestRecord.MAC | should be '11:11:11:11:11:11'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should benullorempty
-		$TestRecord._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$TestRecord._ref | should be $Ref
 	}
-#
 	It "Sets the comment and Name on an existing DNS Record - using byRef method" {
-		$Refstring = 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-		Set-IBFixedAddress -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring -Name 'testrecord2.domain.com' -Comment 'new comment'
-		$TestRecord = Get-IBFixedAddress -gridmaster $gridmaster -credential $credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		Set-IBFixedAddress -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref -Name 'testrecord2.domain.com' -Comment 'new comment'
+		$TestRecord = Get-IBFixedAddress -gridmaster $gridmaster -credential $credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_FixedAddress'
 		$TestRecord.Name | should be 'testrecord2.domain.com'
 		$TestRecord.NetworkView | should be 'default'
 		$TestRecord.MAC | should be '11:11:11:11:11:11'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'new comment'
-		$TestRecord._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the MAC on an existing record - using byRef method" {
-		$RefString = 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-		Set-IBFixedAddress -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring  -MAC '00:00:00:00:00:00'
-		$TestRecord = Get-IBFixedAddress -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		Set-IBFixedAddress -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref  -MAC '00:00:00:00:00:00'
+		$TestRecord = Get-IBFixedAddress -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_FixedAddress'
 		$TestRecord.Name | should be 'testrecord2.domain.com'
 		$TestRecord.NetworkView | should be 'default'
 		$TestRecord.MAC | should be '00:00:00:00:00:00'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should be 'new comment'
-		$TestRecord._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$TestRecord._ref | should be $Ref
 	}
 	It "Sets the comment to null - using byRef method" {
-		$Refstring = 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-		Set-IBFixedAddress -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Refstring -Comment $Null
-		$TestRecord = Get-IBFixedAddress  -gridmaster $gridmaster -credential $Credential -_Ref $Refstring
+		$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:1.1.1.1/default"}._ref
+		Set-IBFixedAddress -Confirm:$False -gridmaster $gridmaster -credential $Credential -_Ref $Ref -Comment $Null
+		$TestRecord = Get-IBFixedAddress  -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 		$TestRecord.GetType().Name | should be 'IB_FixedAddress'
 		$TestRecord.Name | should be 'testrecord2.domain.com'
 		$TestRecord.NetworkView | should be 'default'
 		$TestRecord.MAC | should be '00:00:00:00:00:00'
 		$TestRecord.IPAddress | should be '1.1.1.1'
 		$TestRecord.Comment | should benullorempty
-		$TestRecord._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
+		$TestRecord._ref | should be $Ref
 	}
 
 }
+Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
+	It "Throws an error with an empty gridmaster" {
+		{Add-IBExtensibleAttribute -Gridmaster '' -Credential $Credential -_Ref 'refstring' -eaname 'EA' -eavalue 'value'} | should throw
+	}
+	It "THrows an error with empty ref parameter" {
+		{Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref -eaname 'EA' -eavalue 'value'} | should throw
+	}
+	It "Throws an error with pipeline input object missing a ref property" {
+		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Get-IBRecord -ea Stop -eaname 'EA' -eavalue 'value'} | should Throw
+	}
+	It "Adds extensible attribute by object pipeline with passthru option" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord2.domain.com/view3"}._ref
+		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref $Ref
+		$TestRecord = $TestRecord | Add-IBExtensibleAttribute -EAName Site -EAValue corp -Passthru -Confirm:$False
+		$TestRecord.ExtAttrib.Name | should be 'Site'
+		$TestRecord.ExtAttrib.value | should be 'corp'
+	}
+	It "Updates the value of an existing extensible attribute by object pipeline with passthru option" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref $Ref
+		$TestRecord = $TestRecord | Add-IBExtensibleAttribute -eaname Site -eavalue gulf -Passthru -Confirm:$False
+		$TestRecord.ExtAttrib | measure-object | select -ExpandProperty Count | should be 1
+		$TestRecord.ExtAttrib.Name | should be 'Site'
+		$TestRecord.ExtAttrib.value | should be 'gulf'
+	}
+	It "Adds extensible attribute by ref" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		Add-IBExtensibleAttribute -gridmaster $gridmaster -credential $credential -_ref $Ref -EAName 'EA2' -EAValue 'Value2' -Confirm:$False
+		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref $Ref
+		$TestRecord.ExtAttrib | measure-object | select -ExpandProperty Count | should be 2
+		$TestRecord.ExtAttrib[0].Name | should be 'EA2'
+		$TestRecord.ExtAttrib[0].Value | should be 'Value2'
+		$TestRecord.ExtAttrib[1].Name | should be 'Site'
+		$TestRecord.ExtAttrib[1].Value | should be 'gulf'
+	}
+	It "Adds extensible attribute by object" {
+		$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref $Ref
+		$TestRecord = Add-IBExtensibleAttribute -Record $testrecord -Passthru -EAName 'EA3' -EAValue 'Value3' -Confirm:$False
+		$TestRecord.ExtAttrib | measure-object | % count | should be 3
+		$TestRecord.ExtAttrib[0].Name | should be 'EA2'
+		$TestRecord.ExtAttrib[0].Value | should be 'Value2'
+		$TestRecord.ExtAttrib[1].Name | should be 'EA3'
+		$TestRecord.ExtAttrib[1].Value | should be 'Value3'
+		$TestRecord.ExtAttrib[2].Name | should be 'Site'
+		$TestRecord.ExtAttrib[2].Value | should be 'gulf'
+	}
+	It "Removes specified extensible attribute by ref" {
+		$TestRecord = Remove-IBExtensibleAttribute -Confirm:$False -EAName Site -gridmaster $gridmaster -credential $credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default' -Passthru
+		$TestRecord.ExtAttrib | measure-object | % Count | should be 2
+		$TestRecord.ExtAttrib[0].Name | should be 'EA2'
+		$TestRecord.ExtAttrib[0].Value | should be 'Value2'
+		$TestRecord.ExtAttrib[1].Name | should be 'EA3'
+		$TestRecord.ExtAttrib[1].Value | should be 'Value3'
+	}
+	It "Removes all extensible attributes by object" {
+		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
+		$TestRecord = $TestRecord | Remove-IBExtensibleAttribute -RemoveAll -Passthru -Confirm:$False
+		$TestReecord.Extattrib | should benullorempty
+	}
+	It "Removes all extensible attributes by ref" {
+		$TestRecord = Remove-IBExtensibleAttribute -Gridmaster $gridmaster -Credential $Credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3' -removeall -passthru -Confirm:$False
+		$TestRecord.Extattrib | should benullorempty
+	}
+	It "Removes specified extensible attribute by object" {
+		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref "record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default"
+		Add-IBExtensibleAttribute -Record $TestRecord -EAName EA2 -EAValue 'Value2' -Confirm:$False
+		Remove-IBExtensibleAttribute -Record $TestRecord -EAName Site -Confirm:$False
+		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref "record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default"
+		$TestRecord.Extattrib | measure-object | % Count | should be 1
+		$TestRecord.ExtAttrib.Name | should be 'EA2'
+		$TestRecord.ExtAttrib.Value | should be 'Value2'
+	}
+}
+
 Describe "Remove-IBDNSARecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-		$uri | Mock-InfobloxDelete
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Throws an error with an empty gridmaster" {
 		{Remove-IBDNSARecord -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
 	}
@@ -5018,14 +2874,6 @@ Describe "Remove-IBDNSARecord tests" {
 	}
 }
 Describe "Remove-IBDNSCNameRecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-		$uri | Mock-InfobloxDelete
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Throws an error with an empty gridmaster" {
 		{Remove-IBDNSCNameRecord -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
 	}
@@ -5060,14 +2908,6 @@ Describe "Remove-IBDNSCNameRecord tests" {
 	}
 }
 Describe "Remove-IBDNSPTRRecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-		$uri | Mock-InfobloxDelete
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Throws an error with an empty gridmaster" {
 		{Remove-IBDNSPTRRecord -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
 	}
@@ -5102,14 +2942,6 @@ Describe "Remove-IBDNSPTRRecord tests" {
 	}
 }
 Describe "Remove-IBFixedAddress tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-		$uri | Mock-InfobloxDelete
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Throws an error with an empty gridmaster" {
 		{Remove-IBFixedAddress -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
 	}
@@ -5134,7 +2966,6 @@ Describe "Remove-IBFixedAddress tests" {
 		$Return | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
 		$TestRecord | should benullorempty
 	}
-#
 	It "Deletes the record using byRef method" {
 		$Refstring = 'fixedAddress/ZG5zLmJpbcHRyJC5fZGVmYX:1.2.3.4/default'
 		$Return = Remove-IBFixedAddress -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring
@@ -5145,14 +2976,6 @@ Describe "Remove-IBFixedAddress tests" {
 	}
 }
 Describe "Remove-IBRecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-		$uri | Mock-InfobloxDelete
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
 	It "Throws an error with an empty gridmaster" {
 		{Remove-IBRecord -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
 	}
@@ -5195,215 +3018,16 @@ Describe "Remove-IBRecord tests" {
 		$TestRecord | should benullorempty
 	}
 }
-Describe "Get-IBRecord tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
-	It "Throws an error with an empty gridmaster" {
-		{Get-IBRecord -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
-	}
-	It "THrows an error with empty ref parameter" {
-		{Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref} | should throw
-	}
-	It "Throws an error with pipeline input object missing a ref property" {
-		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Get-IBRecord -ea Stop} | should Throw
-	}
-	It "Returns A record from ref query" {
-		$TestRecord = Get-IBRecord -gridmaster $Gridmaster -credential $Credential -_Ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord.Name | should be 'testrecord.domain.com'
-		$TestRecord.View | should be 'default'
-		$TestRecord.IPAddress | should be '1.1.1.1'
-		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		$TestRecord.TTL | should be 1200
-		$TestRecord.Use_TTL | should be $True
-	}
-	It "Returns CName Record from ref query" {
-		$testalias = Get-IBRecord -gridmaster $gridmaster -credential $Credential -_Ref 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-		$testalias.Name | should be 'testalias.domain.com'
-		$testalias.View | should be 'default'
-		$testalias.canonical | should be 'testrecord.domain.com'
-		$testalias.Comment | should be 'test comment'
-		$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		$testalias.TTL | should be 1200
-		$testalias.Use_TTL | should be $True
-	}
-	It "Returns PTR Record from ref query" {
-		$TestRecord = Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-		$TestRecord.PTRDName | should be 'testrecord.domain.com'
-		$TestRecord.View | should be 'default'
-		$TestRecord.IPAddress | should be '1.1.1.1'
-		$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-		$TestRecord.TTL | should be 1200
-		$TestRecord.Use_TTL | should be $True
-	}
-	It "Returns fixed address from ref query" {
-		$Return = Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-		$Return.GetType().Name | should be 'IB_FixedAddress'
-		$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-		$Return.name | should be 'testrecord.domain.com'
-		$Return.IPAddress | should be '1.1.1.1'
-		$Return.comment | should be 'test comment'
-		$Return.networkview | should be 'default'
-		$Return.MAC | should be '00:00:00:00:00:00'
-	}
-	It "Returns A record from ref query through pipeline" {
-		$Refstring = 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		$object = new-object PSObject -Property @{
-			gridmaster = $Gridmaster
-			credential = $Credential
-			_ref = $Refstring
-		}
-		$TestRecord = $object | Get-IBRecord
-		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord.Name | should be 'testrecord.domain.com'
-		$TestRecord.View | should be 'default'
-		$TestRecord.IPAddress | should be '1.1.1.1'
-		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		$TestRecord.TTL | should be 1200
-		$TestRecord.Use_TTL | should be $True
-	}
-	It "Returns CName Record from ref query through pipeline" {
-		$Refstring = 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		$object = new-object PSObject -Property @{
-			gridmaster = $Gridmaster
-			credential = $Credential
-			_ref = $Refstring
-		}
-		$Testalias = $object | Get-IBRecord
-		$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-		$testalias.Name | should be 'testalias.domain.com'
-		$testalias.View | should be 'default'
-		$testalias.canonical | should be 'testrecord.domain.com'
-		$testalias.Comment | should be 'test comment'
-		$testalias._ref | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		$testalias.TTL | should be 1200
-		$testalias.Use_TTL | should be $True
-	}
-	It "Returns PTR Record from ref query through pipeline" {
-		$Refstring = 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-		$object = new-object PSObject -Property @{
-			gridmaster = $Gridmaster
-			credential = $Credential
-			_ref = $Refstring
-		}
-		$TestRecord = $object | Get-IBRecord
-		$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-		$TestRecord.PTRDName | should be 'testrecord.domain.com'
-		$TestRecord.View | should be 'default'
-		$TestRecord.IPAddress | should be '1.1.1.1'
-		$TestRecord.Name | should be '1.1.1.1.in-addr.arpa'
-		$TestRecord.Comment | should be 'test comment'
-		$TestRecord._ref | should be 'record:ptr/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1.in-addr.arpa/default'
-		$TestRecord.TTL | should be 1200
-		$TestRecord.Use_TTL | should be $True
-	}
-	It "Returns fixed address from ref query through pipeline" {
-		$Refstring = 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-		$object = new-object PSObject -Property @{
-			gridmaster = $Gridmaster
-			credential = $Credential
-			_ref = $Refstring
-		}
-		$Return = $object | Get-IBRecord
-		$Return.GetType().Name | should be 'IB_FixedAddress'
-		$Return._ref | should be 'fixedAddress/ZG5zLmJpbmRfcHRyJC5fZGVa:1.1.1.1/default'
-		$Return.name | should be 'testrecord.domain.com'
-		$Return.IPAddress | should be '1.1.1.1'
-		$Return.comment | should be 'test comment'
-		$Return.networkview | should be 'default'
-		$Return.MAC | should be '00:00:00:00:00:00'
-	}
+Describe "Remove-IBNetwork tests" {
+	
 }
-Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
-	$script:Recordlist = Get-Content "$ScriptLocation\TestData.txt" -Raw | ConvertFrom-Json | select -ExpandProperty TestData
-	Mock Test-Connection {$True}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Put'} {
-		Mock-InfobloxPut -uri $Uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Post'} {
-		Mock-InfobloxPost -uri $uri -body $Body
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq 'Delete'} {
-	$uri | Mock-InfobloxDelete
-	}
-	Mock Invoke-RestMethod -ParameterFilter {$Method -eq $Null} {
-		$URI | Mock-InfobloxGet
-	}
-	It "Throws an error with an empty gridmaster" {
-		{Add-IBExtensibleAttribute -Gridmaster '' -Credential $Credential -_Ref 'refstring' -eaname 'EA' -eavalue 'value'} | should throw
-	}
-	It "THrows an error with empty ref parameter" {
-		{Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref  -eaname 'EA' -eavalue 'value'} | should throw
-	}
-	It "Throws an error with pipeline input object missing a ref property" {
-		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Get-IBRecord -ea Stop -eaname 'EA' -eavalue 'value'} | should Throw
-	}
-	It "Adds extensible attribute by object pipeline with passthru option" {
-		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3'
-		$TestRecord = $TestRecord | Add-IBExtensibleAttribute -EAName Site -EAValue corp -Passthru -Confirm:$False
-		$TestRecord.ExtAttrib.Name | should be 'Site'
-		$TestRecord.ExtAttrib.value | should be 'corp'
-	}
-	It "Updates the value of an existing extensible attribute by object pipeline with passthru option" {
-		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		$TestRecord = $TestRecord | Add-IBExtensibleAttribute -eaname Site -eavalue gulf -Passthru -Confirm:$False
-		$TestRecord.ExtAttrib | measure-object | select -ExpandProperty Count | should be 1
-		$TestRecord.ExtAttrib.Name | should be 'Site'
-		$TestRecord.ExtAttrib.value | should be 'gulf'
-	}
-	It "Adds extensible attribute by ref" {
-		Add-IBExtensibleAttribute -gridmaster $gridmaster -credential $credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default' -EAName 'EA2' -EAValue 'Value2' -Confirm:$False
-		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		$TestRecord.ExtAttrib | measure-object | select -ExpandProperty Count | should be 2
-		$TestRecord.ExtAttrib[0].Name | should be 'EA2'
-		$TestRecord.ExtAttrib[0].Value | should be 'Value2'
-		$TestRecord.ExtAttrib[1].Name | should be 'Site'
-		$TestRecord.ExtAttrib[1].Value | should be 'gulf'
-	}
-	It "Adds extensible attribute by object" {
-		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		$TestRecord = Add-IBExtensibleAttribute -Record $testrecord -Passthru -EAName 'EA3' -EAValue 'Value3' -Confirm:$False
-		$TestRecord.ExtAttrib | measure-object | % count | should be 3
-		$TestRecord.ExtAttrib[0].Name | should be 'EA2'
-		$TestRecord.ExtAttrib[0].Value | should be 'Value2'
-		$TestRecord.ExtAttrib[1].Name | should be 'EA3'
-		$TestRecord.ExtAttrib[1].Value | should be 'Value3'
-		$TestRecord.ExtAttrib[2].Name | should be 'Site'
-		$TestRecord.ExtAttrib[2].Value | should be 'gulf'
-	}
-	It "Removes specified extensible attribute by ref" {
-		$TestRecord = Remove-IBExtensibleAttribute -Confirm:$False -EAName Site -gridmaster $gridmaster -credential $credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default' -Passthru
-		$TestRecord.ExtAttrib | measure-object | % Count | should be 2
-		$TestRecord.ExtAttrib[0].Name | should be 'EA2'
-		$TestRecord.ExtAttrib[0].Value | should be 'Value2'
-		$TestRecord.ExtAttrib[1].Name | should be 'EA3'
-		$TestRecord.ExtAttrib[1].Value | should be 'Value3'
-	}
-	It "Removes all extensible attributes by object" {
-		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		$TestRecord = $TestRecord | Remove-IBExtensibleAttribute -RemoveAll -Passthru -Confirm:$False
-		$TestReecord.Extattrib | should benullorempty
-	}
-	It "Removes all extensible attributes by ref" {
-		$TestRecord = Remove-IBExtensibleAttribute -Gridmaster $gridmaster -Credential $Credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJfZGVmY2:testrecord2.domain.com/view3' -removeall -passthru -Confirm:$False
-		$TestRecord.Extattrib | should benullorempty
-	}
-	It "Removes specified extensible attribute by object" {
-		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref "record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default"
-		Add-IBExtensibleAttribute -Record $TestRecord -EAName EA2 -EAValue 'Value2' -Confirm:$False
-		Remove-IBExtensibleAttribute -Record $TestRecord -EAName Site -Confirm:$False
-		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref "record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default"
-		$TestRecord.Extattrib | measure-object | % Count | should be 1
-		$TestRecord.ExtAttrib.Name | should be 'EA2'
-		$TestRecord.ExtAttrib.Value | should be 'Value2'
-	}
+Describe "Remove-IBDNSZone tests" {
+	
 }
+Describe "Remove-IBView tests" {
+	
+}
+Describe "Remove-IBExtensibleAttributeDefinition tests" {
+	
+}
+$Recordlist | %{Remove-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref -Confirm:$false}

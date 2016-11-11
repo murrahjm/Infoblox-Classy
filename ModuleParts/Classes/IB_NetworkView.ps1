@@ -8,6 +8,18 @@ Class IB_networkview : IB_ReferenceObject {
     [String] ToString () {
         return $this.name
     }
+	static [IB_NetworkView] Create(
+		[String]$Gridmaster,
+		[PSCredential]$Credential,
+		[String]$Name,
+		[String]$Comment
+	){
+		$URIString = "https://$Gridmaster/wapi/$Script:WapiVersion/networkview"
+		$bodyhashtable = @{name=$Name}
+		If ($Comment){$bodyhashtable += @{comment=$Comment}}
+		$Return = Invoke-RestMethod -uri $URIString -Method Post -body $bodyhashtable -Credential $Credential
+		return [IB_NetworkView]::Get($gridmaster,$Credential,$return)
+	}
 	static [IB_networkview] Get (
 		[String]$Gridmaster,
 		[PSCredential]$Credential,

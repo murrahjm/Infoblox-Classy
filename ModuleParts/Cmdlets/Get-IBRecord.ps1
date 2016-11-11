@@ -50,7 +50,7 @@ Function Get-IBRecord{
     [CmdletBinding(DefaultParameterSetName='byObject')]
     Param(
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
-        [ValidateScript({If ($_){Test-connection -ComputerName $_ -Count 1 -Quiet}})]
+        [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
 		[String]$Gridmaster,
 
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]

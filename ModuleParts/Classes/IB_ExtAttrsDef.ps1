@@ -21,9 +21,9 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
     ){
         $URIString = "https://$GridMaster/wapi/$script:WapiVersion/extensibleattributedef"
         $BodyHashTable = @{name=$Name}
-        $bodyhashtable += @{type=$Type}
+        $bodyhashtable += @{type=$Type.ToUpper()}
         $bodyhashtable += @{comment=$comment}
-		$bodyhashtable += @{default_value=$DefaultValue}
+		if ($defaultvalue){$bodyhashtable += @{default_value=$DefaultValue}}
         $return = Invoke-RestMethod -Uri $URIString -Method Post -Body $BodyHashTable -Credential $Credential
 		If ($return) {
 			return [IB_ExtAttrsDef]::Get($GridMaster,$Credential,$return)
@@ -55,7 +55,6 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
         [String]$Name,
 		[String]$Type,
 		[String]$Comment,
-		[String]$DefaultValue,
         [Bool]$Strict,
         [Int]$MaxResults
     ){
@@ -66,13 +65,10 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
 			$URI += "name$Operator$Name&"
 		}
 		If ($Type){
-			$URI += "type=$Type&"
+			$URI += "type=$($Type.ToUpper())&"
 		}
 		If ($comment){
 			$URI += "comment$operator$comment&"
-		}
-		If ($DefaultValue){
-			$URI += "default_value=$DefaultValue&"
 		}
         If ($MaxResults){
 			$URI += "_max_results=$MaxResults&"
@@ -98,7 +94,7 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
         $URIString = "https://$($this.GridMaster)/wapi/$script:WapiVersion/$($this._ref)"
         $bodyHashTable = $null
         $bodyHashTable+=@{name=$Name}
-        $bodyHashTable+=@{type=$Type}
+        $bodyHashTable+=@{type=$Type.ToUpper()}
         $bodyHashTable+=@{comment=$comment}
 		$bodyHashTable+=@{default_value=$DefaultValue}
         If ($bodyHashTable){

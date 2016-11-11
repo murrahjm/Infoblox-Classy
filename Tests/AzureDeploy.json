@@ -1,0 +1,346 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualMachines_TestGridmaster_adminPassword": {
+      "type": "SecureString"
+    },
+    "virtualMachines_TestGridmaster_name": {
+      "defaultValue": "ib-gridmaster",
+      "type": "String"
+    },
+    "networkInterfaces_TestGridmaster_lan1_name": {
+      "defaultValue": "IB-LAN1",
+      "type": "String"
+    },
+    "networkInterfaces_TestGridmaster_mgmt_name": {
+      "defaultValue": "IB-mgmt",
+      "type": "String"
+    },
+    "networkSecurityGroups_TestGridmaster_securityGroup_name": {
+      "defaultValue": "IB-NSG1",
+      "type": "String"
+    },
+    "publicIPAddresses_infobloxpublic_name": {
+      "defaultValue": "IB-publicIP1",
+      "type": "String"
+    },
+    "virtualNetworks_InfobloxTest_name": {
+      "defaultValue": "IB-vnet1",
+      "type": "String"
+    },
+    "storageAccounts_infobloxstorage_name": {
+      "defaultValue": "ibteststorage",
+      "type": "String"
+    },
+    "location": {
+      "defaultvalue": "southcentralus",
+      "type": "string"
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('virtualMachines_TestGridmaster_name')]",
+      "apiVersion": "2015-06-15",
+      "location": "[parameters('location')]",
+      "plan": {
+        "name": "vnios-te-v1420",
+        "product": "infoblox-vnios-te-v1420",
+        "publisher": "infoblox"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_DS3"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "infoblox",
+            "offer": "infoblox-vnios-te-v1420",
+            "sku": "vnios-te-v1420",
+            "version": "800.343389.3"
+          },
+          "osDisk": {
+            "name": "[parameters('virtualMachines_TestGridmaster_name')]",
+            "createOption": "FromImage",
+            "vhd": {
+              "uri": "[concat('http', '://', parameters('storageAccounts_infobloxstorage_name'), '.blob.core.windows.net', concat('/disks/', parameters('virtualMachines_TestGridmaster_name'),'.vhd'))]"
+            },
+            "caching": "ReadWrite"
+          },
+          "dataDisks": []
+        },
+        "osProfile": {
+          "computerName": "[parameters('virtualMachines_TestGridmaster_name')]",
+          "adminUsername": "dpo4uxijbws4w",
+          "customData": "ZGVmYXVsdF9hZG1pbl9wYXNzd29yZDogUGFzc3dvcmQxMjM0CnRlbXBfbGljZW5zZTogdm5pb3MgZW50ZXJwcmlzZSBkbnMgY2xvdWQgDQo=",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false
+          },
+          "secrets": [],
+          "adminPassword": "[parameters('virtualMachines_TestGridmaster_adminPassword')]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_TestGridmaster_lan1_name'))]",
+              "properties": {
+                "primary": true
+              }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_TestGridmaster_mgmt_name'))]",
+              "properties": {
+                "primary": false
+              }
+            }
+          ]
+        }
+      },
+      "resources": [],
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_infobloxstorage_name'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_TestGridmaster_lan1_name'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_TestGridmaster_mgmt_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[parameters('networkInterfaces_TestGridmaster_lan1_name')]",
+      "apiVersion": "2016-03-30",
+      "location": "[parameters('location')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAddress": "10.0.0.4",
+              "privateIPAllocationMethod": "Static",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_infobloxpublic_name'))]"
+              },
+              "subnet": {
+                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_InfobloxTest_name')), '/subnets/lan1')]"
+              }
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableIPForwarding": true,
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_TestGridmaster_securityGroup_name'))]"
+        }
+      },
+      "resources": [],
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_infobloxpublic_name'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_InfobloxTest_name'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_TestGridmaster_securityGroup_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[parameters('networkInterfaces_TestGridmaster_mgmt_name')]",
+      "apiVersion": "2016-03-30",
+      "location": "[parameters('location')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAddress": "10.0.1.4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_InfobloxTest_name')), '/subnets/mgmt')]"
+              }
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableIPForwarding": true,
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_TestGridmaster_securityGroup_name'))]"
+        }
+      },
+      "resources": [],
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_InfobloxTest_name'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_TestGridmaster_securityGroup_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[parameters('networkSecurityGroups_TestGridmaster_securityGroup_name')]",
+      "apiVersion": "2016-03-30",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "SSH",
+            "properties": {
+              "description": "Allow SSH",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "DNS",
+            "properties": {
+              "description": "Allow DNS",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "53",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "HTTPS",
+            "properties": {
+              "description": "Allow HTTPS",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Grid_traffic_UDP_1194_in",
+            "properties": {
+              "description": "Allow vNIOS Grid traffic 1194 Inbound",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "1194",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 103,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Grid_traffic_UDP_2114_in",
+            "properties": {
+              "description": "Allow vNIOS Grid traffic 2114 Inbound",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "2114",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 104,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Grid_traffic_UDP_1194_out",
+            "properties": {
+              "description": "Allow vNIOS Grid traffic 1194 Outbound",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "1194",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 105,
+              "direction": "Outbound"
+            }
+          },
+          {
+            "name": "Grid_traffic_UDP_2114_out",
+            "properties": {
+              "description": "Allow vNIOS Grid traffic 2114 Outbound",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "2114",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 106,
+              "direction": "Outbound"
+            }
+          }
+        ]
+      },
+      "resources": [],
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[parameters('publicIPAddresses_infobloxpublic_name')]",
+      "apiVersion": "2016-03-30",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "idleTimeoutInMinutes": 4,
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('virtualMachines_TestGridmaster_name')]"
+        }
+      },
+      "resources": [],
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('virtualNetworks_InfobloxTest_name')]",
+      "apiVersion": "2016-03-30",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.0.0/16"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "lan1",
+            "properties": {
+              "addressPrefix": "10.0.0.0/24"
+            }
+          },
+          {
+            "name": "mgmt",
+            "properties": {
+              "addressPrefix": "10.0.1.0/24"
+            }
+          }
+        ]
+      },
+      "resources": [],
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "sku": {
+        "name": "Premium_LRS",
+        "tier": "Premium"
+      },
+      "kind": "Storage",
+      "name": "[parameters('storageAccounts_infobloxstorage_name')]",
+      "apiVersion": "2016-01-01",
+      "location": "[parameters('location')]",
+      "tags": {},
+      "properties": {},
+      "resources": [],
+      "dependsOn": []
+    }
+  ]
+}

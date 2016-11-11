@@ -8,6 +8,18 @@ Class IB_View : IB_ReferenceObject {
     [String] ToString () {
         return $this.name
     }
+	static [IB_View] Create(
+		[String]$Gridmaster,
+		[PSCredential]$Credential,
+		[String]$Name,
+		[String]$Comment
+	){
+		$URIString = "https://$Gridmaster/wapi/$Script:WapiVersion/view"
+		$bodyhashtable = @{name=$Name}
+		If ($Comment){$bodyhashtable += @{comment=$Comment}}
+		$Return = Invoke-RestMethod -uri $URIString -Method Post -body $bodyhashtable -Credential $Credential
+		return [IB_View]::Get($gridmaster,$Credential,$return)
+	}
 	static [IB_View] Get (
 		[String]$Gridmaster,
 		[PSCredential]$Credential,

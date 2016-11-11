@@ -48,7 +48,7 @@ Function Get-IBFixedAddress {
 	[CmdletBinding(DefaultParameterSetName = 'byQuery')]
 	Param(
         [Parameter(Mandatory=$True)]
-        [ValidateScript({If($_){Test-connection -ComputerName $_ -Count 1 -Quiet}})]
+        [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
         [ValidateNotNullorEmpty()]
         [String]$Gridmaster,
 
