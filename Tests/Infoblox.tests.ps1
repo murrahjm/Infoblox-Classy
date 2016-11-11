@@ -384,7 +384,16 @@ Describe "New-IBFixedAddress tests" {
 
 }
 Describe "Get-IBExtensibleAttributeDefinition tests" {
-	
+	It "Returns extensible attributes with specified refstring" {
+		$Ref = $script:Recordlist.where{$_._ref -like 'extensibleattributedef/*:site'}
+		$Result = Get-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Credential $Credential -_Ref $ref
+		$Result.GetType().Name | should be 'IB_ExtAttrDef'
+		$Result.Name | should be 'Site'
+	}
+	It "Returns all extensible attribute definitions" {
+		$Result = Get-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Credential $Credential
+		$Result.GetType().Name | should be 'IB_ExtAttrDef[]'
+	}
 }
 Describe "Get-IBView tests" {
 	It "Returns dnsview with specified refstring" {
