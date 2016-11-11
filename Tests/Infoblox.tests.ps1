@@ -3037,6 +3037,40 @@ Describe "Remove-IBView tests" {
 	
 }
 Describe "Remove-IBExtensibleAttributeDefinition tests" {
-	
+	It "Throws an error with an empty gridmaster" {
+		{Remove-IBExtensibleAttributeDefinition -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
+	}
+	It "THrows an error with empty ref parameter" {
+		{Remove-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Credential $Credential -_Ref} | should throw
+	}
+	It "Throws an error with invalid record object" {
+		{Remove-IBExtensibleAttributeDefinition -Record 'notadnsrecord'} | should throw
+	}
+	It "Throws an error with parameters from both sets" {
+		$Ref = $script:Recordlist.where{$_._ref -like "extensibleattributedef/*:EA2"}
+		$TestRecord = [IB_ExtAttrsDef]::Get($gridmaster,$Credential,$Ref)
+		{Remove-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Record $TestRecord} | should Throw
+	}
+	It "Throws an error with pipeline input object missing a ref property" {
+		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Remove-IBExtensibleAttributeDefinition -ea Stop} | should Throw
+	}
+	It "Deletes the record using byObject method" {
+		$Ref = $script:Recordlist.where{$_._ref -like "extensibleattributedef/*:EA2"}
+		$Record = [IB_ExtAttrsDef]::Get($gridmaster,$Credential,$Ref)
+		$Return = $Record | Remove-IBExtensibleAttributeDefinition -Confirm:$False
+		$TestRecord = [IB_ExtAttrsDef]::Get($gridmaster,$Credential,$Ref)
+		$Return.GetType().Name | Should be 'String'
+		$Return | should be $Ref
+		$TestRecord | should benullorempty
+	}
+	It "Deletes the record using byRef method" {
+		$Ref = $script:Recordlist.where{$_._ref -like "extensibleattributedef/*:EA3"}
+		$Return = Remove-IBExtensibleAttributeDefinition -Confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref
+		$TestRecord = [IB_ExtAttrsDef]::Get($gridmaster,$Credential,$Ref)
+		$Return.GetType().Name | Should be 'String'
+		$Return | should be $Ref
+		$TestRecord | should benullorempty
+	}
+
 }
 $Recordlist | %{Remove-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref -Confirm:$false}
