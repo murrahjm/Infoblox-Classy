@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 $SourceDir = $env:BUILD_SOURCESDIRECTORY
 $TempDir = $env:TEMP
 
-$Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.DomainNameLabel
+$Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn
 $Credential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $($env:AdminPassword | ConvertTo-SecureString -AsPlainText -Force)
 
 #
