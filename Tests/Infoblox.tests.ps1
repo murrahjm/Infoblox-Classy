@@ -592,25 +592,25 @@ Describe "Get-IBView tests" {
 		$result = Get-IBView -Gridmaster $gridmaster -Credential $Credential -Type DNSView -Name 'view'
 		$result.count | should be 4
 		#
-		$Result[0].GetType().Name | should be 'IB_View'
-		$Result[0].Name | should be 'view2'
-		$Result[0].comment | should be 'Second View'
-		$Result[0].is_default | should be $False
-		#
-		$Result[1].GetType().Name | should be 'IB_View'
-		$Result[1].Name | should be 'view3'
-		$Result[1].comment | should be 'Third View'
-		$Result[1].is_default | should be $False
-		#
 		$Result[2].GetType().Name | should be 'IB_View'
-		$Result[2].Name | should be 'default.networkview2'
+		$Result[2].Name | should be 'view2'
 		$Result[2].comment | should be 'Second View'
 		$Result[2].is_default | should be $False
 		#
 		$Result[3].GetType().Name | should be 'IB_View'
-		$Result[3].Name | should be 'default.networkview3'
+		$Result[3].Name | should be 'view3'
 		$Result[3].comment | should be 'Third View'
 		$Result[3].is_default | should be $False
+		#
+		$Result[0].GetType().Name | should be 'IB_View'
+		$Result[0].Name | should be 'default.networkview2'
+		$Result[0].comment | should be 'Second View'
+		$Result[0].is_default | should be $False
+		#
+		$Result[1].GetType().Name | should be 'IB_View'
+		$Result[1].Name | should be 'default.networkview3'
+		$Result[1].comment | should be 'Third View'
+		$Result[1].is_default | should be $False
 	}
 	It "Returns network views with non-strict name search" {
 		$result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView -Name 'networkview'
@@ -971,7 +971,7 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.Name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
-		$TestRecord.Comment | should be 'test comment'
+		$TestRecord.Comment | should benullorempty
 		$TestRecord._ref | should be $Ref
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
@@ -982,7 +982,7 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.Name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
-		$TestRecord.Comment | should be 'test comment'
+		$TestRecord.Comment | should benullorempty
 		$TestRecord.TTL | should be 1200
 		$TestRecord.Use_TTL | should be $True
 	}
@@ -994,7 +994,7 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[0].Name | should be 'testrecord.domain.com'
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '12.12.1.1'
-		$TestRecord[0].Comment | should be 'test comment'
+		$TestRecord[0].Comment | should benullorempty
 		$TestRecord[0].TTL | should be 1200
 		$TestRecord[0].Use_TTL | should be $True
 		#
@@ -1010,7 +1010,7 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[2].Name | should be 'testrecord2.domain.com'
 		$TestRecord[2].View | should be 'view3'
 		$TestRecord[2].IPAddress | should be '12.12.2.2'
-		$TestRecord[2].Comment | should benullorempty
+		$TestRecord[2].Comment | should be 'test comment'
 		$TestRecord[2].TTL | should be 0
 		$TestRecord[2].Use_TTL | should be $False
 
@@ -1079,9 +1079,7 @@ Describe "Get-IBDNSARecord tests" {
 	It "Returns A record from strict comment query" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -comment 'test comment' -strict
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord.Name | should be 'testrecord.domain.com'
-		$TestRecord.extattrib.Name | should be 'Site'
-		$TestRecord.extattrib.Value | should be 'corp'
+		$TestRecord.Name | should be 'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should be 'test comment'
@@ -3026,19 +3024,17 @@ Describe "Remove-IBDNSZone tests" {
 	It "deletes zone using byRef method" {
 		$Ref = $Script:recordlist.where{$_._ref -like "zone_auth/*:domain.com/default"}._ref
 		$Return = Remove-IBDNSZone -confirm:$False -gridmaster $Gridmaster -credential $Credential -_ref $Ref
-		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should Throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 	It "deletes zone using object through pipeline" {
 		$Ref = $Script:recordlist.where{$_._ref -like "zone_auth/*:12.0.0.0*8/view2"}._ref
 		$Record = get-IBDNSZone -gridmaster $Gridmaster -credential $Credential -_ref $Ref
 		$Return = $Record | Remove-IBDNSZone -confirm:$False
-		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 	It "deletes multiple zones through pipeline"{
 		Get-IBDNSZone -gridmaster $Gridmaster -credential $Credential -fqdn domain.com | remove-ibdnszone -confirm:$False
@@ -3049,7 +3045,7 @@ Describe "Remove-IBDNSZone tests" {
 		$zones | %{
 			$Result = Remove-IBdnszone -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref -confirm:$False
 			$Result | should be $_._ref
-			get-ibdnszone -gridmaster $Gridmaster -credential $credential -_ref $_._ref | should benullorempty
+			{get-ibdnszone -gridmaster $Gridmaster -credential $credential -_ref $_._ref} | should Throw
 		}
 	}
 }
