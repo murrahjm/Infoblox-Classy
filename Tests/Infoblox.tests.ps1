@@ -514,12 +514,12 @@ Describe "Get-IBView tests" {
 		#
 		$Result[2].GetType().Name | should be 'IB_View'
 		$Result[2].Name | should be 'default.networkview2'
-		$Result[2].comment | should be 'Second View'
+		$Result[2].comment | should benullorempty
 		$Result[2].is_default | should be $False
 		#
 		$Result[3].GetType().Name | should be 'IB_View'
 		$Result[3].Name | should be 'default.networkview3'
-		$Result[3].comment | should be 'Third View'
+		$Result[3].comment | should benullorempty
 		$Result[3].is_default | should be $False
 	}
 	It "Throws error with invalid Type value" {
@@ -547,11 +547,11 @@ Describe "Get-IBView tests" {
 		$Result[3].GetType().Name | should be 'IB_View'
 		$Result[3].Name | should be 'default.networkview2'
 		$Result[3].comment | should benullorempty
-		$Result[3].is_default | should be $True
+		$Result[3].is_default | should be $False
 		#
 		$Result[4].GetType().Name | should be 'IB_View'
 		$Result[4].Name | should be 'default.networkview3'
-		$Result[4].comment | should be 'Second View'
+		$Result[4].comment | should benullorempty
 		$Result[4].is_default | should be $False
 
 	}
@@ -575,14 +575,14 @@ Describe "Get-IBView tests" {
 		$Result[2].is_default | should be $False
 	}
 	It "Returns dns view with specified name parameter" {
-		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView -Name 'default'
+		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView -Name 'default' -Strict
 		$Result[0].GetType().Name | should be 'IB_View'
 		$Result.Name | should be 'default'
 		$Result.comment | should benullorempty
 		$Result.is_default | should be $True
 	}
 	It "Returns network view with specified name parameter" {
-		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView -Name 'default'
+		$Result = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type NetworkView -Name 'default' -Strict
 		$Result.GetType().Name | should be 'IB_NetworkView'
 		$Result.Name | should be 'default'
 		$Result.comment | should benullorempty
@@ -970,8 +970,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
-		$TestRecord.extattrib.Name | should be 'Site'
-		$TestRecord.extattrib.Value | should be 'corp'
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should be 'test comment'
 		$TestRecord._ref | should be $Ref
@@ -983,8 +981,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
-		$TestRecord.extattrib.Name | should be 'Site'
-		$TestRecord.extattrib.Value | should be 'corp'
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should be 'test comment'
 		$TestRecord.TTL | should be 1200
@@ -996,8 +992,6 @@ Describe "Get-IBDNSARecord tests" {
 		#
 		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord[0].Name | should be 'testrecord.domain.com'
-		$TestRecord[0].extattrib.Name | should be 'Site'
-		$TestRecord[0].extattrib.Value | should be 'corp'
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '12.12.1.1'
 		$TestRecord[0].Comment | should be 'test comment'
@@ -1005,8 +999,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[0].Use_TTL | should be $True
 		#
 		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[1].extattrib.Name | should be 'Site'
-		$TestRecord[1].extattrib.Value | should be 'corp'
 		$TestRecord[1].Name | should be 'testrecord3.domain.com'
 		$TestRecord[1].View | should be 'default'
 		$TestRecord[1].IPAddress | should be '12.12.1.1'
@@ -1029,8 +1021,6 @@ Describe "Get-IBDNSARecord tests" {
 		#
 		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord[0].Name | should be 'testrecord.domain.com'
-		$TestRecord[0].extattrib.Name | should be 'Site'
-		$TestRecord[0].extattrib.Value | should be 'corp'
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '12.12.1.1'
 		$TestRecord[0].Comment | should be 'test comment'
@@ -1039,8 +1029,6 @@ Describe "Get-IBDNSARecord tests" {
 		#
 		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord[1].Name | should be 'testrecord3.domain.com'
-		$TestRecord[1].extattrib.Name | should be 'Site'
-		$TestRecord[1].extattrib.Value | should be 'corp'
 		$TestRecord[1].View | should be 'default'
 		$TestRecord[1].IPAddress | should be '12.12.1.1'
 		$TestRecord[1].Comment | should be 'test comment 2'
@@ -1062,8 +1050,6 @@ Describe "Get-IBDNSARecord tests" {
 		#
 		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord[0].Name | should be 'testrecord.domain.com'
-		$TestRecord[0].extattrib.Name | should be 'Site'
-		$TestRecord[0].extattrib.Value | should be 'corp'
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '12.12.1.1'
 		$TestRecord[0].Comment | should be 'test comment'
@@ -1072,8 +1058,6 @@ Describe "Get-IBDNSARecord tests" {
 		#
 		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord[1].Name | should be 'testrecord3.domain.com'
-		$TestRecord[1].extattrib.Name | should be 'Site'
-		$TestRecord[1].extattrib.Value | should be 'corp'
 		$TestRecord[1].View | should be 'default'
 		$TestRecord[1].IPAddress | should be '12.12.1.1'
 		$TestRecord[1].Comment | should be 'test comment 2'
@@ -1111,8 +1095,6 @@ Describe "Get-IBDNSARecord tests" {
 		#
 		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord[0].Name | should be 'testrecord.domain.com'
-		$TestRecord[0].extattrib.Name | should be 'Site'
-		$TestRecord[0].extattrib.Value | should be 'corp'
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '12.12.1.1'
 		$TestRecord[0].Comment | should be 'test comment'
@@ -1122,8 +1104,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord[1].Name | should be 'testrecord3.domain.com'
 		$TestRecord[1].View | should be 'default'
-		$TestRecord[1].extattrib.Name | should be 'Site'
-		$TestRecord[1].extattrib.Value | should be 'corp'
 		$TestRecord[1].IPAddress | should be '12.12.1.1'
 		$TestRecord[1].Comment | should be 'test comment 2'
 		$TestRecord[1].TTL | should be 1200
@@ -1135,8 +1115,6 @@ Describe "Get-IBDNSARecord tests" {
 		#
 		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord[0].Name | should be 'testrecord.domain.com'
-		$TestRecord[0].extattrib.Name | should be 'Site'
-		$TestRecord[0].extattrib.Value | should be 'corp'
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '12.12.1.1'
 		$TestRecord[0].Comment | should be 'test comment'
@@ -1146,8 +1124,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord[1].Name | should be 'testrecord3.domain.com'
 		$TestRecord[1].View | should be 'default'
-		$TestRecord[1].extattrib.Name | should be 'Site'
-		$TestRecord[1].extattrib.Value | should be 'corp'
 		$TestRecord[1].IPAddress | should be '12.12.1.1'
 		$TestRecord[1].Comment | should be 'test comment 2'
 		$TestRecord[1].TTL | should be 1200
@@ -1157,8 +1133,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord = Get-IBDNSARecord -credential $Credential -gridmaster $Gridmaster -name 'testrecord' -comment 'test comment 2'
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be 'testrecord3.domain.com'
-		$TestRecord.extattrib.Name | should be 'Site'
-		$TestRecord.extattrib.Value | should be 'corp'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should be 'test comment 2'
@@ -1169,8 +1143,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -name 'testrecord.domain.com' -ipaddress '12.12.1.1' -Strict
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be 'testrecord.domain.com'
-		$TestRecord.extattrib.Name | should be 'Site'
-		$TestRecord.extattrib.Value | should be 'corp'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should be 'test comment'
@@ -1181,8 +1153,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -name 'testrecord.domain.com' -view 'default' -strict
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be 'testrecord.domain.com'
-		$TestRecord.extattrib.Name | should be 'Site'
-		$TestRecord.extattrib.Value | should be 'corp'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should be 'test comment'
@@ -1193,8 +1163,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -name 'testrecord.domain.com' -zone 'domain.com' -strict
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be 'testrecord.domain.com'
-		$TestRecord.extattrib.Name | should be 'Site'
-		$TestRecord.extattrib.Value | should be 'corp'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should be 'test comment'
@@ -1206,8 +1174,6 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $Credential -name 'testrecord' -maxResults 1
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.Name | should be 'testrecord.domain.com'
-		$TestRecord.extattrib.Name | should be 'Site'
-		$TestRecord.extattrib.Value | should be 'corp'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should be 'test comment'
@@ -1229,8 +1195,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -_Ref $Ref
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias.Name | should be 'testalias.domain.com'
-			$Testalias.extattrib.Name | should be 'Site'
-			$Testalias.extattrib.Value | should be 'corp'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
@@ -1242,8 +1206,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias.domain.com' -strict
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias.Name | should be 'testalias.domain.com'
-			$Testalias.extattrib.Name | should be 'Site'
-			$Testalias.extattrib.Value | should be 'corp'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
@@ -1256,8 +1218,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[0].Name | should be 'testalias.domain.com'
-			$Testalias[0].extattrib.Name | should be 'Site'
-			$Testalias[0].extattrib.Value | should be 'corp'
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
@@ -1266,8 +1226,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[1].Name | should be 'testalias3.domain.com'
-			$Testalias[1].extattrib.Name | should be 'Site'
-			$Testalias[1].extattrib.Value | should be 'corp'
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
@@ -1289,8 +1247,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[0].Name | should be 'testalias.domain.com'
-			$Testalias[0].extattrib.Name | should be 'Site'
-			$Testalias[0].extattrib.Value | should be 'corp'
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
@@ -1299,8 +1255,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[1].Name | should be 'testalias3.domain.com'
-			$Testalias[1].extattrib.Name | should be 'Site'
-			$Testalias[1].extattrib.Value | should be 'corp'
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
@@ -1322,8 +1276,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[0].Name | should be 'testalias.domain.com'
-			$Testalias[0].extattrib.Name | should be 'Site'
-			$Testalias[0].extattrib.Value | should be 'corp'
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
@@ -1332,8 +1284,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[1].Name | should be 'testalias3.domain.com'
-			$Testalias[1].extattrib.Name | should be 'Site'
-			$Testalias[1].extattrib.Value | should be 'corp'
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
@@ -1355,8 +1305,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[0].Name | should be 'testalias.domain.com'
-			$Testalias[0].extattrib.Name | should be 'Site'
-			$Testalias[0].extattrib.Value | should be 'corp'
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
@@ -1365,8 +1313,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[1].Name | should be 'testalias3.domain.com'
-			$Testalias[1].extattrib.Name | should be 'Site'
-			$Testalias[1].extattrib.Value | should be 'corp'
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
@@ -1388,8 +1334,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 		It "Returns CName Record from strict comment query" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -comment 'test comment' -strict
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$Testalias.extattrib.Name | should be 'Site'
-			$Testalias.extattrib.Value | should be 'corp'
 			$testalias.Name | should be 'testalias.domain.com'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
@@ -1404,8 +1348,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[0].Name | should be 'testalias.domain.com'
-			$Testalias[0].extattrib.Name | should be 'Site'
-			$Testalias[0].extattrib.Value | should be 'corp'
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
@@ -1414,8 +1356,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[1].Name | should be 'testalias3.domain.com'
-			$Testalias[1].extattrib.Name | should be 'Site'
-			$Testalias[1].extattrib.Value | should be 'corp'
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
@@ -1428,8 +1368,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[0].Name | should be 'testalias.domain.com'
-			$Testalias[0].extattrib.Name | should be 'Site'
-			$Testalias[0].extattrib.Value | should be 'corp'
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
 			$testalias[0].Comment | should be 'test comment'
@@ -1438,8 +1376,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			#
 			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[1].Name | should be 'testalias3.domain.com'
-			$Testalias[1].extattrib.Name | should be 'Site'
-			$Testalias[1].extattrib.Value | should be 'corp'
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
 			$testalias[1].Comment | should be 'test comment 2'
@@ -1450,8 +1386,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias' -comment 'test comment 2'
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias.Name | should be 'testalias3.domain.com'
-			$Testalias.extattrib.Name | should be 'Site'
-			$Testalias.extattrib.Value | should be 'corp'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment 2'
@@ -1462,8 +1396,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias.domain.com' -canonical 'testrecord.domain.com' -strict
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias.Name | should be 'testalias.domain.com'
-			$Testalias.extattrib.Name | should be 'Site'
-			$Testalias.extattrib.Value | should be 'corp'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
@@ -1474,8 +1406,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias.domain.com' -view 'default' -strict
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias.Name | should be 'testalias.domain.com'
-			$Testalias.extattrib.Name | should be 'Site'
-			$Testalias.extattrib.Value | should be 'corp'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
@@ -1486,8 +1416,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias.domain.com' -zone 'domain.com' -strict
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias.Name | should be 'testalias.domain.com'
-			$Testalias.extattrib.Name | should be 'Site'
-			$Testalias.extattrib.Value | should be 'corp'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
@@ -1499,8 +1427,6 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias' -maxresults 1
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias.Name | should be 'testalias.domain.com'
-			$Testalias.extattrib.Name | should be 'Site'
-			$Testalias.extattrib.Value | should be 'corp'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
@@ -1526,8 +1452,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $Ref
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.extattrib.Name | should be 'Site'
-			$TestRecord.extattrib.Value | should be 'corp'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
@@ -1540,8 +1464,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -name '1.1.12.12.in-addr.arpa' -strict
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.extattrib.Name | should be 'Site'
-			$TestRecord.extattrib.Value | should be 'corp'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
@@ -1555,8 +1477,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].extattrib.Name | should be 'Site'
-			$TestRecord[0].extattrib.Value | should be 'corp'
 			$TestRecord[0].View | should be 'default'
 			$TestRecord[0].IPAddress | should be '12.12.1.1'
 			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
@@ -1566,8 +1486,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].extattrib.Name | should be 'Site'
-			$TestRecord[1].extattrib.Value | should be 'corp'
 			$TestRecord[1].View | should be 'default'
 			$TestRecord[1].IPAddress | should be '12.12.3.4'
 			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
@@ -1590,8 +1508,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].extattrib.Name | should be 'Site'
-			$TestRecord[0].extattrib.Value | should be 'corp'
 			$TestRecord[0].View | should be 'default'
 			$TestRecord[0].IPAddress | should be '12.12.1.1'
 			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
@@ -1601,8 +1517,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].extattrib.Name | should be 'Site'
-			$TestRecord[1].extattrib.Value | should be 'corp'
 			$TestRecord[1].View | should be 'default'
 			$TestRecord[1].IPAddress | should be '12.12.3.4'
 			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
@@ -1616,8 +1530,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].extattrib.Name | should be 'Site'
-			$TestRecord[0].extattrib.Value | should be 'corp'
 			$TestRecord[0].View | should be 'default'
 			$TestRecord[0].IPAddress | should be '12.12.1.1'
 			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
@@ -1627,8 +1539,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].extattrib.Name | should be 'Site'
-			$TestRecord[1].extattrib.Value | should be 'corp'
 			$TestRecord[1].View | should be 'default'
 			$TestRecord[1].IPAddress | should be '12.12.3.4'
 			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
@@ -1652,8 +1562,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].extattrib.Name | should be 'Site'
-			$TestRecord[0].extattrib.Value | should be 'corp'
 			$TestRecord[0].View | should be 'default'
 			$TestRecord[0].IPAddress | should be '12.12.1.1'
 			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
@@ -1663,8 +1571,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].extattrib.Name | should be 'Site'
-			$TestRecord[1].extattrib.Value | should be 'corp'
 			$TestRecord[1].View | should be 'default'
 			$TestRecord[1].IPAddress | should be '12.12.3.4'
 			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
@@ -1686,8 +1592,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ipaddress '12.12.1.1'
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.extattrib.Name | should be 'Site'
-			$TestRecord.extattrib.Value | should be 'corp'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
@@ -1711,8 +1615,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'test comment' -strict
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.extattrib.Name | should be 'Site'
-			$TestRecord.extattrib.Value | should be 'corp'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
@@ -1727,8 +1629,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].extattrib.Name | should be 'Site'
-			$TestRecord[0].extattrib.Value | should be 'corp'
 			$TestRecord[0].View | should be 'default'
 			$TestRecord[0].IPAddress | should be '12.12.1.1'
 			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
@@ -1738,8 +1638,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].extattrib.Name | should be 'Site'
-			$TestRecord[1].extattrib.Value | should be 'corp'
 			$TestRecord[1].View | should be 'default'
 			$TestRecord[1].IPAddress | should be '12.12.3.4'
 			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
@@ -1753,8 +1651,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].extattrib.Name | should be 'Site'
-			$TestRecord[0].extattrib.Value | should be 'corp'
 			$TestRecord[0].View | should be 'default'
 			$TestRecord[0].IPAddress | should be '12.12.1.1'
 			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
@@ -1764,8 +1660,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			#
 			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].extattrib.Name | should be 'Site'
-			$TestRecord[1].extattrib.Value | should be 'corp'
 			$TestRecord[1].View | should be 'default'
 			$TestRecord[1].IPAddress | should be '12.12.3.4'
 			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
@@ -1777,8 +1671,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ptrdname 'testrecord' -comment 'test comment 2'
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.extattrib.Name | should be 'Site'
-			$TestRecord.extattrib.Value | should be 'corp'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.3.4'
 			$TestRecord.Name | should be '4.3.12.12.in-addr.arpa'
@@ -1790,8 +1682,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ptrdname 'testrecord.domain.com' -ipaddress '12.12.1.1' -strict
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.extattrib.Name | should be 'Site'
-			$TestRecord.extattrib.Value | should be 'corp'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
@@ -1802,8 +1692,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 		It "Returns PTR Record from strict name and view query" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -name '1.1.12.12.in-addr.arpa' -view 'default' -strict
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.extattrib.Name | should be 'Site'
-			$TestRecord.extattrib.Value | should be 'corp'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
@@ -1816,8 +1704,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -name '1.1.12.12.in-addr.arpa' -zone 'domain.com' -strict
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.extattrib.Name | should be 'Site'
-			$TestRecord.extattrib.Value | should be 'corp'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
@@ -1830,8 +1716,6 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ptrdname 'testrecord' -maxresults 1
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.extattrib.Name | should be 'Site'
-			$TestRecord.extattrib.Value | should be 'corp'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
@@ -1859,8 +1743,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return.GetType().Name | should be 'IB_FixedAddress'
 			$Return._ref | should be $Ref
 			$Return.name | should be 'testrecord.domain.com'
-			$Return.extattrib.Name | should be 'Site'
-			$Return.extattrib.Value | should be 'corp'
 			$Return.IPAddress | should be '12.12.1.1'
 			$Return.comment | should be 'test comment'
 			$Return.networkview | should be 'default'
@@ -1873,8 +1755,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return[0].GetType().Name | should be 'IB_FixedAddress'
 			$Return[0].name | should be 'testrecord.domain.com'
 			$Return[0].IPAddress | should be '12.12.1.1'
-			$Return[0].extattrib.Name | should be 'Site'
-			$Return[0].extattrib.Value | should be 'corp'
 			$Return[0].comment | should be 'test comment'
 			$Return[0].networkview | should be 'default'
 			$Return[0].MAC | should be '00:00:00:00:00:00'
@@ -1908,8 +1788,6 @@ Describe "Get-IBFixedAddress tests" {
 			#
 			$Return[0].GetType().Name | should be 'IB_FixedAddress'
 			$Return[0].name | should be 'testrecord.domain.com'
-			$Return[0].extattrib.Name | should be 'Site'
-			$Return[0].extattrib.Value | should be 'corp'
 			$Return[0].IPAddress | should be '12.12.1.1'
 			$Return[0].comment | should be 'test comment'
 			$Return[0].networkview | should be 'default'
@@ -1928,8 +1806,6 @@ Describe "Get-IBFixedAddress tests" {
 			#
 			$Return[0].GetType().Name | should be 'IB_FixedAddress'
 			$Return[0].name | should be 'testrecord.domain.com'
-			$Return[0].extattrib.Name | should be 'Site'
-			$Return[0].extattrib.Value | should be 'corp'
 			$Return[0].IPAddress | should be '12.12.1.1'
 			$Return[0].comment | should be 'test comment'
 			$Return[0].networkview | should be 'default'
@@ -1946,8 +1822,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -comment 'test comment' -Strict
 			$Return.GetType().Name | should be 'IB_FixedAddress'
 			$Return.name | should be 'testrecord.domain.com'
-			$Return.extattrib.Name | should be 'Site'
-			$Return.extattrib.Value | should be 'corp'
 			$Return.IPAddress | should be '12.12.1.1'
 			$Return.comment | should be 'test comment'
 			$Return.networkview | should be 'default'
@@ -1957,8 +1831,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -ExtAttributeQuery {Site -eq 'corp'}
 			$Return.GetType().Name | should be 'IB_FixedAddress'
 			$Return.name | should be 'testrecord.domain.com'
-			$Return.extattrib.Name | should be 'Site'
-			$Return.extattrib.Value | should be 'corp'
 			$Return.IPAddress | should be '12.12.1.1'
 			$Return.comment | should be 'test comment'
 			$Return.networkview | should be 'default'
@@ -1970,8 +1842,6 @@ Describe "Get-IBFixedAddress tests" {
 			#
 			$Return[0].GetType().Name | should be 'IB_FixedAddress'
 			$Return[0].name | should be 'testrecord.domain.com'
-			$Return[0].extattrib.Name | should be 'Site'
-			$Return[0].extattrib.Value | should be 'corp'
 			$Return[0].IPAddress | should be '12.12.1.1'
 			$Return[0].comment | should be 'test comment'
 			$Return[0].networkview | should be 'default'
@@ -1988,8 +1858,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -IPAddress '12.12.1.1' -mac '00:00:00:00:00:00'
 			$Return.GetType().Name | should be 'IB_FixedAddress'
 			$Return.name | should be 'testrecord.domain.com'
-			$Return.extattrib.Name | should be 'Site'
-			$Return.extattrib.Value | should be 'corp'
 			$Return.IPAddress | should be '12.12.1.1'
 			$Return.comment | should be 'test comment'
 			$Return.networkview | should be 'default'
@@ -1999,8 +1867,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -IPAddress '12.12.1.1' -networkview 'default'
 			$Return.GetType().Name | should be 'IB_FixedAddress'
 			$Return.name | should be 'testrecord.domain.com'
-			$Return.extattrib.Name | should be 'Site'
-			$Return.extattrib.Value | should be 'corp'
 			$Return.IPAddress | should be '12.12.1.1'
 			$Return.comment | should be 'test comment'
 			$Return.networkview | should be 'default'
@@ -2010,8 +1876,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -IPAddress '12.12.1.1' -comment 'test comment' -Networkview 'default'
 			$Return.GetType().Name | should be 'IB_FixedAddress'
 			$Return.name | should be 'testrecord.domain.com'
-			$Return.extattrib.Name | should be 'Site'
-			$Return.extattrib.Value | should be 'corp'
 			$Return.IPAddress | should be '12.12.1.1'
 			$Return.comment | should be 'test comment'
 			$Return.networkview | should be 'default'
@@ -2021,8 +1885,6 @@ Describe "Get-IBFixedAddress tests" {
 			$Return = Get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -maxresults 1
 			$Return.GetType().Name | should be 'IB_FixedAddress'
 			$Return.name | should be 'testrecord.domain.com'
-			$Return.extattrib.Name | should be 'Site'
-			$Return.extattrib.Value | should be 'corp'
 			$Return.IPAddress | should be '12.12.1.1'
 			$Return.comment | should be 'test comment'
 			$Return.networkview | should be 'default'
@@ -3139,7 +3001,7 @@ Describe "Remove-IBNetwork tests" {
 		$TestRecord | should benullorempty
 	}
 	It "deletes network using object through pipeline" {
-		$Ref = $Script:recordlist.where{$_._ref -like "network/*:12.12.0.0/16/networkview3"}._ref
+		$Ref = $Script:recordlist.where{$_._ref -like "network/*:12.12.0.0*16/networkview3"}._ref
 		$Record = get-IBNetwork -gridmaster $Gridmaster -credential $Credential -_ref $Ref
 		$Return = $Record | Remove-IBNetwork -confirm:$False
 		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
@@ -3154,7 +3016,7 @@ Describe "Remove-IBNetwork tests" {
 	It "deletes multiple parent networks through byRef method" {
 		$networks = get-ibnetwork -gridmaster $Gridmaster -credential $Credential -network 12.0.0.0/8
 		$Networks | %{
-			$Result = Remove-IBNetwork -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref
+			$Result = Remove-IBNetwork -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref -confirm:$False
 			$Result | should be $_._ref
 			get-ibnetwork -gridmaster $Gridmaster -credential $credential -_ref $_._ref | should benullorempty
 		}
@@ -3170,7 +3032,7 @@ Describe "Remove-IBDNSZone tests" {
 		$TestRecord | should benullorempty
 	}
 	It "deletes zone using object through pipeline" {
-		$Ref = $Script:recordlist.where{$_._ref -like "zone_auth/*:12.0.0.0/8/view2"}._ref
+		$Ref = $Script:recordlist.where{$_._ref -like "zone_auth/*:12.0.0.0*8/view2"}._ref
 		$Record = get-IBDNSZone -gridmaster $Gridmaster -credential $Credential -_ref $Ref
 		$Return = $Record | Remove-IBDNSZone -confirm:$False
 		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
@@ -3178,14 +3040,14 @@ Describe "Remove-IBDNSZone tests" {
 		$Return | should be $Ref
 		$TestRecord | should benullorempty
 	}
-	It "deletes multiple networks through pipeline"{
+	It "deletes multiple zones through pipeline"{
 		Get-IBDNSZone -gridmaster $Gridmaster -credential $Credential -fqdn domain.com | remove-ibdnszone -confirm:$False
 		Get-IBDNSZone -gridmaster $Gridmaster -credential $Credential -fqdn domain.com | should benullorempty
 	}
-	It "deletes multiple parent networks through byRef method" {
-		$networks = get-ibdnszone -gridmaster $Gridmaster -credential $Credential -view default
-		$Networks | %{
-			$Result = Remove-IBdnszone -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref
+	It "deletes multiple zones through byRef method" {
+		$zones = get-ibdnszone -gridmaster $Gridmaster -credential $Credential -view default
+		$zones | %{
+			$Result = Remove-IBdnszone -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref -confirm:$False
 			$Result | should be $_._ref
 			get-ibdnszone -gridmaster $Gridmaster -credential $credential -_ref $_._ref | should benullorempty
 		}
