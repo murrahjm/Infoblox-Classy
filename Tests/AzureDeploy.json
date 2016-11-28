@@ -30,7 +30,7 @@
       "type": "String"
     },
     "storageAccounts_infobloxstorage_name": {
-      "defaultValue": "ibteststorage",
+      "defaultValue": "ibcmdlettestingstorage",
       "type": "String"
     },
     "location": {

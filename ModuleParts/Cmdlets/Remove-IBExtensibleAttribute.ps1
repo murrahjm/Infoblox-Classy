@@ -52,7 +52,7 @@ Function Remove-IBExtensibleAttribute {
         
         [Parameter(Mandatory=$True,ValueFromPipeline=$True,ParameterSetName='byObjectEAName')]
         [Parameter(Mandatory=$True,ValueFromPipeline=$True,ParameterSetName='byObjectAll')]
-        [IB_DNSARecord[]]$Record,
+        [object[]]$Record,
 
 		[Parameter(Mandatory=$True, ParameterSetName='byRefEAName')]
 		[Parameter(Mandatory=$True, ParameterSetName='byObjectEAName')]
