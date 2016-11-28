@@ -3,7 +3,7 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "virtualMachines_TestGridmaster_adminPassword": {
-      "type": "SecureString"
+      "type": "String"
     },
     "virtualMachines_TestGridmaster_name": {
       "defaultValue": "ib-gridmaster",
