@@ -599,7 +599,7 @@ Describe "Get-IBView tests" {
 		#
 		$Result[3].GetType().Name | should be 'IB_View'
 		$Result[3].Name | should be 'view3'
-		$Result[3].comment | should be 'Third View'
+		$Result[3].comment | should benullorempty
 		$Result[3].is_default | should be $False
 		#
 		$Result[0].GetType().Name | should be 'IB_View'
@@ -609,7 +609,7 @@ Describe "Get-IBView tests" {
 		#
 		$Result[1].GetType().Name | should be 'IB_View'
 		$Result[1].Name | should be 'default.networkview3'
-		$Result[1].comment | should be 'Third View'
+		$Result[1].comment | should benullorempty
 		$Result[1].is_default | should be $False
 	}
 	It "Returns network views with non-strict name search" {
@@ -2993,19 +2993,17 @@ Describe "Remove-IBNetwork tests" {
 	It "deletes network using byRef method" {
 		$Ref = $Script:recordlist.where{$_._ref -like "network/*:192.168.1.0/24/networkview2"}._ref
 		$Return = Remove-IBNetwork -confirm:$False -gridmaster $Gridmaster -credential $Credential -_ref $Ref
-		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 	It "deletes network using object through pipeline" {
 		$Ref = $Script:recordlist.where{$_._ref -like "network/*:12.12.0.0*16/networkview3"}._ref
 		$Record = get-IBNetwork -gridmaster $Gridmaster -credential $Credential -_ref $Ref
 		$Return = $Record | Remove-IBNetwork -confirm:$False
-		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 	It "deletes multiple networks through pipeline"{
 		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -network 12.12.0.0/16 | remove-ibnetwork -confirm:$False
@@ -3016,7 +3014,7 @@ Describe "Remove-IBNetwork tests" {
 		$Networks | %{
 			$Result = Remove-IBNetwork -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref -confirm:$False
 			$Result | should be $_._ref
-			get-ibnetwork -gridmaster $Gridmaster -credential $credential -_ref $_._ref | should benullorempty
+			{get-ibnetwork -gridmaster $Gridmaster -credential $credential -_ref $_._ref} | should throw
 		}
 	}
 }
