@@ -31,4 +31,4 @@ Import-Module $modulePath -DisableNameChecking
  
 $outputFile = "$SourceDir\$TestName-pester.xml"
  
-Invoke-Pester -Script "$SourceDir\$TestName.tests.ps1" -PassThru -OutputFile $outputFile -OutputFormat NUnitXml -EnableExit
+Invoke-Pester -Script "$SourceDir\tests\$TestName.tests.ps1" -PassThru -OutputFile $outputFile -OutputFormat NUnitXml -EnableExit
