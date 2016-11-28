@@ -39,7 +39,7 @@ $Credential = new-object -TypeName system.management.automation.pscredential -Ar
 $Recordlist = @()
 Describe "Test-Gridmaster" {
 	It "Tests accessibility to infoblox gridmaster" {
-		Test-IBGridMaster -gridmaster $Gridmaster -quiet | should be $True
+		Test-IBGridMaster -gridmaster $Gridmaster | should be $True
 	}
 }
 Describe "New-IBExtensibleAttributeDefinition tests" {
