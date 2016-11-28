@@ -4,22 +4,13 @@
 # You can download Pester from http://go.microsoft.com/fwlink/?LinkID=534084
 #
 $ErrorActionPreference = 'Stop'
-$ScriptLocation = Split-Path -parent $MyInvocation.MyCommand.Definition
-$Scripts = Get-ChildItem "$ScriptLocation\..\ModuleParts" -Filter *.ps1 -Recurse
-$Scripts | get-content | out-file -FilePath "$($env:TEMP)\infoblox.ps1"
-. "$($env:TEMP)\infoblox.ps1"
-remove-item "$($env:TEMP)\infoblox.ps1"
-$scripts | %{. $_.FullName}
+$SourceDir = $env:BUILD_SOURCESDIRECTORY
+$TempDir = $env:TEMP
+
+$Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.DomainNameLabel
+$Credential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $env:AdminPassword | ConvertTo-SecureString -AsPlainText -Force)
+
 #
-Try {
-	Get-AzureRmContext -ea 'Stop'
-} Catch {
-	Login-AzureRmAccount -SubscriptionName 'MSDN Platforms'
-}
-#If (!(get-azurermcontext -ea 'SilentlyContinue')){Login-AzureRmAccount -SubscriptionName 'MSDN Platforms'}
-$output = & "$scriptlocation\BuildTestEnvironment.ps1"
-$Gridmaster = $output.GridmasterFQDN
-$Credential = $output.AdminCredential
 #order tests as below
 #create extensible attribute definitions
 #create dns views
