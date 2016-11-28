@@ -707,7 +707,24 @@ Describe "Get-IBView tests" {
 
 }
 Describe "Get-IBDNSZone tests" {
-	
+	It "Gets forward zones in default view" {
+		$Result = get-IBDNSZone -gridmaster $gridmaster -credential $Credential -zoneformat forward -view default
+		$Result.Count | should be 1
+		$Result[0].GetType().Name | should be 'IB_ZoneAuth'
+		$Result[0].fqdn | should be 'domain.com'
+		$Result[0].view | should be 'default'
+	}
+	It "Gets reverse zones by fqdn search" {
+		$Result = Get-IBDNSZone -gridmaster $gridmaster -credential $Credential -zoneformat ipv4 -fqdn 12.0.0.0/8
+		$Result.count | should be 2
+		$Result[0].GetType().Name | should be 'IB_ZoneAuth'
+		$Result[0].fqdn | should be '12.0.0.0/8'
+		$Result[0].view | should be 'default'
+		#
+		$Result[1].GetType().Name | should be 'IB_ZoneAuth'
+		$Result[1].fqdn | should be '12.0.0.0/8'
+		$Result[1].view | should be 'view2'
+	}
 }
 Describe "Get-IBNetwork tests" {
 	
@@ -3131,11 +3148,11 @@ Describe "Remove-IBNetwork tests" {
 		$TestRecord | should benullorempty
 	}
 	It "deletes multiple networks through pipeline"{
-		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -network 12.12.0.0 | remove-ibnetwork -confirm:$False
-		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -network 12.12.0.0 | should benullorempty
+		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -network 12.12.0.0/16 | remove-ibnetwork -confirm:$False
+		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -network 12.12.0.0/16 | should benullorempty
 	}
 	It "deletes multiple parent networks through byRef method" {
-		$networks = get-ibnetwork -gridmaster $Gridmaster -credential $Credential -network 12.0.0.0
+		$networks = get-ibnetwork -gridmaster $Gridmaster -credential $Credential -network 12.0.0.0/8
 		$Networks | %{
 			$Result = Remove-IBNetwork -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref
 			$Result | should be $_._ref
@@ -3144,7 +3161,35 @@ Describe "Remove-IBNetwork tests" {
 	}
 }
 Describe "Remove-IBDNSZone tests" {
-	
+	It "deletes zone using byRef method" {
+		$Ref = $Script:recordlist.where{$_._ref -like "zone_auth/*:domain.com/default"}._ref
+		$Return = Remove-IBDNSZone -confirm:$False -gridmaster $Gridmaster -credential $Credential -_ref $Ref
+		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		$Return.GetType().Name | Should be 'String'
+		$Return | should be $Ref
+		$TestRecord | should benullorempty
+	}
+	It "deletes zone using object through pipeline" {
+		$Ref = $Script:recordlist.where{$_._ref -like "zone_auth/*:12.0.0.0/8/view2"}._ref
+		$Record = get-IBDNSZone -gridmaster $Gridmaster -credential $Credential -_ref $Ref
+		$Return = $Record | Remove-IBDNSZone -confirm:$False
+		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		$Return.GetType().Name | Should be 'String'
+		$Return | should be $Ref
+		$TestRecord | should benullorempty
+	}
+	It "deletes multiple networks through pipeline"{
+		Get-IBDNSZone -gridmaster $Gridmaster -credential $Credential -fqdn domain.com | remove-ibdnszone -confirm:$False
+		Get-IBDNSZone -gridmaster $Gridmaster -credential $Credential -fqdn domain.com | should benullorempty
+	}
+	It "deletes multiple parent networks through byRef method" {
+		$networks = get-ibdnszone -gridmaster $Gridmaster -credential $Credential -view default
+		$Networks | %{
+			$Result = Remove-IBdnszone -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref
+			$Result | should be $_._ref
+			get-ibdnszone -gridmaster $Gridmaster -credential $credential -_ref $_._ref | should benullorempty
+		}
+	}
 }
 Describe "Remove-IBView tests" {
 	
