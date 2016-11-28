@@ -28,7 +28,7 @@ Function Test-IBGridmaster {
     write-verbose "$FunctionName`:  Beginning Function"
 		Try {
             write-verbose "$FunctionName`:  Attempting connection to https://$gridmaster/wapidoc/"
-            $data = invoke-webrequest -uri "https://$gridmaster/wapidoc/"
+            $data = invoke-webrequest -uri "https://$gridmaster/wapidoc/" -UseBasicParsing
             If ($Data){
                 If ($Data.rawcontent -like "*Infoblox WAPI Documentation*"){
                     return $True
