@@ -14,7 +14,7 @@ Class IB_ZoneAuth : IB_ReferenceObject {
         [String]$ZoneFormat,
         [String]$Comment
     ){
-        $URIString = "https://$Gridmaster/wapi/$Script:WapiVersion/zone_auth"
+        $URIString = "https://$Gridmaster/wapi/$WapiVersion/zone_auth"
         $bodyhashtable = @{fqdn=$fqdn}
         If ($comment){$bodyhashtable += @{comment=$Comment}}
         If ($View){$bodyhashtable += @{view = $View}}
@@ -29,7 +29,7 @@ Class IB_ZoneAuth : IB_ReferenceObject {
         [String]$_ref
     ){
         $ReturnFields = "extattrs,fqdn,view,zone_format,comment"
-        $URIstring = "https://$gridmaster/wapi/$script:WapiVersion/$_ref`?_return_fields=$ReturnFields"
+        $URIstring = "https://$gridmaster/wapi/$WapiVersion/$_ref`?_return_fields=$ReturnFields"
         $Return = Invoke-RestMethod -Uri $URIstring -Credential $Credential
         If ($Return){
             return [IB_ZoneAuth]::New($Return.FQDN,
@@ -57,7 +57,7 @@ Class IB_ZoneAuth : IB_ReferenceObject {
         [Int]$MaxResults
     ){
         $ReturnFields = "extattrs,fqdn,view,zone_format,comment"
-        $URI = "https://$gridmaster/wapi/$script:WapiVersion/zone_auth?"
+        $URI = "https://$gridmaster/wapi/$WapiVersion/zone_auth?"
         If ($Strict){$Operator = "="} else {$Operator = "~="}
         If ($FQDN){
             $URI += "fqdn$Operator$fqdn&"
@@ -98,7 +98,7 @@ Class IB_ZoneAuth : IB_ReferenceObject {
     hidden [void]Set (
         [String]$Comment
     ){
-        $URIString = "https://$($this.Gridmaster)/wapi/$script:wapiversion/$($this._ref)"
+        $URIString = "https://$($this.Gridmaster)/wapi/$WapiVersion/$($this._ref)"
         $bodyhashtable = @{comment=$Comment}
         If ($bodyhashtable){
             $return = Invoke-RestMethod -uri $URIString -method Put -body $($bodyhashtable | convertto-json) -contenttype application/json -Credential $this.Credential
@@ -113,7 +113,7 @@ Class IB_ZoneAuth : IB_ReferenceObject {
 		[String]$Name,
 		[String]$Value
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$script:WapiVersion/$($this._ref)"
+		$URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
 		New-Variable -name $Name -Value $(New-object psobject -Property @{value=$Value})
 		$ExtAttr = new-object psobject -Property @{$Name=$(get-variable $Name | select -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs+"=$extattr}
@@ -130,7 +130,7 @@ Class IB_ZoneAuth : IB_ReferenceObject {
 	hidden [void] RemoveExtAttrib (
 		[String]$ExtAttrib
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$script:WapiVersion/$($this._ref)"
+		$URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
 		New-Variable -name $ExtAttrib -Value $(New-object psobject -Property @{})
 		$ExtAttr = new-object psobject -Property @{$extattrib=$(get-variable $ExtAttrib | select -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs-"=$extattr}

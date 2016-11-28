@@ -13,7 +13,7 @@ Class IB_ReferenceObject {
 		[PSCredential]$Credential,
 		[string]$_ref
 	) {
-		$URIString = "https://$gridmaster/wapi/$script:WapiVersion/$_ref"
+		$URIString = "https://$gridmaster/wapi/$WapiVersion/$_ref"
 		$return = Invoke-RestMethod -Uri $URIString -Credential $Credential
         If ($Return) {
 			return [IB_ReferenceObject]::New($Gridmaster,$Credential,$return._ref)
@@ -22,7 +22,7 @@ Class IB_ReferenceObject {
 		}
 	}
    hidden [String] Delete(){
-        $URIString = "https://$($this.GridMaster)/wapi/$script:WapiVersion/$($this._ref)"
+        $URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
         $return = Invoke-RestMethod -Uri $URIString -Method Delete -Credential $this.Credential
         return $return
     }
