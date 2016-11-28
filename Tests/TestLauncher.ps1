@@ -5,7 +5,7 @@ param(
     [string]$TempDir = $env:TEMP,
     [String]$TestName
 )
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
  
 $Scripts = Get-ChildItem "$SourceDir\ModuleParts" -Filter *.ps1 -Recurse
 $Scripts | get-content | out-file -FilePath "$TempDir\infoblox.ps1"
