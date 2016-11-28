@@ -37,6 +37,11 @@ $Credential = new-object -TypeName system.management.automation.pscredential -Ar
 #all set tests
 #all delete tests
 $Recordlist = @()
+Describe "Test-Gridmaster" {
+	It "Tests accessibility to infoblox gridmaster" {
+		Test-IBGridMaster -gridmaster $Gridmaster -quiet | should be $True
+	}
+}
 Describe "New-IBExtensibleAttributeDefinition tests" {
 	It "Creates new extensible attribute definition with value type String" {
 		$Record = New-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Credential $Credential -Name 'EA2' -Type 'String' -DefaultValue 'Corp' -confirm:$False
