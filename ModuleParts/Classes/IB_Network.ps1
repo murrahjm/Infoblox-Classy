@@ -13,7 +13,7 @@ Class IB_Network : IB_ReferenceObject {
         [String]$NetworkView,
         [String]$Comment
     ){
-        $URIString = "https://$Gridmaster/wapi/$WapiVersion/network"
+        $URIString = "https://$Gridmaster/wapi/$Global:WapiVersion/network"
         $bodyhashtable = @{network=$Network}
         If ($comment){$bodyhashtable += @{comment=$Comment}}
         If ($NetworkView){$bodyhashtable += @{network_view = $NetworkView}}
@@ -27,7 +27,7 @@ Class IB_Network : IB_ReferenceObject {
         [String]$_ref
     ){
         $ReturnFields = "extattrs,network,network_view,network_container,comment"
-        $URIstring = "https://$gridmaster/wapi/$WapiVersion/$_ref`?_return_fields=$ReturnFields"
+        $URIstring = "https://$gridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
         $Return = Invoke-RestMethod -Uri $URIstring -Credential $Credential
         If ($Return){
             return [IB_Network]::New($Return.Network,
@@ -55,7 +55,7 @@ Class IB_Network : IB_ReferenceObject {
         [Int]$MaxResults
     ){
         $ReturnFields = "extattrs,network,network_view,network_container,comment"
-        $URI = "https://$gridmaster/wapi/$WapiVersion/network?"
+        $URI = "https://$gridmaster/wapi/$Global:WapiVersion/network?"
         If ($Strict){$Operator = "="} else {$Operator = "~="}
         If ($Network){
             $URI += "network$Operator$Network&"
@@ -96,7 +96,7 @@ Class IB_Network : IB_ReferenceObject {
     hidden [void]Set (
         [String]$Comment
     ){
-        $URIString = "https://$($this.Gridmaster)/wapi/$WapiVersion/$($this._ref)"
+        $URIString = "https://$($this.Gridmaster)/wapi/$Global:WapiVersion/$($this._ref)"
         $bodyhashtable = @{comment=$Comment}
         If ($bodyhashtable){
             $return = Invoke-RestMethod -uri $URIString -method Put -body $($bodyhashtable | convertto-json) -contenttype application/json -Credential $this.Credential
@@ -111,7 +111,7 @@ Class IB_Network : IB_ReferenceObject {
 		[String]$Name,
 		[String]$Value
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
+		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $Name -Value $(New-object psobject -Property @{value=$Value})
 		$ExtAttr = new-object psobject -Property @{$Name=$(get-variable $Name | select -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs+"=$extattr}
@@ -128,7 +128,7 @@ Class IB_Network : IB_ReferenceObject {
 	hidden [void] RemoveExtAttrib (
 		[String]$ExtAttrib
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
+		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $ExtAttrib -Value $(New-object psobject -Property @{})
 		$ExtAttr = new-object psobject -Property @{$extattrib=$(get-variable $ExtAttrib | select -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs-"=$extattr}
@@ -146,7 +146,7 @@ Class IB_Network : IB_ReferenceObject {
         [String[]]$Exclude,
         [uint32]$Count
     ){
-        $URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)?_function=next_available_ip"
+        $URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)?_function=next_available_ip"
         $bodyhashtable = $null
         if ($count){$bodyhashtable += @{num = $count}}
         If ($Exclude){$bodyhashtable += @{exclude = $Exclude}}

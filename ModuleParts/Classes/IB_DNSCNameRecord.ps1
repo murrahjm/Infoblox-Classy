@@ -22,7 +22,7 @@ Class IB_DNSCNameRecord : IB_ReferenceObject {
 
     ){
         
-        $URIString = "https://$GridMaster/wapi/$WapiVersion/record:cname"
+        $URIString = "https://$GridMaster/wapi/$Global:WapiVersion/record:cname"
         $BodyHashTable = @{name=$Name}
         $bodyhashtable += @{canonical=$Canonical}
         $bodyhashtable += @{comment=$comment}
@@ -46,7 +46,7 @@ Class IB_DNSCNameRecord : IB_ReferenceObject {
 		[String]$_ref
 	) {
 		$ReturnFields = "extattrs,name,canonical,comment,view,ttl,use_ttl"
-		$URIString = "https://$gridmaster/wapi/$WapiVersion/$_ref`?_return_fields=$ReturnFields"
+		$URIString = "https://$gridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
 		$return = Invoke-RestMethod -Uri $URIString -Credential $Credential
         If ($return) {
 			return [IB_DNSCNameRecord]::New($return.Name,
@@ -78,7 +78,7 @@ Class IB_DNSCNameRecord : IB_ReferenceObject {
         [Int]$MaxResults
     ){
 		$ReturnFields = "extattrs,name,canonical,comment,view,ttl,use_ttl"
-		$URI = "https://$Gridmaster/wapi/$WapiVersion/record:cname?"
+		$URI = "https://$Gridmaster/wapi/$Global:WapiVersion/record:cname?"
 		If ($Strict){$Operator = ":="} else {$Operator = "~:="}
 		If ($Name){
 			$URI += "name$Operator$Name&"
@@ -128,7 +128,7 @@ Class IB_DNSCNameRecord : IB_ReferenceObject {
         [bool]$Use_TTL
 
     ){
-        $URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
+        $URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
         $bodyHashTable = $null
         $bodyHashTable+=@{canonical=$canonical}
         $bodyHashTable+=@{comment=$comment}
@@ -160,7 +160,7 @@ Class IB_DNSCNameRecord : IB_ReferenceObject {
 		[String]$Name,
 		[String]$Value
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
+		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $Name -Value $(New-object psobject -Property @{value=$Value})
 		$ExtAttr = new-object psobject -Property @{$Name=$(get-variable $Name | select -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs+"=$extattr}
@@ -178,7 +178,7 @@ Class IB_DNSCNameRecord : IB_ReferenceObject {
 	hidden [void] RemoveExtAttrib (
 		[String]$ExtAttrib
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
+		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $ExtAttrib -Value $(New-object psobject -Property @{})
 		$ExtAttr = new-object psobject -Property @{$extattrib=$(get-variable $ExtAttrib | select -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs-"=$extattr}

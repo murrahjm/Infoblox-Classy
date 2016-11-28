@@ -1,5 +1,5 @@
 #Variables
-$WapiVersion = 'v2.2'
+$Global:WapiVersion = 'v2.2'
 #Helper Functions
 Function ConvertTo-PTRName {
     Param(

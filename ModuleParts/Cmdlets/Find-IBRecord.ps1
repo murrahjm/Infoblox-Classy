@@ -84,14 +84,14 @@ Function Find-IBRecord {
         }
         if ($pscmdlet.ParameterSetName -eq 'globalSearchbyString'){
 			If ($Strict){
-				$uribase = "https://$gridmaster/wapi/$WapiVersion/search?search_string:="
+				$uribase = "https://$gridmaster/wapi/$Global:WapiVersion/search?search_string:="
 
 			} else {
-				$uribase = "https://$gridmaster/wapi/$WapiVersion/search?search_string~:="
+				$uribase = "https://$gridmaster/wapi/$Global:WapiVersion/search?search_string~:="
 
 			}
 		} elseif ($pscmdlet.ParameterSetName -eq 'globalSearchbyIP'){
-			$uribase = "https://$gridmaster/wapi/$WapiVersion/search?address="
+			$uribase = "https://$gridmaster/wapi/$Global:WapiVersion/search?address="
 		}
 		
 	}

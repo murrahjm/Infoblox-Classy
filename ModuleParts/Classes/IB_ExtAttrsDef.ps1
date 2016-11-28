@@ -19,7 +19,7 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
 		[String]$Comment,
 		[String]$DefaultValue
     ){
-        $URIString = "https://$GridMaster/wapi/$WapiVersion/extensibleattributedef"
+        $URIString = "https://$GridMaster/wapi/$Global:WapiVersion/extensibleattributedef"
         $BodyHashTable = @{name=$Name}
         $bodyhashtable += @{type=$Type.ToUpper()}
         $bodyhashtable += @{comment=$comment}
@@ -40,7 +40,7 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
 		[String]$_ref
 	) {
 		$ReturnFields = "name,comment,default_value,type"
-		$URIString = "https://$gridmaster/wapi/$WapiVersion/$_ref`?_return_fields=$ReturnFields"
+		$URIString = "https://$gridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
 		$return = Invoke-RestMethod -Uri $URIString -Credential $Credential
         If ($Return) {
 			return [IB_ExtAttrsDef]::New($gridmaster,$credential,$return.name,$return.type,$return.comment,$return.default_value,$return._ref)
@@ -59,7 +59,7 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
         [Int]$MaxResults
     ){
 		$ReturnFields = "name,comment,default_value,type"
-		$URI = "https://$Gridmaster/wapi/$WapiVersion/extensibleattributedef?"
+		$URI = "https://$Gridmaster/wapi/$Global:WapiVersion/extensibleattributedef?"
 		If ($Strict){$Operator = ":="} else {$Operator = "~:="}
 		If ($Name){
 			$URI += "name$Operator$Name&"
@@ -91,7 +91,7 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
 		[String]$DefaultValue
     )
 	{
-        $URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
+        $URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
         $bodyHashTable = $null
         $bodyHashTable+=@{name=$Name}
         $bodyHashTable+=@{type=$Type.ToUpper()}

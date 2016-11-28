@@ -14,7 +14,7 @@ Class IB_networkview : IB_ReferenceObject {
 		[String]$Name,
 		[String]$Comment
 	){
-		$URIString = "https://$Gridmaster/wapi/$WapiVersion/networkview"
+		$URIString = "https://$Gridmaster/wapi/$Global:WapiVersion/networkview"
 		$bodyhashtable = @{name=$Name}
 		If ($Comment){$bodyhashtable += @{comment=$Comment}}
 		$Return = Invoke-RestMethod -uri $URIString -Method Post -body $bodyhashtable -Credential $Credential
@@ -26,7 +26,7 @@ Class IB_networkview : IB_ReferenceObject {
 		[String]$_ref
 	) {
 		$ReturnFields = "extattrs,name,is_default,comment"
-		$URIString = "https://$gridmaster/wapi/$WapiVersion/$_ref`?_return_fields=$ReturnFields"
+		$URIString = "https://$gridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
 		$return = Invoke-RestMethod -Uri $URIString -Credential $Credential
 		If ($Return) {
 			return [IB_networkview]::New($Return.name,
@@ -52,7 +52,7 @@ Class IB_networkview : IB_ReferenceObject {
         [Int]$MaxResults
     ){
 		$ReturnFields = "extattrs,name,is_default,comment"
-		$URI = "https://$Gridmaster/wapi/$WapiVersion/networkview?"
+		$URI = "https://$Gridmaster/wapi/$Global:WapiVersion/networkview?"
 		If ($Strict){$Operator = ":="} else {$Operator = "~:="}
 		If ($Name){
 			$URI += "name$Operator$Name&"

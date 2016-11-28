@@ -17,7 +17,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
         [String]$NetworkView,
 		[String]$MAC
     ){
-        $URIString = "https://$GridMaster/wapi/$WapiVersion/fixedaddress"
+        $URIString = "https://$GridMaster/wapi/$Global:WapiVersion/fixedaddress"
         $bodyhashtable = @{ipv4addr=$IPAddress}
         $BodyHashTable += @{name=$Name}
         $bodyhashtable += @{comment=$comment}
@@ -41,7 +41,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
 		[String]$_ref
 	) {
 		$ReturnFields = "extattrs,name,ipv4addr,comment,network_view,mac"
-		$URIString = "https://$gridmaster/wapi/$WapiVersion/$_ref`?_return_fields=$ReturnFields"
+		$URIString = "https://$gridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
 		$return = Invoke-RestMethod -Uri $URIString -Credential $Credential
         If ($Return) {
 			return [IB_FixedAddress]::New($return.name,
@@ -69,7 +69,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
 		[Int]$MaxResults
 	){
 		$ReturnFields = "extattrs,name,ipv4addr,comment,network_view,mac"
-		$URI = "https://$gridmaster/wapi/$WapiVersion/fixedaddress?"
+		$URI = "https://$gridmaster/wapi/$Global:WapiVersion/fixedaddress?"
 		If ($Strict){$Operator = ":="} else {$Operator = "~:="}
 		If ($IPAddress){
 			$URI += "ipv4addr=$($IPAddress.IPAddressToString)&"
@@ -113,7 +113,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
         [String]$Comment,
 		[String]$MAC
     ){
-        $URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
+        $URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
         $bodyHashTable = $null
         $bodyHashTable+=@{name=$Name}
         $bodyHashTable+=@{comment=$comment}
@@ -139,7 +139,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
 		[String]$Name,
 		[String]$Value
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
+		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $Name -Value $(New-object psobject -Property @{value=$Value})
 		$ExtAttr = new-object psobject -Property @{$Name=$(get-variable $Name | select -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs+"=$extattr}
@@ -157,7 +157,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
 	hidden [void] RemoveExtAttrib (
 		[String]$ExtAttrib
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$WapiVersion/$($this._ref)"
+		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $ExtAttrib -Value $(New-object psobject -Property @{})
 		$ExtAttr = new-object psobject -Property @{$extattrib=$(get-variable $ExtAttrib | select -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs-"=$extattr}
