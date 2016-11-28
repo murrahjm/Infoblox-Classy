@@ -37,7 +37,9 @@ $Credential = new-object -TypeName system.management.automation.pscredential -Ar
 #all set tests
 #all delete tests
 $Recordlist = @()
+write-output "Gridmaster:  $gridmaster"
 write-output "wapi version:  $Wapiversion"
+
 Describe "Test-Gridmaster" {
 	It "Tests accessibility to infoblox gridmaster" {
 		Test-IBGridMaster -gridmaster $Gridmaster | should be $True
