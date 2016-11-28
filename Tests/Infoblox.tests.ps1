@@ -3073,7 +3073,7 @@ Describe "Remove-IBRecord tests" {
 	It "Throws an error with an empty gridmaster" {
 		{Remove-IBRecord -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
 	}
-	It "THrows an error with empty ref parameter" {
+	It "Throws an error with empty ref parameter" {
 		{Remove-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref} | should throw
 	}
 	It "Throws an error with pipeline input object missing a ref property" {
@@ -3081,13 +3081,13 @@ Describe "Remove-IBRecord tests" {
 	}
 	It "finds no record to delete and returns nothing" {
 		$Refstring = 'record:a/ZG5zLmJGVmYX:testrecord3.domain.com/default'
-		$Return = Remove-IBRecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Refstring
+		$Return = Remove-IBRecord -confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring
 		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Refstring)
 		$Return | should benullorempty
 		$TestRecord | should benullorempty
 	}
 	It "Deletes an A record using byRef method" {
-		$Ref = $script:recordlist.where{$_._ref -like "record:a/*:testrecord3.domain.com/default"}
+		$Ref = $script:recordlist.where{$_._ref -like "record:a/*:testrecord3.domain.com/default"}._ref
 		$Return = Remove-IBRecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Ref
 		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
 		$Return.GetType().Name | Should be 'String'
@@ -3095,7 +3095,7 @@ Describe "Remove-IBRecord tests" {
 		$TestRecord | should benullorempty
 	}
 	It "Deletes an PTR record using byRef method" {
-		$Ref = $script:recordlist.where{$_._ref -like "record:ptr/*:1.1.12.12.in-addr.arpa/default"}
+		$Ref = $script:recordlist.where{$_._ref -like "record:ptr/*:1.1.12.12.in-addr.arpa/default"}._ref
 		$Return = Remove-IBRecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Ref
 		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
 		$Return.GetType().Name | Should be 'String'
@@ -3103,8 +3103,7 @@ Describe "Remove-IBRecord tests" {
 		$TestRecord | should benullorempty
 	}
 	It "Deletes CName Record using object through pipeline" {
-		$Ref = $script:recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}
-		$refstring = 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
+		$Ref = $script:recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
 		$Record = Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $ref
 		$return = $Record | Remove-IBRecord -confirm:$False 
 		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
@@ -3114,7 +3113,35 @@ Describe "Remove-IBRecord tests" {
 	}
 }
 Describe "Remove-IBNetwork tests" {
-	
+	It "deletes network using byRef method" {
+		$Ref = $Script:recordlist.where{$_._ref -like "network/*:192.168.1.0/24/networkview2"}._ref
+		$Return = Remove-IBNetwork -confirm:$False -gridmaster $Gridmaster -credential $Credential -_ref $Ref
+		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		$Return.GetType().Name | Should be 'String'
+		$Return | should be $Ref
+		$TestRecord | should benullorempty
+	}
+	It "deletes network using object through pipeline" {
+		$Ref = $Script:recordlist.where{$_._ref -like "network/*:12.12.0.0/16/networkview3"}._ref
+		$Record = get-IBNetwork -gridmaster $Gridmaster -credential $Credential -_ref $Ref
+		$Return = $Record | Remove-IBNetwork -confirm:$False
+		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		$Return.GetType().Name | Should be 'String'
+		$Return | should be $Ref
+		$TestRecord | should benullorempty
+	}
+	It "deletes multiple networks through pipeline"{
+		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -name 12.12.0.0 | remove-ibnetwork -confirm:$False
+		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -name 12.12.0.0 | should benullorempty
+	}
+	It "deletes multiple parent networks through byRef method" {
+		$networks = get-ibnetwork -gridmaster $Gridmaster -credential $Credential -name 12.0.0.0
+		$Networks | %{
+			$Result = Remove-IBNetwork -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref
+			$Result | should be $_._ref
+			get-ibnetwork -gridmaster $Gridmaster -credential $credential -_ref $_._ref | should benullorempty
+		}
+	}
 }
 Describe "Remove-IBDNSZone tests" {
 	
