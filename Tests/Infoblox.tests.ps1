@@ -3131,11 +3131,11 @@ Describe "Remove-IBNetwork tests" {
 		$TestRecord | should benullorempty
 	}
 	It "deletes multiple networks through pipeline"{
-		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -name 12.12.0.0 | remove-ibnetwork -confirm:$False
-		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -name 12.12.0.0 | should benullorempty
+		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -network 12.12.0.0 | remove-ibnetwork -confirm:$False
+		Get-IBNetwork -gridmaster $Gridmaster -credential $Credential -network 12.12.0.0 | should benullorempty
 	}
 	It "deletes multiple parent networks through byRef method" {
-		$networks = get-ibnetwork -gridmaster $Gridmaster -credential $Credential -name 12.0.0.0
+		$networks = get-ibnetwork -gridmaster $Gridmaster -credential $Credential -network 12.0.0.0
 		$Networks | %{
 			$Result = Remove-IBNetwork -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref
 			$Result | should be $_._ref
