@@ -6,13 +6,7 @@ param(
     [String]$TestName
 )
 $ErrorActionPreference = 'Continue'
- 
-$Scripts = Get-ChildItem "$SourceDir\ModuleParts" -Filter *.ps1 -Recurse
-$Scripts | get-content | out-file -FilePath "$TempDir\infoblox.ps1"
-. "$TempDir\infoblox.ps1"
-$scripts | %{. $_.FullName}
-
- 
+  
 $modulePath = Join-Path $TempDir Pester-master\Pester.psm1
  
 if (-not(Test-Path $modulePath)) {

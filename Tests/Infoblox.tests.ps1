@@ -19,6 +19,11 @@ add-type @"
     }
 "@
 [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+$Scripts = Get-ChildItem "$SourceDir\ModuleParts" -Filter *.ps1 -Recurse
+$Scripts | get-content | out-file -FilePath "$TempDir\infoblox.ps1"
+. "$TempDir\infoblox.ps1"
+$scripts | %{. $_.FullName}
+
 
 
 $Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn
@@ -732,220 +737,219 @@ Describe "Get-IBNetwork tests" {
 Describe "Find-IBRecord" {
 	It "Returns records from non-strict Name search" {
 		$return = Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString testrecord
-		$Return.count | should be 12
+		$Return.count | should be 9
 		#
-		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0].name | should be 'testrecord.domain.com'
-		$Return[0].view | should be 'default'
+		$Return[0].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[0].Name | should be '1.1.12.12.in-addr.arpa'
+		$Return[0].view | should be 'view2'
 		#
-		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1].name | should be 'testrecord3.domain.com'
+		$Return[1].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[1].name | should be '1.1.12.12.in-addr.arpa'
 		$Return[1].view | should be 'default'
 		#
-		$Return[2].GetType().Name | should be 'IB_DNSARecord'
-		$Return[2].name | should be 'testrecord2.domain.com'
-		$Return[2].view | should be 'view3'
+		$Return[2].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[2].name | should be '2.1.12.12.in-addr.arpa'
+		$Return[2].view | should be 'default'
 		#
 		$Return[3].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[3].name | should be 'testalias.domain.com'
-		$Return[3].view | should be 'default'
+		$Return[3].name | should be 'testalias4.domain.com'
+		$Return[3].view | should be 'view2'
 		#
 		$Return[4].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[4].name | should be 'testalias3.domain.com'
+		$Return[4].name | should be 'testalias.domain.com'
 		$Return[4].view | should be 'default'
 		#
 		$Return[5].GetType().Name | should be 'IB_DNSCNameRecord'
 		$Return[5].name | should be 'testalias2.domain.com'
-		$Return[5].view | should be 'view3'
+		$Return[5].view | should be 'default'
 		#
-		$Return[6].GetType().Name | should be 'IB_FixedAddress'
-		$Return[6].IPAddress | should be '12.12.1.1'
-		$Return[6].networkview | should be 'default'
+		$Return[6].GetType().Name | should be 'IB_DNSARecord'
+		$Return[6].name | should be 'testrecord4.domain.com'
+		$Return[6].view | should be 'view2'
 		#
-		$Return[7].GetType().Name | should be 'IB_FixedAddress'
-		$Return[7].IPAddress | should be '12.12.3.4'
-		$Return[7].networkview | should be 'default'
+		$Return[7].GetType().Name | should be 'IB_DNSARecord'
+		$Return[7].name | should be 'testrecord.domain.com'
+		$Return[7].view | should be 'default'
 		#
-		$Return[8].GetType().Name | should be 'IB_FixedAddress'
-		$Return[8].IPAddress | should be '12.12.2.2'
-		$Return[8].networkview | should be 'networkview3'
-		#
-		$Return[9].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[9].Name | should be '1.1.12.12.in-addr.arpa'
-		$Return[9].view | should be 'default'
-		#
-		$Return[10].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[10].name | should be '4.3.12.12.in-addr.arpa'
-		$Return[10].view | should be 'default'
-		#
-		$Return[12].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[12].name | should be '2.2.12.12.in-addr.arpa'
-		$Return[12].view | should be 'view3'
+		$Return[8].GetType().Name | should be 'IB_DNSARecord'
+		$Return[8].name | should be 'testrecord2.domain.com'
+		$Return[8].view | should be 'default'
 	}
 	It "Returns a records with non-strict name and type search" {
 		$return = Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString testrecord -Recordtype 'record:a'
 		$return.count | should be 3
 		#
 		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0].name | should be 'testrecord.domain.com'
-		$Return[0].view | should be 'default'
+		$Return[0].name | should be 'testrecord4.domain.com'
+		$Return[0].view | should be 'view2'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1].name | should be 'testrecord3.domain.com'
+		$Return[1].name | should be 'testrecord.domain.com'
 		$Return[1].view | should be 'default'
 		#
 		$Return[2].GetType().Name | should be 'IB_DNSARecord'
-		$Return[2]._name | should be 'testrecord2.domain.com'
-		$Return[2].view | should be 'view3'
+		$Return[2].name | should be 'testrecord2.domain.com'
+		$Return[2].view | should be 'default'
 	}
 	It "Returns records from IPAddress search" {
 		$Return = Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -IPAddress '12.12.1.1'
-		$Return.count | should be 4
+		$Return.count | should be 11
 		#
-		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0].name | should be 'testrecord.domain.com'
-		$Return[0].view | should be 'default'
+		$Return[0].GetType().Name | should be 'IB_FixedAddress'
+		$Return[0].ipaddress | should be '12.12.1.1'
+		$Return[0].networkview | should be 'default'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1].name | should be 'testrecord3.domain.com'
+		$Return[1].name | should be 'testrecord.domain.com'
 		$Return[1].view | should be 'default'
 		#
-		$Return[2].GetType().Name | should be 'IB_FixedAddress'
-		$Return[2].ipaddress | should be '12.12.1.1'
-		$Return[2].networkview | should be 'default'
+		$Return[2].GetType().Name | should be 'IB_DNSARecord'
+		$Return[2].name | should be 'testrecord4.domain.com'
+		$Return[2].view | should be 'view2'
 		#
-		$Return[3].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[3].name | should be '1.1.12.12.in-addr.arpa'
+		$Return[3].GetType().Name | should be 'IB_DNSARecord'
+		$Return[3].name | should be 'testrecord2.domain.com'
 		$Return[3].view | should be 'default'
+		#
+		$Return[4].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[4].name | should be '1.1.12.12.in-addr.arpa'
+		$Return[4].view | should be 'view2'
+		#
+		$Return[5].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[5].name | should be '1.1.12.12.in-addr.arpa'
+		$Return[5].view | should be 'default'
 	}
 	It "Throws error from IPAddress and type search" {
 		{Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -IPAddress '12.12.1.1' -Recordtype fixedaddress} | should throw
 	}
 	It "Returns records from strict name search" {
 		$return = Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString testrecord.domain.com -Strict
-		$Return.count | should be 7
+		$Return.count | should be 5
 		#
-		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0].name | should be 'testrecord.domain.com'
+		$Return[0].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[0].name | should be '1.1.12.12.in-addr.arpa'
 		$Return[0].view | should be 'default'
+		#
+		$Return[1].GetType().Name | should be 'IB_DNSCNameRecord'
+		$Return[1].name | should be 'testalias4.domain.com'
+		$Return[1].view | should be 'view2'
+		#
+		$Return[2].GetType().Name | should be 'IB_DNSCNameRecord'
+		$Return[2].name | should be 'testalias.domain.com'
+		$Return[2].view | should be 'default'
+		#
+		$Return[3].GetType().Name | should be 'IB_DNSCNameRecord'
+		$Return[3].name | should be 'testalias2.domain.com'
+		$Return[3].view | should be 'default'
+		#
+		$Return[4].GetType().Name | should be 'IB_DNSARecord'
+		$Return[4].name | should be 'testrecord.domain.com'
+		$Return[4].view | should be 'default'
+	}
+	It "Returns cname records from strict name and type search" {
+		$return = Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString testrecord.domain.com -Strict -Recordtype 'record:cname'
+		$Return.count | should be 3
+		#
+		$Return[0].GetType().Name | should be 'IB_DNSCNameRecord'
+		$Return[0].name | should be 'testalias4.domain.com'
+		$Return[0].view | should be 'view2'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSCNameRecord'
 		$Return[1].name | should be 'testalias.domain.com'
 		$Return[1].view | should be 'default'
 		#
 		$Return[2].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[2].name | should be 'testalias3.domain.com'
+		$Return[2].name | should be 'testalias2.domain.com'
 		$Return[2].view | should be 'default'
+	}
+	It "Returns records from IPAddress search through the pipeline" {
+		$Return = '12.12.1.1' | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential
+		$Return.count | should be 11
 		#
-		$Return[3].GetType().Name | should be 'IB_FixedAddress'
-		$Return[3].IPAddress | should be '12.12.1.1'
-		$Return[3].networkview | should be 'default'
+		$Return[0].GetType().Name | should be 'IB_FixedAddress'
+		$Return[0].ipaddress | should be '12.12.1.1'
+		$Return[0].networkview | should be 'default'
 		#
-		$Return[4].GetType().Name | should be 'IB_FixedAddress'
-		$Return[4].ipaddress | should be '12.12.3.4'
-		$Return[4].networkview | should be 'default'
+		$Return[1].GetType().Name | should be 'IB_DNSARecord'
+		$Return[1].name | should be 'testrecord.domain.com'
+		$Return[1].view | should be 'default'
+		#
+		$Return[2].GetType().Name | should be 'IB_DNSARecord'
+		$Return[2].name | should be 'testrecord4.domain.com'
+		$Return[2].view | should be 'view2'
+		#
+		$Return[3].GetType().Name | should be 'IB_DNSARecord'
+		$Return[3].name | should be 'testrecord2.domain.com'
+		$Return[3].view | should be 'default'
+		#
+		$Return[4].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[4].name | should be '1.1.12.12.in-addr.arpa'
+		$Return[4].view | should be 'view2'
 		#
 		$Return[5].GetType().Name | should be 'IB_DNSPTRRecord'
 		$Return[5].name | should be '1.1.12.12.in-addr.arpa'
 		$Return[5].view | should be 'default'
-		#
-		$Return[6].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[6].name | should be '4.3.12.12.in-addr.arpa'
-		$Return[6].view | should be 'default'
-	}
-	It "Returns cname records from strict name and type search" {
-		$return = Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -SearchString testrecord.domain.com -Strict -Recordtype 'record:cname'
-		$Return.count | should be 2
-		$Return[0].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[0].name | should be 'testalias.domain.com'
-		$Return[0].view | should be 'default'
-		#
-		$Return[1].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[1].name | should be 'testalias3.domain.com'
-		$Return[1].view | should be 'default'
-	}
-	It "Returns records from IPAddress search through the pipeline" {
-		$Return = '12.12.1.1' | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential
-		$Return.count | should be 4
-		#
-		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0].name | should be 'testrecord.domain.com'
-		$Return[0].view | should be 'default'
-		#
-		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1].name | should be 'testrecord3.domain.com'
-		$Return[1].view | should be 'default'
-		#
-		$Return[2].GetType().Name | should be 'IB_FixedAddress'
-		$Return[2].ipaddress | should be '12.12.1.1'
-		$Return[2].view | should be 'default'
-		#
-		$Return[3].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[3].name | should be '1.1.12.12.in-addr.arpa'
-		$Return[3].view | should be 'default'
 	}
 	It "Returns records from multiple IPAddress search through the pipeline" {
 		$Return = @('12.12.1.1','12.12.2.2') | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential
-		$Return.count | should be 7
+		$Return.count | should be 16
 		#
-		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0].name | should be 'testrecord.domain.com'
-		$Return[0].view | should be 'default'
+		$Return[0].GetType().Name | should be 'IB_FixedAddress'
+		$Return[0].ipaddress | should be '12.12.1.1'
+		$Return[0].networkview | should be 'default'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1].name | should be 'testrecord3.domain.com'
+		$Return[1].name | should be 'testrecord.domain.com'
 		$Return[1].view | should be 'default'
 		#
-		$Return[2].GetType().Name | should be 'IB_FixedAddress'
-		$Return[2].ipaddress | should be '12.12.1.1'
-		$Return[2].networkview | should be 'default'
+		$Return[2].GetType().Name | should be 'IB_DNSARecord'
+		$Return[2].name | should be 'testrecord4.domain.com'
+		$Return[2].view | should be 'view2'
 		#
-		$Return[3].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[3].name | should be '1.1.12.12.in-addr.arpa'
+		$Return[3].GetType().Name | should be 'IB_DNSARecord'
+		$Return[3].name | should be 'testrecord2.domain.com'
 		$Return[3].view | should be 'default'
 		#
-		$Return[4].GetType().Name | should be 'IB_DNSARecord'
-		$Return[4].name | should be 'testrecord2.domain.com'
-		$Return[4].view | should be 'view3'
+		$Return[4].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[4].name | should be '1.1.12.12.in-addr.arpa'
+		$Return[4].view | should be 'view2'
 		#
-		$Return[5].GetType().Name | should be 'IB_FixedAddress'
-		$Return[5].ipaddress | should be '12.12.2.2'
-		$Return[6].networkview | should be 'networkview3'
-		#
-		$Return[6].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[6].name | should be '2.2.12.12.in-addr.arpa'
-		$Return[6].view | should be 'view3'
+		$Return[5].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[5].name | should be '1.1.12.12.in-addr.arpa'
+		$Return[5].view | should be 'default'
 	}
 	It "Returns records from strict name search through the pipeline" {
-		$Return = 'testrecord3.domain.com' | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -Strict
-		$Return.Count | should be 1
-		$Return.GetType().Name | should be 'IB_DNSARecord'
-		$Return.name | should be 'testrecord3.domain.com'
-		$Return.view | should be 'default'
-	}
-	It "Returns records from multiple strict name search through the pipeline" {
-		$Return = @('testrecord3.domain.com','testrecord2.domain.com') | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -Strict
-		$Return.Count | should be 5
+		$Return = 'testrecord4.domain.com' | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -Strict
+		$Return.Count | should be 2
 		#
-		$Return[0].GetType().Name | should be 'IB_DNSARecord'
-		$Return[0].name | should be 'testrecord3.domain.com'
-		$Return[0].view | should be 'default'
+		$Return[0].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[0].ptrdname | should be 'testrecord4.domain.com'
+		$Return[0].view | should be 'view2'
 		#
 		$Return[1].GetType().Name | should be 'IB_DNSARecord'
-		$Return[1].name | should be 'testrecord2.domain.com'
-		$Return[1].view | should be 'view3'
+		$Return[1].name | should be 'testrecord4.domain.com'
+		$Return[1].view | should be 'view2'
+
+	}
+	It "Returns records from multiple strict name search through the pipeline" {
+		$Return = @('testrecord4.domain.com','testrecord2.domain.com') | Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -Strict
+		$Return.Count | should be 4
 		#
-		$Return[2].GetType().Name | should be 'IB_DNSCNameRecord'
-		$Return[2].name | should be 'testalias2.domain.com'
-		$Return[2].view | should be 'view3'
+		$Return[0].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[0].ptrdname | should be 'testrecord4.domain.com'
+		$Return[0].view | should be 'view2'
 		#
-		$Return[3].GetType().Name | should be 'IB_FixedAddress'
-		$Return[3].IPAddress | should be '12.12.2.2'
-		$Return[3].networkview | should be 'networkview3'
+		$Return[1].GetType().Name | should be 'IB_DNSARecord'
+		$Return[1].name | should be 'testrecord4.domain.com'
+		$Return[1].view | should be 'view2'
 		#
-		$Return[4].GetType().Name | should be 'IB_DNSPTRRecord'
-		$Return[4].name | should be '2.2.12.12.in-addr.arpa'
-		$Return[4].view | should be 'view3'
+		$Return[2].GetType().Name | should be 'IB_DNSPTRRecord'
+		$Return[2].ptrdname | should be 'testrecord2.domain.com'
+		$Return[2].view | should be 'default'
+		#
+		$Return[3].GetType().Name | should be 'IB_DNSARecord'
+		$Return[3].IPAddress | should be '12.12.1.1'
+		$Return[3].view | should be 'default'
 	}
 	It "Throws error with both name and IPAddress parameter" {
 		{Find-IBRecord -Gridmaster $Gridmaster -Credential $Credential -Name 'name' -ipaddress '12.12.1.1'} | should throw
@@ -2953,6 +2957,7 @@ Describe "Remove-IBRecord tests" {
 		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Remove-IBRecord -ea Stop} | should Throw
 	}
 	It "finds no record to delete and returns nothing" {
+		
 		$Refstring = 'record:a/ZG5zLmJGVmYX:testrecord3.domain.com/default'
 		$Return = Remove-IBRecord -confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring
 		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Refstring)} | should throw
@@ -3080,3 +3085,4 @@ Describe "Remove-IBExtensibleAttributeDefinition tests" {
 
 }
 $Recordlist | %{Remove-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref -confirm:$False }
+invoke-restmethod -uri "https://$gridmaster/wapi/v2.2/networkcontainer" -Credential $credential | %{Remove-IBRecord -Gridmaster $gridmaster -Credential $credential -_Ref $_._ref}
