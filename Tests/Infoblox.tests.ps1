@@ -604,7 +604,7 @@ Describe "Get-IBView tests" {
 		#
 		$Result[0].GetType().Name | should be 'IB_View'
 		$Result[0].Name | should be 'default.networkview2'
-		$Result[0].comment | should be 'Second View'
+		$Result[0].comment | should benullorempty
 		$Result[0].is_default | should be $False
 		#
 		$Result[1].GetType().Name | should be 'IB_View'
@@ -973,7 +973,7 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should benullorempty
 		$TestRecord._ref | should be $Ref
-		$TestRecord.TTL | should be 1200
+		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $True
 	}
 	It "Returns A record from strict name query" {
@@ -983,7 +983,7 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should benullorempty
-		$TestRecord.TTL | should be 1200
+		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $True
 	}
 	It "Returns multiple A records from non-strict name query" {
@@ -2817,27 +2817,27 @@ Describe "Remove-IBDNSARecord tests" {
 		{Remove-IBDNSARecord -Record 'notadnsrecord'} | should throw
 	}
 	It "Throws an error with parameters from both sets" {
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $script:recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		{Remove-IBDNSARecord -Gridmaster $Gridmaster -Record $TestRecord} | should Throw
 	}
 	It "Throws an error with pipeline input object missing a ref property" {
 		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Remove-IBDNSARecord -ea Stop} | should Throw
 	}
 	It "Deletes the record using byObject method" {
-		$Record = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		$Ref = $script:recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+		$Record = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
 		$Return = $Record | Remove-IBDNSARecord -confirm:$False 
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default')
+		{[IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
-		$Return | should be 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default'
-		$TestRecord | should benullorempty
+		$Return | should be $Ref
 	}
 	It "Deletes the record using byRef method" {
-		$Refstring = 'record:a/ZG5zLmJpbcHRyJC5fZGVmYX:testrecord3.domain.com/default'
-		$Return = Remove-IBDNSARecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Refstring
-		$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Refstring)
+		$Ref = $script:recordlist.where{$_._ref -like "record:a/*:testrecord3.domain.com/default"}._ref
+		$Return = Remove-IBDNSARecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $ref
+		{[IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
-		$Return | should be $Refstring
-		$TestRecord | should benullorempty
+		$Return | should be $Ref
 	}
 }
 Describe "Remove-IBDNSCNameRecord tests" {
@@ -2851,27 +2851,27 @@ Describe "Remove-IBDNSCNameRecord tests" {
 		{Remove-IBDNSCNameRecord -Record 'notadnsrecord'} | should throw
 	}
 	It "Throws an error with parameters from both sets" {
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$ref = $script:recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$ref)
 		{Remove-IBDNSCNameRecord -Gridmaster $Gridmaster -Record $TestRecord} | should Throw
 	}
 	It "Throws an error with pipeline input object missing a ref property" {
 		{new-object PSObject -Property @{gridmaster=$Gridmaster;credential=$Credential} | Remove-IBDNSCNameRecord -ea Stop} | should Throw
 	}
 	It "Deletes the record using byObject method" {
-		$Record = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		$ref = $script:recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
+		$Record = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
 		$Return = $Record | Remove-IBDNSCNameRecord -confirm:$False 
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default')
+		{[IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
-		$Return | should be 'record:cname/ZG5zLmJpbmRfcHRyJC5fZGVa:testalias.domain.com/default'
-		$TestRecord | should benullorempty
+		$Return | should be $Ref
 	}
 	It "Deletes the record using byRef method" {
-		$Refstring = 'record:cname/ZG5zLmJpbcHRyJC5fZGVmYX:testalias3.domain.com/default'
-		$Return = Remove-IBDNSCNameRecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Refstring
-		$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Refstring)
+		$ref = $script:recordlist.where{$_._ref -like "record:cname/*:testalias3.domain.com/default"}._ref
+		$Return = Remove-IBDNSCNameRecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Ref
+		{[IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Refstring)} | should throw
 		$Return.GetType().Name | Should be 'String'
-		$Return | should be $Refstring
-		$TestRecord | should benullorempty
+		$Return | should be $Ref
 	}
 }
 Describe "Remove-IBDNSPTRRecord tests" {
@@ -2896,18 +2896,16 @@ Describe "Remove-IBDNSPTRRecord tests" {
 		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:2.1.12.12.in-addr.arpa/default"}._ref
 		$Record = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
 		$Return = $Record | Remove-IBDNSPTRRecord -confirm:$False 
-		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
+		{[IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 	It "Deletes the record using byRef method" {
 		$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:4.3.12.12.in-addr.arpa/default"}._ref
 		$Return = Remove-IBDNSPTRRecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Ref
-		$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
+		{[IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 }
 Describe "Remove-IBFixedAddress tests" {
@@ -2932,18 +2930,16 @@ Describe "Remove-IBFixedAddress tests" {
 		$Ref = $script:Recordlist.where{$_._ref -like "fixedaddress/*:12.12.1.2/default"}._ref
 		$Record = [IB_FixedAddress]::Get($gridmaster,$Credential,$ref)
 		$Return = $Record | Remove-IBFixedAddress -confirm:$False 
-		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)
+		{[IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 	It "Deletes the record using byRef method" {
 		$Ref = $script:Recordlist.where{$_._ref -like "fixedaddress/*:12.12.3.4/default"}._ref
 		$Return = Remove-IBFixedAddress -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Ref
-		$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)
+		{[IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 }
 Describe "Remove-IBRecord tests" {
@@ -2959,34 +2955,30 @@ Describe "Remove-IBRecord tests" {
 	It "finds no record to delete and returns nothing" {
 		$Refstring = 'record:a/ZG5zLmJGVmYX:testrecord3.domain.com/default'
 		$Return = Remove-IBRecord -confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Refstring
-		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Refstring)
+		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Refstring)} | should throw
 		$Return | should benullorempty
-		$TestRecord | should benullorempty
 	}
 	It "Deletes an A record using byRef method" {
 		$Ref = $script:recordlist.where{$_._ref -like "record:a/*:testrecord3.domain.com/default"}._ref
 		$Return = Remove-IBRecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Ref
-		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 	It "Deletes an PTR record using byRef method" {
 		$Ref = $script:recordlist.where{$_._ref -like "record:ptr/*:1.1.12.12.in-addr.arpa/default"}._ref
 		$Return = Remove-IBRecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Ref
-		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 	It "Deletes CName Record using object through pipeline" {
 		$Ref = $script:recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
 		$Record = Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $ref
 		$return = $Record | Remove-IBRecord -confirm:$False 
-		$TestRecord = [IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)
+		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
-		$TestRecord | should benullorempty
 	}
 }
 Describe "Remove-IBNetwork tests" {
