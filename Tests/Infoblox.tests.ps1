@@ -978,7 +978,7 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.Comment | should benullorempty
 		$TestRecord._ref | should be $Ref
 		$TestRecord.TTL | should be 0
-		$TestRecord.Use_TTL | should be $True
+		$TestRecord.Use_TTL | should be $False
 	}
 	It "Returns A record from strict name query" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $credential -name 'testrecord.domain.com' -strict
@@ -988,10 +988,59 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should benullorempty
 		$TestRecord.TTL | should be 0
-		$TestRecord.Use_TTL | should be $True
+		$TestRecord.Use_TTL | should be $False
 	}
 	It "Returns multiple A records from non-strict name query" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $credential -name 'testrecord'
+		$TestRecord.count | should be 3
+		#
+		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
+		$TestRecord[0].Name | should be 'testrecord4.domain.com'
+		$TestRecord[0].View | should be 'view2'
+		$TestRecord[0].IPAddress | should be '12.12.1.1'
+		$TestRecord[0].Comment | should benullorempty
+		$TestRecord[0].TTL | should be 0
+		$TestRecord[0].Use_TTL | should be $False
+		#
+		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
+		$TestRecord[1].Name | should be 'testrecord.domain.com'
+		$TestRecord[1].View | should be 'default'
+		$TestRecord[1].IPAddress | should be '12.12.1.1'
+		$TestRecord[1].Comment | should benullorempty
+		$TestRecord[1].TTL | should be 0
+		$TestRecord[1].Use_TTL | should be $False
+		#
+		$TestRecord[2].GetType().Name | should be 'IB_DNSARecord'
+		$TestRecord[2].Name | should be 'testrecord2.domain.com'
+		$TestRecord[2].View | should be 'default'
+		$TestRecord[2].IPAddress | should be '12.12.1.1'
+		$TestRecord[2].Comment | should be 'test comment'
+		$TestRecord[2].TTL | should be 100
+		$TestRecord[2].Use_TTL | should be $True
+
+	}
+	It "Returns multiple A records from zone query" {
+		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $Credential -zone 'domain.com'
+		$TestRecord.count | should be 2
+		#
+		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
+		$TestRecord[0].Name | should be 'testrecord.domain.com'
+		$TestRecord[0].View | should be 'default'
+		$TestRecord[0].IPAddress | should be '12.12.1.1'
+		$TestRecord[0].Comment | should benullorempty
+		$TestRecord[0].TTL | should be 0
+		$TestRecord[0].Use_TTL | should be $False
+		#
+		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
+		$TestRecord[1].Name | should be 'testrecord2.domain.com'
+		$TestRecord[1].View | should be 'default'
+		$TestRecord[1].IPAddress | should be '12.12.1.1'
+		$TestRecord[1].Comment | should be 'test comment'
+		$TestRecord[1].TTL | should be 100
+		$TestRecord[1].Use_TTL | should be $True
+	}
+	It "Returns multiple A records from IP Address query" {
+		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $Credential -ipaddress '12.12.1.1'
 		$TestRecord.count | should be 3
 		#
 		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
@@ -999,82 +1048,31 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord[0].View | should be 'default'
 		$TestRecord[0].IPAddress | should be '12.12.1.1'
 		$TestRecord[0].Comment | should benullorempty
-		$TestRecord[0].TTL | should be 1200
-		$TestRecord[0].Use_TTL | should be $True
+		$TestRecord[0].TTL | should be 0
+		$TestRecord[0].Use_TTL | should be $False
 		#
 		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[1].Name | should be 'testrecord3.domain.com'
+		$TestRecord[1].Name | should be 'testrecord2.domain.com'
 		$TestRecord[1].View | should be 'default'
 		$TestRecord[1].IPAddress | should be '12.12.1.1'
-		$TestRecord[1].Comment | should be 'test comment 2'
-		$TestRecord[1].TTL | should be 1200
+		$TestRecord[1].Comment | should be 'test comment'
+		$TestRecord[1].TTL | should be 100
 		$TestRecord[1].Use_TTL | should be $True
 		#
 		$TestRecord[2].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[2].Name | should be 'testrecord2.domain.com'
-		$TestRecord[2].View | should be 'view3'
-		$TestRecord[2].IPAddress | should be '12.12.2.2'
-		$TestRecord[2].Comment | should be 'test comment'
-		$TestRecord[2].TTL | should be 0
-		$TestRecord[2].Use_TTL | should be $False
-
-	}
-	It "Returns multiple A records from zone query" {
-		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $Credential -zone 'domain.com'
-		$TestRecord.count | should be 3
-		#
-		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[0].Name | should be 'testrecord.domain.com'
-		$TestRecord[0].View | should be 'default'
-		$TestRecord[0].IPAddress | should be '12.12.1.1'
-		$TestRecord[0].Comment | should be 'test comment'
-		$TestRecord[0].TTL | should be 1200
-		$TestRecord[0].Use_TTL | should be $True
-		#
-		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[1].Name | should be 'testrecord3.domain.com'
-		$TestRecord[1].View | should be 'default'
-		$TestRecord[1].IPAddress | should be '12.12.1.1'
-		$TestRecord[1].Comment | should be 'test comment 2'
-		$TestRecord[1].TTL | should be 1200
-		$TestRecord[1].Use_TTL | should be $True
-		#
-		$TestRecord[2].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[2].Name | should be 'testrecord2.domain.com'
-		$TestRecord[2].View | should be 'view3'
-		$TestRecord[2].IPAddress | should be '12.12.2.2'
+		$TestRecord[2].Name | should be 'testrecord4.domain.com'
+		$TestRecord[2].View | should be 'view2'
+		$TestRecord[2].IPAddress | should be '12.12.1.1'
 		$TestRecord[2].Comment | should benullorempty
 		$TestRecord[2].TTL | should be 0
 		$TestRecord[2].Use_TTL | should be $False
-
-	}
-	It "Returns multiple A records from IP Address query" {
-		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $Credential -ipaddress '12.12.1.1'
-		$TestRecord.count | should be 2
-		#
-		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[0].Name | should be 'testrecord.domain.com'
-		$TestRecord[0].View | should be 'default'
-		$TestRecord[0].IPAddress | should be '12.12.1.1'
-		$TestRecord[0].Comment | should be 'test comment'
-		$TestRecord[0].TTL | should be 1200
-		$TestRecord[0].Use_TTL | should be $True
-		#
-		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[1].Name | should be 'testrecord3.domain.com'
-		$TestRecord[1].View | should be 'default'
-		$TestRecord[1].IPAddress | should be '12.12.1.1'
-		$TestRecord[1].Comment | should be 'test comment 2'
-		$TestRecord[1].TTL | should be 1200
-		$TestRecord[1].Use_TTL | should be $True
-
 	}
 	It "Returns A record from view query" {
-		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -view 'view3'
+		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -view 'view2'
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord.Name | should be 'testrecord2.domain.com'
-		$TestRecord.View | should be 'view3'
-		$TestRecord.IPAddress | should be '12.12.2.2'
+		$TestRecord.Name | should be 'testrecord4.domain.com'
+		$TestRecord.View | should be 'view2'
+		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should benullorempty
 		$TestRecord.TTL | should be 0
 		$TestRecord.Use_TTL | should be $False
@@ -1087,58 +1085,18 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
 		$TestRecord.Comment | should be 'test comment'
-		$TestRecord.TTL | should be 1200
+		$TestRecord.TTL | should be 100
 		$TestRecord.Use_TTL | should be $True
 
 	}
 	It "Returns A record from non-strict comment query" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -comment 'test comment'
-		$TestRecord.count | should be 2
-		#
-		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[0].Name | should be 'testrecord.domain.com'
-		$TestRecord[0].View | should be 'default'
-		$TestRecord[0].IPAddress | should be '12.12.1.1'
-		$TestRecord[0].Comment | should be 'test comment'
-		$TestRecord[0].TTL | should be 1200
-		$TestRecord[0].Use_TTL | should be $True
-		#
-		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[1].Name | should be 'testrecord3.domain.com'
-		$TestRecord[1].View | should be 'default'
-		$TestRecord[1].IPAddress | should be '12.12.1.1'
-		$TestRecord[1].Comment | should be 'test comment 2'
-		$TestRecord[1].TTL | should be 1200
-		$TestRecord[1].Use_TTL | should be $True
-	}
-	It "Returns A record from extensible attribute search" {
-		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -ExtAttributeQuery {Site -eq 'corp'}
-		$TestRecord.count | should be 2
-		#
-		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[0].Name | should be 'testrecord.domain.com'
-		$TestRecord[0].View | should be 'default'
-		$TestRecord[0].IPAddress | should be '12.12.1.1'
-		$TestRecord[0].Comment | should be 'test comment'
-		$TestRecord[0].TTL | should be 1200
-		$TestRecord[0].Use_TTL | should be $True
-		#
-		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord[1].Name | should be 'testrecord3.domain.com'
-		$TestRecord[1].View | should be 'default'
-		$TestRecord[1].IPAddress | should be '12.12.1.1'
-		$TestRecord[1].Comment | should be 'test comment 2'
-		$TestRecord[1].TTL | should be 1200
-		$TestRecord[1].Use_TTL | should be $True
-	}
-	It "Returns A record from non-strict name and comment query" {
-		$TestRecord = Get-IBDNSARecord -credential $Credential -gridmaster $Gridmaster -name 'testrecord' -comment 'test comment 2'
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord.Name | should be 'testrecord3.domain.com'
+		$TestRecord.Name | should be 'testrecord2.domain.com'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
-		$TestRecord.Comment | should be 'test comment 2'
-		$TestRecord.TTL | should be 1200
+		$TestRecord.Comment | should be 'test comment'
+		$TestRecord.TTL | should be 100
 		$TestRecord.Use_TTL | should be $True
 	}
 	It "Returns A record from strict name and IP Address query" {
@@ -1147,9 +1105,9 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.Name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
-		$TestRecord.Comment | should be 'test comment'
-		$TestRecord.TTL | should be 1200
-		$TestRecord.Use_TTL | should be $True
+		$TestRecord.Comment | should benullorempty
+		$TestRecord.TTL | should be 0
+		$TestRecord.Use_TTL | should be $False
 	}
 	It "Returns A record from strict name and view query" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -name 'testrecord.domain.com' -view 'default' -strict
@@ -1157,9 +1115,9 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.Name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
-		$TestRecord.Comment | should be 'test comment'
-		$TestRecord.TTL | should be 1200
-		$TestRecord.Use_TTL | should be $True
+		$TestRecord.Comment | should benullorempty
+		$TestRecord.TTL | should be 0
+		$TestRecord.Use_TTL | should be $False
 	}
 	It "Returns A record from strict name and zone query" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -name 'testrecord.domain.com' -zone 'domain.com' -strict
@@ -1167,20 +1125,19 @@ Describe "Get-IBDNSARecord tests" {
 		$TestRecord.Name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'
 		$TestRecord.IPAddress | should be '12.12.1.1'
-		$TestRecord.Comment | should be 'test comment'
-		$TestRecord.TTL | should be 1200
-		$TestRecord.Use_TTL | should be $True
-
+		$TestRecord.Comment | should benullorempty
+		$TestRecord.TTL | should be 0
+		$TestRecord.Use_TTL | should be $False
 	}
 	It "Returns A record from non-strict name query with results count of 1" {
 		$TestRecord = Get-IBDNSARecord -gridmaster $gridmaster -credential $Credential -name 'testrecord' -maxResults 1
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
-		$TestRecord.Name | should be 'testrecord.domain.com'
-		$TestRecord.View | should be 'default'
+		$TestRecord.Name | should be 'testrecord4.domain.com'
+		$TestRecord.View | should be 'view2'
 		$TestRecord.IPAddress | should be '12.12.1.1'
-		$TestRecord.Comment | should be 'test comment'
-		$TestRecord.TTL | should be 1200
-		$TestRecord.Use_TTL | should be $True
+		$TestRecord.Comment | should benullorempty
+		$TestRecord.TTL | should be 0
+		$TestRecord.Use_TTL | should be $False
 
 	}
 }
@@ -1199,10 +1156,10 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.Name | should be 'testalias.domain.com'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
+			$testalias.Comment | should benullorempty
 			$testalias._ref | should be $Ref
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
+			$testalias.TTL | should be 0
+			$testalias.Use_TTL | should be $False
 		}
 		It "Returns CName Record from strict name query" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias.domain.com' -strict
@@ -1210,38 +1167,37 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.Name | should be 'testalias.domain.com'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
+			$testalias.Comment | should benullorempty
+			$testalias.TTL | should be 0
+			$testalias.Use_TTL | should be $False
 		}
 		It "Returns multiple CName Records from non-strict name query" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias'
 			$testalias.count | should be 3
 			#
 			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[0].Name | should be 'testalias.domain.com'
-			$testalias[0].View | should be 'default'
+			$testalias[0].Name | should be 'testalias4.domain.com'
+			$testalias[0].View | should be 'view2'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
+			$testalias[0].Comment | should benullorempty
+			$testalias[0].TTL | should be 0
+			$testalias[0].Use_TTL | should be $False
 			#
 			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
+			$testalias[1].Name | should be 'testalias.domain.com'
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1].TTL | should be 1200
-			$testalias[1].Use_TTL | should be $True
+			$testalias[1].Comment | should benullorempty
+			$testalias[1].TTL | should be 0
+			$testalias[1].Use_TTL | should be $False
 			#
 			$testalias[2].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[2].Name | should be 'testalias2.domain.com'
-			$testalias[2].View | should be 'view3'
-			$testalias[2].canonical | should be 'testrecord2.domain.com'
-			$testalias[2].Comment | should benullorempty
-			$testalias[2].TTL | should be 0
-			$testalias[2].Use_TTL | should be $False
-
+			$testalias[2].View | should be 'default'
+			$testalias[2].canonical | should be 'testrecord.domain.com'
+			$testalias[2].Comment | should be 'test comment'
+			$testalias[2].TTL | should be 100
+			$testalias[2].Use_TTL | should be $True
 		}
 		It "Returns multiple CName Records from non-strict canonical query" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -canonical 'testrecord'
@@ -1251,147 +1207,114 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias[0].Name | should be 'testalias.domain.com'
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
+			$testalias[0].Comment | should benullorempty
+			$testalias[0].TTL | should be 0
+			$testalias[0].Use_TTL | should be $False
 			#
 			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
+			$testalias[1].Name | should be 'testalias2.domain.com'
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1].TTL | should be 1200
+			$testalias[1].Comment | should be 'test comment'
+			$testalias[1].TTL | should be 100
 			$testalias[1].Use_TTL | should be $True
 			#
 			$testalias[2].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[2].Name | should be 'testalias2.domain.com'
-			$testalias[2].View | should be 'view3'
-			$testalias[2].canonical | should be 'testrecord2.domain.com'
+			$testalias[2].Name | should be 'testalias4.domain.com'
+			$testalias[2].View | should be 'view2'
+			$testalias[2].canonical | should be 'testrecord.domain.com'
 			$testalias[2].Comment | should benullorempty
 			$testalias[2].TTL | should be 0
 			$testalias[2].Use_TTL | should be $False
-
 		}
 		It "Returns multiple CName Records from zone query" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -zone 'domain.com'
+			$testalias.count | should be 2
+			#
+			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
+			$testalias[0].Name | should be 'testalias.domain.com'
+			$testalias[0].View | should be 'default'
+			$testalias[0].canonical | should be 'testrecord.domain.com'
+			$testalias[0].Comment | should benullorempty
+			$testalias[0].TTL | should be 0
+			$testalias[0].Use_TTL | should be $False
+			#
+			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
+			$testalias[1].Name | should be 'testalias2.domain.com'
+			$testalias[1].View | should be 'default'
+			$testalias[1].canonical | should be 'testrecord.domain.com'
+			$testalias[1].Comment | should be 'test comment'
+			$testalias[1].TTL | should be 100
+			$testalias[1].Use_TTL | should be $True
+		}
+		It "Returns multiple CName Records from strict canonical query" {
+			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -canonical 'testrecord.domain.com' -strict
 			$testalias.count | should be 3
 			#
 			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
 			$testalias[0].Name | should be 'testalias.domain.com'
 			$testalias[0].View | should be 'default'
 			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
+			$testalias[0].Comment | should benullorempty
+			$testalias[0].TTL | should be 0
+			$testalias[0].Use_TTL | should be $False
 			#
 			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
+			$testalias[1].Name | should be 'testalias2.domain.com'
 			$testalias[1].View | should be 'default'
 			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1].TTL | should be 1200
+			$testalias[1].Comment | should be 'test comment'
+			$testalias[1].TTL | should be 100
 			$testalias[1].Use_TTL | should be $True
 			#
 			$testalias[2].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[2].Name | should be 'testalias2.domain.com'
-			$testalias[2].View | should be 'view3'
-			$testalias[2].canonical | should be 'testrecord2.domain.com'
+			$testalias[2].Name | should be 'testalias4.domain.com'
+			$testalias[2].View | should be 'view2'
+			$testalias[2].canonical | should be 'testrecord.domain.com'
 			$testalias[2].Comment | should benullorempty
 			$testalias[2].TTL | should be 0
 			$testalias[2].Use_TTL | should be $False
-
-		}
-		It "Returns multiple CName Records from strict canonical query" {
-			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -canonical 'testrecord.domain.com' -strict
-			$testalias.count | should be 2
-			#
-			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[0].Name | should be 'testalias.domain.com'
-			$testalias[0].View | should be 'default'
-			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
-			#
-			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
-			$testalias[1].View | should be 'default'
-			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1].TTL | should be 1200
-			$testalias[1].Use_TTL | should be $True
-
 		}
 		It "Returns CName Record from view query" {
-			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -view 'view3'
+			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -view 'view2'
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias.Name | should be 'testalias2.domain.com'
-			$testalias.View | should be 'view3'
-			$testalias.canonical | should be 'testrecord2.domain.com'
+			$testalias.Name | should be 'testalias4.domain.com'
+			$testalias.View | should be 'view2'
+			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should benullorempty
 			$testalias.TTL | should be 0
 			$testalias.Use_TTL | should be $False
-
 		}
 		It "Returns CName Record from strict comment query" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -comment 'test comment' -strict
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias.Name | should be 'testalias.domain.com'
+			$testalias.Name | should be 'testalias2.domain.com'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
 			$testalias.Comment | should be 'test comment'
-			$testalias.TTL | should be 1200
+			$testalias.TTL | should be 100
 			$testalias.Use_TTL | should be $True
 
 		}
 		It "Returns CName Record from non-strict comment query" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -comment 'test comment'
-			$testalias.count | should be 2
 			#
-			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[0].Name | should be 'testalias.domain.com'
-			$testalias[0].View | should be 'default'
-			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
-			#
-			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
-			$testalias[1].View | should be 'default'
-			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1].TTL | should be 1200
-			$testalias[1].Use_TTL | should be $True
-		}
-		It "Returns CName Record from extensible attribute query" {
-			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -ExtAttributeQuery {Site -eq 'corp'}
-			$testalias.count | should be 2
-			#
-			$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[0].Name | should be 'testalias.domain.com'
-			$testalias[0].View | should be 'default'
-			$testalias[0].canonical | should be 'testrecord.domain.com'
-			$testalias[0].Comment | should be 'test comment'
-			$testalias[0].TTL | should be 1200
-			$testalias[0].Use_TTL | should be $True
-			#
-			$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias[1].Name | should be 'testalias3.domain.com'
-			$testalias[1].View | should be 'default'
-			$testalias[1].canonical | should be 'testrecord.domain.com'
-			$testalias[1].Comment | should be 'test comment 2'
-			$testalias[1].TTL | should be 1200
-			$testalias[1].Use_TTL | should be $True
-		}
-		It "Returns CName Record from non-strict name and comment query" {
-			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias' -comment 'test comment 2'
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias.Name | should be 'testalias3.domain.com'
+			$testalias.Name | should be 'testalias2.domain.com'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment 2'
-			$testalias.TTL | should be 1200
+			$testalias.Comment | should be 'test comment'
+			$testalias.TTL | should be 100
+			$testalias.Use_TTL | should be $True
+		}
+		It "Returns CName Record from non-strict name and comment query" {
+			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias' -comment 'test comment'
+			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
+			$testalias.Name | should be 'testalias2.domain.com'
+			$testalias.View | should be 'default'
+			$testalias.canonical | should be 'testrecord.domain.com'
+			$testalias.Comment | should be 'test comment'
+			$testalias.TTL | should be 100
 			$testalias.Use_TTL | should be $True
 		}
 		It "Returns CName Record from strict name and canonical query" {
@@ -1400,9 +1323,9 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.Name | should be 'testalias.domain.com'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
+			$testalias.Comment | should benullorempty
+			$testalias.TTL | should be 0
+			$testalias.Use_TTL | should be $False
 		}
 		It "Returns CName Record from strict name and view query" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias.domain.com' -view 'default' -strict
@@ -1410,9 +1333,9 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.Name | should be 'testalias.domain.com'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
+			$testalias.Comment | should benullorempty
+			$testalias.TTL | should be 0
+			$testalias.Use_TTL | should be $False
 		}
 		It "Returns CName Record from strict name and zone query" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias.domain.com' -zone 'domain.com' -strict
@@ -1420,21 +1343,19 @@ Describe "Get-IBDNSCNameRecord tests" {
 			$testalias.Name | should be 'testalias.domain.com'
 			$testalias.View | should be 'default'
 			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
-
+			$testalias.Comment | should benullorempty
+			$testalias.TTL | should be 0
+			$testalias.Use_TTL | should be $False
 		}
 		It "Returns CName Record from non-strict name query with results count of 1" {
 			$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -name 'testalias' -maxresults 1
 			$testalias.GetType().Name | should be 'IB_DNSCNameRecord'
-			$testalias.Name | should be 'testalias.domain.com'
-			$testalias.View | should be 'default'
+			$testalias.Name | should be 'testalias4.domain.com'
+			$testalias.View | should be 'view2'
 			$testalias.canonical | should be 'testrecord.domain.com'
-			$testalias.Comment | should be 'test comment'
-			$testalias.TTL | should be 1200
-			$testalias.Use_TTL | should be $True
-
+			$testalias.Comment | should benullorempty
+			$testalias.TTL | should be 0
+			$testalias.Use_TTL | should be $False
 		}
 	}
 }
@@ -1457,74 +1378,74 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
+			$TestRecord.Comment | should benullorempty
 			$TestRecord._ref | should be $Ref
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
+			$TestRecord.TTL | should be 0
+			$TestRecord.Use_TTL | should be $False
 		}
 		It "Returns PTR Record from strict name query" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -name '1.1.12.12.in-addr.arpa' -strict
+			$TestRecord.Count | should be 2
+			#
+			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord[0].PTRDName | should be 'testrecord4.domain.com'
+			$TestRecord[0].View | should be 'view2'
+			$TestRecord[0].IPAddress | should be '12.12.1.1'
+			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
+			$TestRecord[0].Comment | should benullorempty
+			$TestRecord[0].TTL | should be 0
+			$TestRecord[0].Use_TTL | should be $False
+			#
+			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
+			$TestRecord[1].View | should be 'default'
+			$TestRecord[1].IPAddress | should be '12.12.1.1'
+			$TestRecord[1].Name | should be '1.1.12.12.in-addr.arpa'
+			$TestRecord[1].Comment | should benullorempty
+			$TestRecord[1].TTL | should be 0
+			$TestRecord[1].Use_TTL | should be $False
+		}
+		It "Returns multiple PTR Records from non-strict name query" {
+			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -name '1.1'
+			$TestRecord.Count | should be 3
+			#
+			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord[0].PTRDName | should be 'testrecord4.domain.com'
+			$TestRecord[0].View | should be 'view2'
+			$TestRecord[0].IPAddress | should be '12.12.1.1'
+			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
+			$TestRecord[0].Comment | should benullorempty
+			$TestRecord[0].TTL | should be 0
+			$TestRecord[0].Use_TTL | should be $False
+			#
+			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
+			$TestRecord[1].View | should be 'default'
+			$TestRecord[1].IPAddress | should be '12.12.1.1'
+			$TestRecord[1].Name | should be '1.1.12.12.in-addr.arpa'
+			$TestRecord[1].Comment | should benullorempty
+			$TestRecord[1].TTL | should be 0
+			$TestRecord[1].Use_TTL | should be $False
+			#
+			$TestRecord[2].GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord[2].PTRDName | should be 'testrecord2.domain.com'
+			$TestRecord[2].View | should be 'default'
+			$TestRecord[2].IPAddress | should be '12.12.1.2'
+			$TestRecord[2].Name | should be '2.1.12.12.in-addr.arpa'
+			$TestRecord[2].Comment | should be 'test comment'
+			$TestRecord[2].TTL | should be 100
+			$TestRecord[2].Use_TTL | should be $True
+		}
+		It "Returns PTR Record from strict ptrdname query" {
+			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ptrdname 'testrecord.domain.com' -strict
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-		}
-		It "Returns multiple PTR Records from non-strict name query" {
-			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -name '1.'
-			$TestRecord.Count | should be 3
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '12.12.1.1'
-			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '12.12.3.4'
-			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-			#
-			$TestRecord[2].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[2].PTRDName | should be 'localhost'
-			$TestRecord[2].View | should be 'default'
-			$TestRecord[2].IPAddress | should benullorempty
-			$TestRecord[2].Name | should be '1.0.0.0.in-addr.arpa'
-			$TestRecord[2].Comment | should benullorempty
-			$TestRecord[2].TTL | should be 1
-			$TestRecord[2].Use_TTL | should be $True
-		}
-		It "Returns PTR Record from strict ptrdname query" {
-			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ptrdname 'testrecord.domain.com' -strict
-			$TestRecord.count | should be 2
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '12.12.1.1'
-			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '12.12.3.4'
-			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
+			$TestRecord.Comment | should benullorempty
+			$TestRecord.TTL | should be 0
+			$TestRecord.Use_TTL | should be $False
 		}
 		It "Returns multiple PTR Records from non-strict ptrdname query" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ptrdname 'testrecord'
@@ -1535,149 +1456,117 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord[0].View | should be 'default'
 			$TestRecord[0].IPAddress | should be '12.12.1.1'
 			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
+			$TestRecord[0].Comment | should benullorempty
+			$TestRecord[0].TTL | should be 0
+			$TestRecord[0].Use_TTL | should be $False
 			#
 			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
+			$TestRecord[1].PTRDName | should be 'testrecord2.domain.com'
 			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '12.12.3.4'
-			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1].TTL | should be 1200
+			$TestRecord[1].IPAddress | should be '12.12.1.2'
+			$TestRecord[1].Name | should be '2.1.12.12.in-addr.arpa'
+			$TestRecord[1].Comment | should be 'test comment'
+			$TestRecord[1].TTL | should be 100
 			$TestRecord[1].Use_TTL | should be $True
 			#
 			$TestRecord[2].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[2].PTRDName | should be 'testrecord2.domain.com'
-			$TestRecord[2].View | should be 'view3'
-			$TestRecord[2].IPAddress | should be '12.12.2.2'
-			$TestRecord[2].Name | should be '2.2.12.12.in-addr.arpa'
+			$TestRecord[2].PTRDName | should be 'testrecord4.domain.com'
+			$TestRecord[2].View | should be 'view2'
+			$TestRecord[2].IPAddress | should be '12.12.1.1'
+			$TestRecord[2].Name | should be '1.1.12.12.in-addr.arpa'
 			$TestRecord[2].Comment | should benullorempty
 			$TestRecord[2].TTL | should be 0
 			$TestRecord[2].Use_TTL | should be $False
 
 		}
 		It "Returns multiple PTR Records from zone query" {
-			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -zone 'domain.com'
-			$TestRecord.count | should be 3
+			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -zone '12.in-addr.arpa'
+			$TestRecord.count | should be 2
 			#
 			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
 			$TestRecord[0].View | should be 'default'
 			$TestRecord[0].IPAddress | should be '12.12.1.1'
 			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
+			$TestRecord[0].Comment | should benullorempty
+			$TestRecord[0].TTL | should be 0
+			$TestRecord[0].Use_TTL | should be $False
 			#
 			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
+			$TestRecord[1].PTRDName | should be 'testrecord2.domain.com'
 			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '12.12.3.4'
-			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1].TTL | should be 1200
+			$TestRecord[1].IPAddress | should be '12.12.1.2'
+			$TestRecord[1].Name | should be '2.1.12.12.in-addr.arpa'
+			$TestRecord[1].Comment | should be 'test comment'
+			$TestRecord[1].TTL | should be 100
 			$TestRecord[1].Use_TTL | should be $True
-			#
-			$TestRecord[2].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[2].PTRDName | should be 'testrecord2.domain.com'
-			$TestRecord[2].View | should be 'view3'
-			$TestRecord[2].IPAddress | should be '12.12.2.2'
-			$TestRecord[2].Name | should be '2.2.12.12.in-addr.arpa'
-			$TestRecord[2].Comment | should benullorempty
-			$TestRecord[2].TTL | should be 0
-			$TestRecord[2].Use_TTL | should be $False
-
 		}
 		It "Returns PTR Record from IP Address query" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ipaddress '12.12.1.1'
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
-			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '12.12.1.1'
-			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
+			$TestRecord.count | should be 2
+			#
+			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
+			$TestRecord[0].View | should be 'default'
+			$TestRecord[0].IPAddress | should be '12.12.1.1'
+			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
+			$TestRecord[0].Comment | should benullorempty
+			$TestRecord[0].TTL | should be 0
+			$TestRecord[0].Use_TTL | should be $False
+			#
+			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord[1].PTRDName | should be 'testrecord4.domain.com'
+			$TestRecord[1].View | should be 'view2'
+			$TestRecord[1].IPAddress | should be '12.12.1.1'
+			$TestRecord[1].Name | should be '1.1.12.12.in-addr.arpa'
+			$TestRecord[1].Comment | should benullorempty
+			$TestRecord[1].TTL | should be 0
+			$TestRecord[1].Use_TTL | should be $False
 		}
 		It "Returns PTR Record from view query" {
-			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -view 'view3'
-			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.PTRDName | should be 'testrecord2.domain.com'
-			$TestRecord.View | should be 'view3'
-			$TestRecord.IPAddress | should be '12.12.2.2'
-			$TestRecord.Name | should be '2.2.12.12.in-addr.arpa'
-			$TestRecord.Comment | should benullorempty
-			$TestRecord.TTL | should be 0
-			$TestRecord.Use_TTL | should be $False
-
+			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -view 'view2'
+			$TestRecord.count | should be 3
+			#
+			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord[0].PTRDName | should be 'testrecord4.domain.com'
+			$TestRecord[0].View | should be 'view2'
+			$TestRecord[0].IPAddress | should be '12.12.1.1'
+			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
+			$TestRecord[0].Comment | should benullorempty
+			$TestRecord[0].TTL | should be 0
+			$TestRecord[0].Use_TTL | should be $False
 		}
 		It "Returns PTR Record from strict comment query" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'test comment' -strict
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
+			$TestRecord.PTRDName | should be 'testrecord2.domain.com'
 			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '12.12.1.1'
-			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
+			$TestRecord.IPAddress | should be '12.12.1.2'
+			$TestRecord.Name | should be '2.1.12.12.in-addr.arpa'
 			$TestRecord.Comment | should be 'test comment'
-			$TestRecord.TTL | should be 1200
+			$TestRecord.TTL | should be 100
 			$TestRecord.Use_TTL | should be $True
-
 		}
 		It "Returns PTR Record from non-strict comment query" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -comment 'test comment'
-			$TestRecord.count | should be 2
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '12.12.1.1'
-			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '12.12.3.4'
-			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
-		}
-		It "Returns PTR Record from extensible attribute query" {
-			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ExtAttributeQuery {Site -eq 'corp'}
-			$TestRecord.count | should be 2
-			#
-			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[0].View | should be 'default'
-			$TestRecord[0].IPAddress | should be '12.12.1.1'
-			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord[0].Comment | should be 'test comment'
-			$TestRecord[0].TTL | should be 1200
-			$TestRecord[0].Use_TTL | should be $True
-			#
-			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
-			$TestRecord[1].View | should be 'default'
-			$TestRecord[1].IPAddress | should be '12.12.3.4'
-			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
-			$TestRecord[1].Comment | should be 'test comment 2'
-			$TestRecord[1].TTL | should be 1200
-			$TestRecord[1].Use_TTL | should be $True
+			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord.PTRDName | should be 'testrecord2.domain.com'
+			$TestRecord.View | should be 'default'
+			$TestRecord.IPAddress | should be '12.12.1.2'
+			$TestRecord.Name | should be '2.1.12.12.in-addr.arpa'
+			$TestRecord.Comment | should be 'test comment'
+			$TestRecord.TTL | should be 100
+			$TestRecord.Use_TTL | should be $True
 		}
 		It "Returns PTR Record from non-strict ptrdname and comment query" {
-			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ptrdname 'testrecord' -comment 'test comment 2'
+			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ptrdname 'testrecord' -comment 'test comment'
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
-			$TestRecord.PTRDName | should be 'testrecord.domain.com'
+			$TestRecord.PTRDName | should be 'testrecord2.domain.com'
 			$TestRecord.View | should be 'default'
-			$TestRecord.IPAddress | should be '12.12.3.4'
-			$TestRecord.Name | should be '4.3.12.12.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment 2'
-			$TestRecord.TTL | should be 1200
+			$TestRecord.IPAddress | should be '12.12.1.2'
+			$TestRecord.Name | should be '2.1.12.12.in-addr.arpa'
+			$TestRecord.Comment | should be 'test comment'
+			$TestRecord.TTL | should be 100
 			$TestRecord.Use_TTL | should be $True
 		}
 		It "Returns PTR Record from strict ptrdname and IP Address query" {
@@ -1687,9 +1576,9 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
+			$TestRecord.Comment | should benullorempty
+			$TestRecord.TTL | should be 0
+			$TestRecord.Use_TTL | should be $False
 		}
 		It "Returns PTR Record from strict name and view query" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -name '1.1.12.12.in-addr.arpa' -view 'default' -strict
@@ -1698,21 +1587,20 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
+			$TestRecord.Comment | should benullorempty
+			$TestRecord.TTL | should be 0
+			$TestRecord.Use_TTL | should be $False
 		}
 		It "Returns PTR Record from strict name and zone query" {
-			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -name '1.1.12.12.in-addr.arpa' -zone 'domain.com' -strict
+			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -name '1.1.12.12.in-addr.arpa' -zone '12.in-addr.arpa' -strict
 			$TestRecord.GetType().Name | should be 'IB_DNSPTRRecord'
 			$TestRecord.PTRDName | should be 'testrecord.domain.com'
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-
+			$TestRecord.Comment | should benullorempty
+			$TestRecord.TTL | should be 0
+			$TestRecord.Use_TTL | should be $False
 		}
 		It "Returns PTR Record from non-strict ptrdname query with results count of 1" {
 			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ptrdname 'testrecord' -maxresults 1
@@ -1721,10 +1609,9 @@ Describe "Get-IBDNSPTRRecord tests" {
 			$TestRecord.View | should be 'default'
 			$TestRecord.IPAddress | should be '12.12.1.1'
 			$TestRecord.Name | should be '1.1.12.12.in-addr.arpa'
-			$TestRecord.Comment | should be 'test comment'
-			$TestRecord.TTL | should be 1200
-			$TestRecord.Use_TTL | should be $True
-
+			$TestRecord.Comment | should benullorempty
+			$TestRecord.TTL | should be 0
+			$TestRecord.Use_TTL | should be $False
 		}
 	}
 }
@@ -2782,6 +2669,68 @@ Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
 		$TestRecord.ExtAttrib[2].Name | should be 'Site'
 		$TestRecord.ExtAttrib[2].Value | should be 'gulf'
 	}
+	It "Returns A record from extensible attribute search" {
+		$TestRecord = Get-IBDNSARecord -gridmaster $Gridmaster -credential $Credential -ExtAttributeQuery {Site -eq 'corp'}
+		$TestRecord.count | should be 2
+		#
+		$TestRecord[0].GetType().Name | should be 'IB_DNSARecord'
+		$TestRecord[0].Name | should be 'testrecord.domain.com'
+		$TestRecord[0].View | should be 'default'
+		$TestRecord[0].IPAddress | should be '12.12.1.1'
+		$TestRecord[0].Comment | should be 'test comment'
+		$TestRecord[0].TTL | should be 1200
+		$TestRecord[0].Use_TTL | should be $True
+		#
+		$TestRecord[1].GetType().Name | should be 'IB_DNSARecord'
+		$TestRecord[1].Name | should be 'testrecord3.domain.com'
+		$TestRecord[1].View | should be 'default'
+		$TestRecord[1].IPAddress | should be '12.12.1.1'
+		$TestRecord[1].Comment | should be 'test comment 2'
+		$TestRecord[1].TTL | should be 1200
+		$TestRecord[1].Use_TTL | should be $True
+	}
+	It "Returns CName Record from extensible attribute query" {
+		$testalias = Get-IBDNSCNameRecord -gridmaster $gridmaster -credential $Credential -ExtAttributeQuery {Site -eq 'corp'}
+		$testalias.count | should be 2
+		#
+		$testalias[0].GetType().Name | should be 'IB_DNSCNameRecord'
+		$testalias[0].Name | should be 'testalias.domain.com'
+		$testalias[0].View | should be 'default'
+		$testalias[0].canonical | should be 'testrecord.domain.com'
+		$testalias[0].Comment | should be 'test comment'
+		$testalias[0].TTL | should be 1200
+		$testalias[0].Use_TTL | should be $True
+		#
+		$testalias[1].GetType().Name | should be 'IB_DNSCNameRecord'
+		$testalias[1].Name | should be 'testalias3.domain.com'
+		$testalias[1].View | should be 'default'
+		$testalias[1].canonical | should be 'testrecord.domain.com'
+		$testalias[1].Comment | should be 'test comment 2'
+		$testalias[1].TTL | should be 1200
+		$testalias[1].Use_TTL | should be $True
+	}
+		It "Returns PTR Record from extensible attribute query" {
+			$TestRecord = Get-IBDNSPTRRecord -Gridmaster $Gridmaster -Credential $Credential -ExtAttributeQuery {Site -eq 'corp'}
+			$TestRecord.count | should be 2
+			#
+			$TestRecord[0].GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord[0].PTRDName | should be 'testrecord.domain.com'
+			$TestRecord[0].View | should be 'default'
+			$TestRecord[0].IPAddress | should be '12.12.1.1'
+			$TestRecord[0].Name | should be '1.1.12.12.in-addr.arpa'
+			$TestRecord[0].Comment | should be 'test comment'
+			$TestRecord[0].TTL | should be 1200
+			$TestRecord[0].Use_TTL | should be $True
+			#
+			$TestRecord[1].GetType().Name | should be 'IB_DNSPTRRecord'
+			$TestRecord[1].PTRDName | should be 'testrecord.domain.com'
+			$TestRecord[1].View | should be 'default'
+			$TestRecord[1].IPAddress | should be '12.12.3.4'
+			$TestRecord[1].Name | should be '4.3.12.12.in-addr.arpa'
+			$TestRecord[1].Comment | should be 'test comment 2'
+			$TestRecord[1].TTL | should be 1200
+			$TestRecord[1].Use_TTL | should be $True
+		}
 	It "Removes specified extensible attribute by ref" {
 		$TestRecord = Remove-IBExtensibleAttribute -confirm:$False  -EAName Site -gridmaster $gridmaster -credential $credential -_ref 'record:a/ZG5zLmJpbmRfcHRyJC5fZGVa:testrecord.domain.com/default' -Passthru
 		$TestRecord.ExtAttrib | measure-object | % Count | should be 2
