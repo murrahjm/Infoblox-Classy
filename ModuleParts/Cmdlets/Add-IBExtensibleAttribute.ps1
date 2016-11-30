@@ -48,7 +48,7 @@ Function Add-IBExtensibleAttribute {
         [String]$_Ref,
         
         [Parameter(Mandatory=$True,ValueFromPipeline=$True,ParameterSetName='byObject')]
-        [IB_DNSARecord[]]$Record,
+        [object[]]$Record,
 
 		[Parameter(Mandatory=$True)]
 		[ValidateNotNullorEmpty()]
