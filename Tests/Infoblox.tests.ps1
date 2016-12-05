@@ -2612,7 +2612,57 @@ Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
 		$TestRecord.ExtAttrib.Value | should be 'Value2'
 	}
 }
+Describe "Set-IBView tests"{
+	$Viewref = $Script:Recordlist.where{$_._ref -like "view/*:view2/false"}._ref
+	$networkviewref = $Script:Recordlist.where{$_._ref -like "networkview/*:networkview2/false"}
+	$view = [IB_View]::Get($gridmaster,$credential,$viewref)
+	$networkview = [IB_View]::Get($gridmaster,$Credential,$networkviewref)
+	It "sets the comment on view2 to null with ref string" {
+		Set-IBView -gridmaster $Gridmaster -credential $credential -_ref $viewref -comment $Null -confirm:$False
+		$view = get-ibview -Gridmaster $Gridmaster -Credential $credential -_Ref $viewref
+		$view.Name | should be 'view2'
+		$view.comment | should benullorempty
+	}
+	It "sets the comment on view3 using pipeline object" {
+		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -Name 'view3'
+		$view3 | set-ibview -comment 'third view' -confirm:$False
+		$view3.Name | should be 'view3'
+		$view3.comment | should be 'third view'
+	}
+	It "sets the name on view2 using pipeline object" {
+		$view | set-ibview -name 'view2newname' -confirm:$False
+		$view.name | should be 'view2newname'
+		$view.comment | should benullorempty
+	}
+	It "sets the name and comment on view2 using ref string and passthru" {
+		$view2 = set-ibview -gridmaster $gridmaster -credential $credential -name view2 -comment 'second view' -_ref $Viewref -confirm:$False
+		$view2.Name | should be 'view2'
+		$view2.comment | should be 'second view'
+	}
 
+	It "sets the comment on networkview2 to null with ref string" {
+		set-ibview -gridmaster $Gridmaster -credential $Credential -_ref $networkviewref -comment $null -confirm:$False
+		$networkview = get-ibview -Gridmaster $gridmaster -credential $credential -_ref $networkviewref
+		$networkview.Name | should be 'networkview2'
+		$networkview.comment | should benullorempty
+	}
+	It "sets the comment on networkview3 using pipeline object" {
+		$networkview3 = get-ibview -Gridmaster $gridmaster -Credential $credential -Name 'networkview3'
+		$networkview3 | set-ibview -comment 'third networkview' -confirm:$False
+		$networkview3.Name | should be 'networkview3'
+		$networkview3.comment | should be 'third networkview'
+	}
+	It "sets the name on networkview2 using pipeline object" {
+		$networkview | set-ibview -name 'networkview2newname' -confirm:$False
+		$networkview.name | should be 'networkview2newname'
+		$networkview.comment | should benullorempty
+	}
+	It "sets the name and comment on networkview2 using ref string and passthru" {
+		$networkview2 = set-ibview -gridmaster $gridmaster -credential $credential -name networkview2 -comment 'second networkview' -_ref $networkViewref -confirm:$False
+		$networkview2.Name | should be 'networkview2'
+		$networkview2.comment | should be 'second networkview'
+	}
+}
 Describe "Remove-IBDNSARecord tests" {
 	It "Throws an error with an empty gridmaster" {
 		{Remove-IBDNSARecord -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
