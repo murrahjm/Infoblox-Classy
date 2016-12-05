@@ -2611,7 +2611,7 @@ Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
 }
 Describe "Set-IBView tests"{
 	$Viewref = $Script:Recordlist.where{$_._ref -like "view/*:view2/false"}._ref
-	$networkviewref = $Script:Recordlist.where{$_._ref -like "networkview/*:networkview2/false"}
+	$networkviewref = $Script:Recordlist.where{$_._ref -like "networkview/*:networkview2/false"}._ref
 	$view = [IB_View]::Get($gridmaster,$credential,$viewref)
 	$networkview = [IB_networkView]::Get($gridmaster,$Credential,$networkviewref)
 	It "sets the comment on view2 to null with ref string" {
@@ -2889,7 +2889,7 @@ Describe "Remove-IBView tests" {
 	It "deletes view with object through pipeline" {
 		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Strict -Type DNSView
 		$result = $view3 | remove-ibview -confirm:$False
-		get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Strict | should benullorempty
+		get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Type dnsview -Strict | should benullorempty
 		$result | should be $view3._ref
 	}
 	It "deletes multiple networkviews through pipeline" {
