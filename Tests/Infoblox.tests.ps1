@@ -2883,7 +2883,25 @@ Describe "Remove-IBDNSZone tests" {
 	}
 }
 Describe "Remove-IBView tests" {
-	
+	It "deletes view with refstring input" {
+		$view2 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict
+		$result = remove-ibview -gridmaster $gridmaster -credential $credential -_ref $view2.ref
+		{get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict} | should throw
+		$result | should be $view2._ref
+	}
+	It "deletes view with object through pipeline" {
+		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Strict
+		$result = $view3 | remove-ibview
+		{get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Strict} | should throw
+		$result | should be $view3._ref
+	}
+	It "deletes multiple networkviews through pipeline" {
+		$networkviews = get-ibview -gridmaster $gridmaster -credential $credential -type networkview -name networkview
+		$result = $networkviews | remove-ibview
+		{get-ibview -gridmaster $gridmaster -credential $credential -type networkview -name networkview} | should throw
+		$Result[0] | should be $networkviews[0]._ref
+		$result[1] | should be $networkviews[1]._ref
+	}
 }
 Describe "Remove-IBExtensibleAttributeDefinition tests" {
 	It "Throws an error with an empty gridmaster" {
