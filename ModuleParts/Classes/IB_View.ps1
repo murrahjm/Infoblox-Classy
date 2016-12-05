@@ -92,7 +92,8 @@ Class IB_View : IB_ReferenceObject {
         [String]$Comment
     ){
         $URIString = "https://$($this.Gridmaster)/wapi/$Global:WapiVersion/$($this._ref)"
-        $bodyhashtable = @{name=$Name}
+        $bodyhashtable = $null
+		$bodyhashtable += @{name=$Name}
 		$bodyhashtable += @{comment=$Comment}
         If ($bodyhashtable){
             $return = Invoke-RestMethod -uri $URIString -method Put -body $($bodyhashtable | convertto-json) -contenttype application/json -Credential $this.Credential

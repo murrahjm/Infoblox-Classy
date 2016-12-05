@@ -2633,7 +2633,7 @@ Describe "Set-IBView tests"{
 	}
 	It "sets the name and comment on view2 using ref string and passthru" {
 		$view2 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view2newname -strict -type DNSView
-		$view2 = set-ibview -gridmaster $gridmaster -credential $credential -name view2 -comment 'second view' -_ref $View2._ref -confirm:$False
+		$view2 = set-ibview -gridmaster $gridmaster -credential $credential -name view2 -comment 'second view' -_ref $View2._ref -confirm:$False -passthru
 		$view2.Name | should be 'view2'
 		$view2.comment | should be 'second view'
 	}
@@ -2656,7 +2656,7 @@ Describe "Set-IBView tests"{
 		$networkview.comment | should benullorempty
 	}
 	It "sets the name and comment on networkview2 using ref string and passthru" {
-		$networkview2 = set-ibview -gridmaster $gridmaster -credential $credential -name networkview2 -comment 'second networkview' -_ref $networkViewref -confirm:$False
+		$networkview2 = set-ibview -gridmaster $gridmaster -credential $credential -name networkview2 -comment 'second networkview' -_ref $networkViewref -confirm:$False -passthru
 		$networkview2.Name | should be 'networkview2'
 		$networkview2.comment | should be 'second networkview'
 	}

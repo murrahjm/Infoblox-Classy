@@ -51,20 +51,24 @@
     IB_NetworkView
 #>
 Function Set-IBView{
-    [CmdletBinding(SupportsShouldProcess=$True,ConfirmImpact="High")]
+    [CmdletBinding(DefaultParameterSetName='byObject',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
+        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
 		[String]$Gridmaster,
 
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
+        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
         [ValidateNotNullorEmpty()]
         [System.Management.Automation.Credential()]
 		$Credential,
 
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
+        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
         [ValidateNotNullorEmpty()]
         [String]$_Ref,
+        
+        [Parameter(Mandatory=$True,ParameterSetName='byObject',ValueFromPipeline=$True)]
+        [ValidateScript({$_.GetType().Name -eq 'IB_View' -or $_.GetType().name -eq 'IB_NetworkView'})]
+        [object[]]$Record,
         
         [String]$Name = 'unspecified',
 
@@ -79,36 +83,32 @@ Function Set-IBView{
    }
 
     PROCESS{
-        Try {
-            $Record = [IB_View]::Get($gridmaster,$Credential,$_ref)
-        } Catch {
-                write-verbose "No record of type IB_View found with reference string $_ref.  Searching IB_NetworkView types"
-        }
-        If (! $Record){
-            Try {
-                [IB_NetworkView]::Get($gridmaster,$Credential,$_ref)
-            }Catch{
-                write-verbose "No record of type IB_NetworkView found with reference string $_ref"        
+        If ($pscmdlet.ParameterSetName -eq 'byRef'){
+            If ($_Ref -like "view/*"){
+                $Record = [IB_View]::Get($Gridmaster,$Credential,$_Ref)
+            } elseif ($_Ref -like "networkview/*") {
+                $Record = [IB_NetworkView]::Get($Gridmaster,$Credential,$_Ref)
             }
-        }
-        If ($Record){
-            If ($pscmdlet.shouldProcess($Record)){
-                If ($comment -ne 'unspecified'){
-                    write-verbose "$FunctionName`:  Setting comment to $comment"
-                    $Record.Set($Record.Name, $Comment)
+                If ($Record){
+                    $Record | Set-IBView -name $Name -Comment $Comment -Passthru:$Passthru
                 }
-                If ($Name -ne 'unspecified'){
-                    write-verbose "$FunctionName`:  Setting name to $Name"
-                    $Record.Set($Name, $Record.comment)
-                }
-                If ($Passthru) {
-                    Write-Verbose "$FunctionName`:  Passthru specified, returning object as output"
-                    return $Record
-                }
-            }
         } else {
-            Write-error "No record found with reference string $_ref"
-            return
+            foreach ($item in $Record){
+                If ($pscmdlet.shouldProcess($item)){
+                    If ($comment -ne 'unspecified'){
+                        write-verbose "$FunctionName`:  Setting comment to $comment"
+                        $item.Set($item.Name, $Comment)
+                    }
+                    If ($Name -ne 'unspecified'){
+                        write-verbose "$FunctionName`:  Setting name to $Name"
+                        $item.Set($Name, $item.comment)
+                    }
+                    If ($Passthru) {
+                        Write-Verbose "$FunctionName`:  Passthru specified, returning object as output"
+                        return $item
+                    }
+                }
+            }
         }
 	}
     END{}

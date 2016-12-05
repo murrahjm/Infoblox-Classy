@@ -115,7 +115,6 @@ Function Set-IBFixedAddress{
 						Write-Verbose "$FunctionName`:  Passthru specified, returning object as output"
 						return $Item
 					}
-
 				}
 			}
 		}
