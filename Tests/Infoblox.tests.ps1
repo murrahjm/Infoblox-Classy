@@ -2613,7 +2613,7 @@ Describe "Set-IBView tests"{
 	$Viewref = $Script:Recordlist.where{$_._ref -like "view/*:view2/false"}._ref
 	$networkviewref = $Script:Recordlist.where{$_._ref -like "networkview/*:networkview2/false"}
 	$view = [IB_View]::Get($gridmaster,$credential,$viewref)
-	$networkview = [IB_View]::Get($gridmaster,$Credential,$networkviewref)
+	$networkview = [IB_networkView]::Get($gridmaster,$Credential,$networkviewref)
 	It "sets the comment on view2 to null with ref string" {
 		Set-IBView -gridmaster $Gridmaster -credential $credential -_ref $viewref -comment $Null -confirm:$False
 		$view = get-ibview -Gridmaster $Gridmaster -Credential $credential -name view2 -Type DNSView
@@ -2621,7 +2621,7 @@ Describe "Set-IBView tests"{
 		$view.comment | should benullorempty
 	}
 	It "sets the comment on view3 using pipeline object" {
-		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -Name 'view3'
+		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -Name 'view3' -Type DNSView
 		$view3 | set-ibview -comment 'third view' -confirm:$False
 		$view3.Name | should be 'view3'
 		$view3.comment | should be 'third view'
@@ -2639,12 +2639,12 @@ Describe "Set-IBView tests"{
 
 	It "sets the comment on networkview2 to null with ref string" {
 		set-ibview -gridmaster $Gridmaster -credential $Credential -_ref $networkviewref -comment $null -confirm:$False
-		$networkview = get-ibview -Gridmaster $gridmaster -credential $credential -_ref $networkviewref
+		$networkview = get-ibview -Gridmaster $gridmaster -credential $credential -_ref $networkviewref -Type networkview
 		$networkview.Name | should be 'networkview2'
 		$networkview.comment | should benullorempty
 	}
 	It "sets the comment on networkview3 using pipeline object" {
-		$networkview3 = get-ibview -Gridmaster $gridmaster -Credential $credential -Name 'networkview3'
+		$networkview3 = get-ibview -Gridmaster $gridmaster -Credential $credential -Name 'networkview3' -Type NetworkView
 		$networkview3 | set-ibview -comment 'third networkview' -confirm:$False
 		$networkview3.Name | should be 'networkview3'
 		$networkview3.comment | should be 'third networkview'
@@ -2882,20 +2882,20 @@ Describe "Remove-IBDNSZone tests" {
 Describe "Remove-IBView tests" {
 	It "deletes view with refstring input" {
 		$view2 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict -Type DNSView
-		$result = remove-ibview -gridmaster $gridmaster -credential $credential -_ref $view2.ref -confirm:$False
+		$result = remove-ibview -gridmaster $gridmaster -credential $credential -_ref $view2._ref -confirm:$False
 		{get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict} | should throw
 		$result | should be $view2._ref
 	}
 	It "deletes view with object through pipeline" {
 		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Strict -Type DNSView
 		$result = $view3 | remove-ibview -confirm:$False
-		{get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Strict} | should throw
+		get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Strict | should benullorempty
 		$result | should be $view3._ref
 	}
 	It "deletes multiple networkviews through pipeline" {
 		$networkviews = get-ibview -gridmaster $gridmaster -credential $credential -type networkview -name networkview
 		$result = $networkviews | remove-ibview -confirm:$False
-		{get-ibview -gridmaster $gridmaster -credential $credential -type networkview -name networkview} | should throw
+		get-ibview -gridmaster $gridmaster -credential $credential -type networkview -name networkview | should benullorempty
 		$Result[0] | should be $networkviews[0]._ref
 		$result[1] | should be $networkviews[1]._ref
 	}
