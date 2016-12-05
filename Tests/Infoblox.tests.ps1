@@ -1904,9 +1904,6 @@ Describe "Get-IBRecord tests" {
 Describe "Set-IBExtensibleAttributeDefinition tests" {
 	
 }
-Describe "Set-IBView tests" {
-	
-}
 Describe "Set-IBDNSZone tests" {
 	
 }
@@ -2619,7 +2616,7 @@ Describe "Set-IBView tests"{
 	$networkview = [IB_View]::Get($gridmaster,$Credential,$networkviewref)
 	It "sets the comment on view2 to null with ref string" {
 		Set-IBView -gridmaster $Gridmaster -credential $credential -_ref $viewref -comment $Null -confirm:$False
-		$view = get-ibview -Gridmaster $Gridmaster -Credential $credential -_Ref $viewref
+		$view = get-ibview -Gridmaster $Gridmaster -Credential $credential -name view2 -Type DNSView
 		$view.Name | should be 'view2'
 		$view.comment | should benullorempty
 	}
@@ -2884,20 +2881,20 @@ Describe "Remove-IBDNSZone tests" {
 }
 Describe "Remove-IBView tests" {
 	It "deletes view with refstring input" {
-		$view2 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict
-		$result = remove-ibview -gridmaster $gridmaster -credential $credential -_ref $view2.ref
+		$view2 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict -Type DNSView
+		$result = remove-ibview -gridmaster $gridmaster -credential $credential -_ref $view2.ref -confirm:$False
 		{get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict} | should throw
 		$result | should be $view2._ref
 	}
 	It "deletes view with object through pipeline" {
-		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Strict
-		$result = $view3 | remove-ibview
+		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Strict -Type DNSView
+		$result = $view3 | remove-ibview -confirm:$False
 		{get-ibview -Gridmaster $gridmaster -Credential $credential -name view3 -Strict} | should throw
 		$result | should be $view3._ref
 	}
 	It "deletes multiple networkviews through pipeline" {
 		$networkviews = get-ibview -gridmaster $gridmaster -credential $credential -type networkview -name networkview
-		$result = $networkviews | remove-ibview
+		$result = $networkviews | remove-ibview -confirm:$False
 		{get-ibview -gridmaster $gridmaster -credential $credential -type networkview -name networkview} | should throw
 		$Result[0] | should be $networkviews[0]._ref
 		$result[1] | should be $networkviews[1]._ref
