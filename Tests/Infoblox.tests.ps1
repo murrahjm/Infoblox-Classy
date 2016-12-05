@@ -2616,12 +2616,12 @@ Describe "Set-IBView tests"{
 	$networkview = [IB_networkView]::Get($gridmaster,$Credential,$networkviewref)
 	It "sets the comment on view2 to null with ref string" {
 		Set-IBView -gridmaster $Gridmaster -credential $credential -_ref $viewref -comment $Null -confirm:$False
-		$view = get-ibview -Gridmaster $Gridmaster -Credential $credential -name view2 -Type DNSView
+		$view = get-ibview -Gridmaster $Gridmaster -Credential $credential -name view2 -Type DNSView -strict
 		$view.Name | should be 'view2'
 		$view.comment | should benullorempty
 	}
 	It "sets the comment on view3 using pipeline object" {
-		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -Name 'view3' -Type DNSView
+		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -Name 'view3' -Type DNSView -strict
 		$view3 | set-ibview -comment 'third view' -confirm:$False
 		$view3.Name | should be 'view3'
 		$view3.comment | should be 'third view'
@@ -2632,14 +2632,15 @@ Describe "Set-IBView tests"{
 		$view.comment | should benullorempty
 	}
 	It "sets the name and comment on view2 using ref string and passthru" {
-		$view2 = set-ibview -gridmaster $gridmaster -credential $credential -name view2 -comment 'second view' -_ref $Viewref -confirm:$False
+		$view2 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view2newname -strict -type DNSView
+		$view2 = set-ibview -gridmaster $gridmaster -credential $credential -name view2 -comment 'second view' -_ref $View2._ref -confirm:$False
 		$view2.Name | should be 'view2'
 		$view2.comment | should be 'second view'
 	}
 
 	It "sets the comment on networkview2 to null with ref string" {
 		set-ibview -gridmaster $Gridmaster -credential $Credential -_ref $networkviewref -comment $null -confirm:$False
-		$networkview = get-ibview -Gridmaster $gridmaster -credential $credential -_ref $networkviewref -Type networkview
+		$networkview = get-ibview -Gridmaster $gridmaster -credential $credential -_ref $networkviewref
 		$networkview.Name | should be 'networkview2'
 		$networkview.comment | should benullorempty
 	}
