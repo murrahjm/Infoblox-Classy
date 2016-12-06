@@ -2612,13 +2612,11 @@ Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
 Describe "Set-IBView tests"{
 	$Viewref = $Script:Recordlist.where{$_._ref -like "view/*:view2/false"}._ref
 	$networkviewref = $Script:Recordlist.where{$_._ref -like "networkview/*:networkview2/false"}._ref
-	$view = [IB_View]::Get($gridmaster,$credential,$viewref)
-	$networkview = [IB_networkView]::Get($gridmaster,$Credential,$networkviewref)
 	It "sets the comment on view2 to null with ref string" {
 		Set-IBView -gridmaster $Gridmaster -credential $credential -_ref $viewref -comment $Null -confirm:$False
-		$view = get-ibview -Gridmaster $Gridmaster -Credential $credential -name view2 -Type DNSView -strict
-		$view.Name | should be 'view2'
-		$view.comment | should benullorempty
+		$view2 = get-ibview -Gridmaster $Gridmaster -Credential $credential -name view2 -Type DNSView -strict
+		$view2.Name | should be 'view2'
+		$view2.comment | should benullorempty
 	}
 	It "sets the comment on view3 using pipeline object" {
 		$view3 = get-ibview -Gridmaster $gridmaster -Credential $credential -Name 'view3' -Type DNSView -strict
@@ -2627,9 +2625,10 @@ Describe "Set-IBView tests"{
 		$view3.comment | should be 'third view'
 	}
 	It "sets the name on view2 using pipeline object" {
-		$view | set-ibview -name 'view2newname' -confirm:$False
-		$view.name | should be 'view2newname'
-		$view.comment | should benullorempty
+		$view2 = get-ibview -Gridmaster $Gridmaster -Credential $credential -name view2 -Type DNSView -strict
+		$view2 | set-ibview -name 'view2newname' -confirm:$False
+		$view2.name | should be 'view2newname'
+		$view2.comment | should benullorempty
 	}
 	It "sets the name and comment on view2 using ref string and passthru" {
 		$view2 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view2newname -strict -type DNSView
@@ -2640,9 +2639,9 @@ Describe "Set-IBView tests"{
 
 	It "sets the comment on networkview2 to null with ref string" {
 		set-ibview -gridmaster $Gridmaster -credential $Credential -_ref $networkviewref -comment $null -confirm:$False
-		$networkview = get-ibview -Gridmaster $gridmaster -credential $credential -_ref $networkviewref
-		$networkview.Name | should be 'networkview2'
-		$networkview.comment | should benullorempty
+		$networkview2 = get-ibview -Gridmaster $gridmaster -credential $credential -_ref $networkviewref
+		$networkview2.Name | should be 'networkview2'
+		$networkview2.comment | should benullorempty
 	}
 	It "sets the comment on networkview3 using pipeline object" {
 		$networkview3 = get-ibview -Gridmaster $gridmaster -Credential $credential -Name 'networkview3' -Type NetworkView
@@ -2651,9 +2650,10 @@ Describe "Set-IBView tests"{
 		$networkview3.comment | should be 'third networkview'
 	}
 	It "sets the name on networkview2 using pipeline object" {
-		$networkview | set-ibview -name 'networkview2newname' -confirm:$False
-		$networkview.name | should be 'networkview2newname'
-		$networkview.comment | should benullorempty
+		$networkview2 = get-ibview -Gridmaster $gridmaster -credential $credential -_ref $networkviewref
+		$networkview2 | set-ibview -name 'networkview2newname' -confirm:$False
+		$networkview2.name | should be 'networkview2newname'
+		$networkview2.comment | should benullorempty
 	}
 	It "sets the name and comment on networkview2 using ref string and passthru" {
 		$networkview2 = set-ibview -gridmaster $gridmaster -credential $credential -name networkview2 -comment 'second networkview' -_ref $networkViewref -confirm:$False -passthru
@@ -2884,7 +2884,7 @@ Describe "Remove-IBView tests" {
 	It "deletes view with refstring input" {
 		$view2 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict -Type DNSView
 		$result = remove-ibview -gridmaster $gridmaster -credential $credential -_ref $view2._ref -confirm:$False
-		{get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict} | should throw
+		get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict -type DNSView | should benullorempty
 		$result | should be $view2._ref
 	}
 	It "deletes view with object through pipeline" {
