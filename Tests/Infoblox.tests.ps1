@@ -19,7 +19,7 @@ $Recordlist = @()
 $Scripts = Get-ChildItem ".\ModuleParts" -Filter *.ps1 -Recurse
 $Scripts | get-content | out-file -FilePath ".\infoblox.ps1"
 . .\infoblox.ps1
-$scripts | %{. $_.FullName}
+$scripts | foreach-object {. $_.FullName}
 
 $Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn
 $Credential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $($env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force)
@@ -2537,14 +2537,14 @@ Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
 	}
 	It "Updates the value of an existing extensible attribute by object pipeline with passthru option" {
 		$TestRecord = $TestRecord | Add-IBExtensibleAttribute -eaname Site -eavalue gulf -Passthru -confirm:$False 
-		$TestRecord.ExtAttrib | measure-object | select -ExpandProperty Count | should be 1
+		$TestRecord.ExtAttrib | measure-object | select-object -ExpandProperty Count | should be 1
 		$TestRecord.ExtAttrib.Name | should be 'Site'
 		$TestRecord.ExtAttrib.value | should be 'gulf'
 	}
 	It "Adds extensible attribute by ref" {
 		Add-IBExtensibleAttribute -gridmaster $gridmaster -credential $credential -_ref $TestRecord._Ref -EAName 'EA2' -EAValue 'Value2' -confirm:$False 
 		$TestRecord = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $Credential -_ref $TestRecord._Ref
-		$TestRecord.ExtAttrib | measure-object | select -ExpandProperty Count | should be 2
+		$TestRecord.ExtAttrib | measure-object | select-object -ExpandProperty Count | should be 2
 		$TestRecord.ExtAttrib[0].Name | should be 'EA2'
 		$TestRecord.ExtAttrib[0].Value | should be 'Value2'
 		$TestRecord.ExtAttrib[1].Name | should be 'Site'
@@ -2552,7 +2552,7 @@ Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
 	}
 	It "Adds extensible attribute by object" {
 		$TestRecord = Add-IBExtensibleAttribute -Record $testrecord -Passthru -EAName 'EA3' -EAValue 'Value3' -confirm:$False 
-		$TestRecord.ExtAttrib | measure-object | % count | should be 3
+		$TestRecord.ExtAttrib | measure-object | select-object -expandproperty count | should be 3
 		$TestRecord.ExtAttrib[0].Name | should be 'EA2'
 		$TestRecord.ExtAttrib[0].Value | should be 'Value2'
 		$TestRecord.ExtAttrib[1].Name | should be 'EA3'
@@ -2606,7 +2606,7 @@ Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
 
 	It "Removes specified extensible attribute by ref" {
 		$TestRecord = Remove-IBExtensibleAttribute -confirm:$False  -EAName Site -gridmaster $gridmaster -credential $credential -_ref $TestRecord._Ref -Passthru
-		$TestRecord.ExtAttrib | measure-object | % Count | should be 2
+		$TestRecord.ExtAttrib | measure-object | select-object -expandproperty Count | should be 2
 		$TestRecord.ExtAttrib[0].Name | should be 'EA2'
 		$TestRecord.ExtAttrib[0].Value | should be 'Value2'
 		$TestRecord.ExtAttrib[1].Name | should be 'EA3'
@@ -2622,7 +2622,7 @@ Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
 		Add-IBExtensibleAttribute -Record $TestRecord -EAName EA2 -EAValue 'Value2' -confirm:$False 
 		Remove-IBExtensibleAttribute -Record $TestRecord -EAName Site -confirm:$False 
 		$TestRecord = Get-IBDNScnameRecord -Gridmaster $gridmaster -Credential $Credential -name testalias.domain.com -View default
-		$TestRecord.Extattrib | measure-object | % Count | should be 1
+		$TestRecord.Extattrib | measure-object | select-object -expandproperty Count | should be 1
 		$TestRecord.ExtAttrib.Name | should be 'EA2'
 		$TestRecord.ExtAttrib.Value | should be 'Value2'
 	}
@@ -2862,7 +2862,7 @@ Describe "Remove-IBNetwork tests" {
 	}
 	It "deletes multiple parent networks through byRef method" {
 		$networks = get-ibnetwork -gridmaster $Gridmaster -credential $Credential -network 12.0.0.0/8
-		$Networks | %{
+		$Networks | foreach-object{
 			$Result = Remove-IBNetwork -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref -confirm:$False
 			$Result | should be $_._ref
 			{get-ibnetwork -gridmaster $Gridmaster -credential $credential -_ref $_._ref} | should throw
@@ -2891,7 +2891,7 @@ Describe "Remove-IBDNSZone tests" {
 	}
 	It "deletes multiple zones through byRef method" {
 		$zones = get-ibdnszone -gridmaster $Gridmaster -credential $Credential -view default
-		$zones | %{
+		$zones | foreach-object{
 			$Result = Remove-IBdnszone -Gridmaster $Gridmaster -Credential $Credential -_Ref $_._ref -confirm:$False
 			$Result | should be $_._ref
 			{get-ibdnszone -gridmaster $Gridmaster -credential $credential -_ref $_._ref} | should Throw

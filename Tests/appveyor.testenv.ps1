@@ -7,7 +7,7 @@ Param(
 )
 #login to azure with secret stuff
 Disable-AzureRmDataCollection
-$AzureCredential = new-object -TypeName pscredential -ArgumentList $env:azureapploginid, $($env:azurepassword | covertto-securestring -AsPlainText -force)
+$AzureCredential = new-object -TypeName pscredential -ArgumentList $env:azureapploginid, $($env:azurepassword | convertto-securestring -AsPlainText -force)
 Login-AzureRmAccount -Credential $AzureCredential -ServicePrincipal -TenantId $env:AzureTenantID
 
 $RGName = $ENV:ResourceGroupName
