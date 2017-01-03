@@ -12,16 +12,16 @@ Login-AzureRmAccount -Credential $AzureCredential -ServicePrincipal -TenantId $e
 
 $RGName = $ENV:ResourceGroupName
 $location = $env:location
-
+$ProjectRoot = $ENV:APPVEYOR_BUILD_FOLDER
 If ($Build){
 
 $SecureIBAdminPassword = $env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force
 If (!(Get-azurermresourcegroup $rgname -ea 'silentlycontinue')){
     $ResourceGroup = New-AzureRMResourceGroup -Name $RGName -Location $Location
 }
-$TestResult = test-AzureRmResourceGroupDeployment -ResourceGroupName $rgname -TemplateFile ".\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $SecureIBAdminPassword
+$TestResult = test-AzureRmResourceGroupDeployment -ResourceGroupName $rgname -TemplateFile "$ProjectRoot\tests\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $SecureIBAdminPassword
 If ($Testresult.count -eq 0){
-    $Result = New-AzureRmResourceGroupDeployment -ResourceGroupName $rgname -TemplateFile ".\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $SecureIBAdminPassword
+    $Result = New-AzureRmResourceGroupDeployment -ResourceGroupName $rgname -TemplateFile "$ProjectRoot\tests\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $SecureIBAdminPassword
     If ($result.ProvisioningState -eq 'Succeeded'){
         $AdminCredential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $SecureIBAdminPassword
         $GridmasterFQDN = "$($result.parameters.virtualMachines_TestGridmaster_name.value).$($result.parameters.location.value).cloudapp.azure.com"
