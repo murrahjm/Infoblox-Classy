@@ -16,6 +16,14 @@
 #all set tests
 #all delete tests
 $Recordlist = @()
+$Scripts = Get-ChildItem ".\ModuleParts" -Filter *.ps1 -Recurse
+$Scripts | get-content | out-file -FilePath ".\infoblox.ps1"
+. .\infoblox.ps1
+$scripts | %{. $_.FullName}
+
+$Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn
+$Credential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $($env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force)
+
 write-output "Gridmaster:  $gridmaster"
 write-output "wapi version:  $Wapiversion"
 #below code allows for ignoring self-signed certificate on infoblox appliance

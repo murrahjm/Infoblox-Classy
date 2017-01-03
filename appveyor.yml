@@ -12,8 +12,8 @@ environment:
     secure: +Yhi3I1uR1xjocdrPn5HGA==
 
 install:
-  - cinst pester -y
-
+ - ps: install-module Pester
+ - ps: install-module AzureRM
 build: false
 
 before_test:
