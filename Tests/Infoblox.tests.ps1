@@ -16,9 +16,10 @@
 #all set tests
 #all delete tests
 $Recordlist = @()
-$Scripts = Get-ChildItem ".\ModuleParts" -Filter *.ps1 -Recurse
-$Scripts | get-content | out-file -FilePath ".\infoblox.ps1"
-. .\infoblox.ps1
+$ProjectRoot = $ENV:APPVEYOR_BUILD_FOLDER
+$Scripts = Get-ChildItem "$projectRoot\ModuleParts" -Filter *.ps1 -Recurse
+$Scripts | get-content | out-file -FilePath "$projectRoot\infoblox.ps1"
+. "$ProjectRoot\infoblox.ps1"
 $scripts | foreach-object {. $_.FullName}
 
 $Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn

@@ -3,16 +3,17 @@
 
 Param(
     [switch]$Build,
-    [Switch]$Destroy
+    [Switch]$Destroy,
+    [String]$ProjectRoot = $ENV:APPVEYOR_BUILD_FOLDER,
+    [String]$RGName = $ENV:ResourceGroupName,
+    [string]$location = $env:location
+
 )
 #login to azure with secret stuff
 Disable-AzureRmDataCollection
 $AzureCredential = new-object -TypeName pscredential -ArgumentList $env:azureapploginid, $($env:azurepassword | convertto-securestring -AsPlainText -force)
 Login-AzureRmAccount -Credential $AzureCredential -ServicePrincipal -TenantId $env:AzureTenantID
 
-$RGName = $ENV:ResourceGroupName
-$location = $env:location
-$ProjectRoot = $ENV:APPVEYOR_BUILD_FOLDER
 If ($Build){
 
 $SecureIBAdminPassword = $env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force
@@ -40,7 +41,7 @@ If ($Testresult.count -eq 0){
 }
 
 } elseif ($Destroy){
-
+Get-azurermResourceGroup -name $rgname | remove-azurermresourcegroup -confirm:$False
 } else {
     throw "invalid parameters specified"
 }
