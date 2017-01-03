@@ -18,11 +18,21 @@
 $Recordlist = @()
 write-output "Gridmaster:  $gridmaster"
 write-output "wapi version:  $Wapiversion"
-
-Describe "Test-Gridmaster" {
-	It "Tests accessibility to infoblox gridmaster" {
-		Test-IBGridMaster -gridmaster $Gridmaster | should be $True
-	}
+#below code allows for ignoring self-signed certificate on infoblox appliance
+add-type @"
+    using System.Net;
+    using System.Security.Cryptography.X509Certificates;
+    public class TrustAllCertsPolicy : ICertificatePolicy {
+        public bool CheckValidationResult(
+            ServicePoint srvPoint, X509Certificate certificate,
+            WebRequest request, int certificateProblem) {
+            return true;
+        }
+    }
+"@
+[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+if (!(Test-IBGridMaster -gridmaster $Gridmaster)){
+	throw "Gridmaster not accessible, aborting tests"
 }
 Describe "New-IBExtensibleAttributeDefinition tests" {
 	It "Creates new extensible attribute definition with value type String" {

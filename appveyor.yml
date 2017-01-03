@@ -1,0 +1,33 @@
+# See http://www.appveyor.com/docs/appveyor-yml for many more options
+
+# Skip on updates to the readme.
+# We can force this by adding [skip ci] or [ci skip] anywhere in commit message
+skip_commits:
+  message: /updated readme.*/
+
+environment:
+  ResourceGroupName: infobloxtesting
+  location: SouthCentralUS
+  IBAdminPassword:
+    secure: +Yhi3I1uR1xjocdrPn5HGA==
+
+install:
+  - cinst pester -y
+
+build: false
+
+before_test:
+# Build test environment in azure to run pester tests against
+ - ps: $BuildEnvironment = . .\Tests\appveyor.testenv.ps1 -build
+ - ps: $Gridmaster = $buildEnvironment.Gridmaster
+ - ps: $AdminCredential = $buildEnvironment.AdminCredential
+test_script:
+# Test with native PS version
+  - ps: . .\Tests\appveyor.pester.ps1 -Test
+  - ps: write-output $gridmaster
+# Finalize pass - collect and upload results
+  - ps: . .\Tests\appveyor.pester.ps1 -Finalize
+
+after_test:
+#destroy test environment in azure after tests are complete
+ - ps: . .\Tests\appveyor.testenv.ps1 -destroy
