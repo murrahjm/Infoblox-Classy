@@ -10,7 +10,12 @@ environment:
   location: SouthCentralUS
   IBAdminPassword:
     secure: +Yhi3I1uR1xjocdrPn5HGA==
-
+  AzurePassword:
+    secure:  YsJNS6K8bf+aQp94gs6CJA==
+  AzureTenantID:
+    secure:  9dde4IdsaFmMXI+c8qpfltOt1vXkebzQldt43KK3i8ips7SWYUw8M3Z0ueHZkJcx
+  AzureAppLoginID:
+    secure:  eeRsMl/TAFnKPf6nqz/GlZ1PRdvIj/QhgSOqWDalQAQy5o+4OW8J5bWrZAp+rp7McQ6C/GAgkr6ypF0vTmA4ysAYsCcwqwBOzIxze2KQwaI=
 install:
  - ps: install-module Pester
  - ps: install-module AzureRM

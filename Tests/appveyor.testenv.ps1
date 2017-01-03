@@ -5,14 +5,17 @@ Param(
     [switch]$Build,
     [Switch]$Destroy
 )
+#login to azure with secret stuff
+Disable-AzureRmDataCollection
+$AzureCredential = new-object -TypeName pscredential -ArgumentList $env:azureapploginid, $($env:azurepassword | covertto-securestring -AsPlainText -force)
+Login-AzureRmAccount -Credential $AzureCredential -ServicePrincipal -TenantId $env:AzureTenantID
 
 $RGName = $ENV:ResourceGroupName
 $location = $env:location
 
 If ($Build){
 
-$IBAdminPassword = 'Password1234'
-$SecureIBAdminPassword = $IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force
+$SecureIBAdminPassword = $env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force
 If (!(Get-azurermresourcegroup $rgname -ea 'silentlycontinue')){
     $ResourceGroup = New-AzureRMResourceGroup -Name $RGName -Location $Location
 }
