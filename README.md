@@ -1,3 +1,6 @@
+### Current Build Status:
+[![Build status](https://ci.appveyor.com/api/projects/status/xsbki1rrxo2nh3fy/branch/master?svg=true)](https://ci.appveyor.com/project/murrahjm/infoblox-classy)
+
 # Infoblox-Classy
 Infoblox cmdlets for Posh 5.0 using classes
 
@@ -7,5 +10,5 @@ The basic structure of the class definitions mirrors the REST API object definit
 
 Pester tests are performed against an infoblox appliance in Azure.  Visual Studio Online build definition provisions infoblox appliance in azure with AzureDeploy.json template, runs pester tests against appliance, then deletes the Azure resource group.
 
-### Current Build Status:
-![Build Status](https://murrahjm.visualstudio.com/_apis/public/build/definitions/4b8783db-bcc0-43dd-9baf-23ac76f7e619/5/badge)
+
+

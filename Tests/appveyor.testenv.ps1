@@ -41,7 +41,7 @@ If ($Testresult.count -eq 0){
 }
 
 } elseif ($Destroy){
-Get-azurermResourceGroup -name $rgname | remove-azurermresourcegroup -confirm:$False
+    Get-azurermResourceGroup -name $rgname | remove-azurermresourcegroup -confirm:$False -Force
 } else {
     throw "invalid parameters specified"
 }

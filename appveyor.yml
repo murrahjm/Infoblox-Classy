@@ -29,7 +29,6 @@ before_test:
 test_script:
 # Test with native PS version
   - ps: . .\Tests\appveyor.pester.ps1 -Test
-  - ps: write-output $gridmaster
 # Finalize pass - collect and upload results
   - ps: . .\Tests\appveyor.pester.ps1 -Finalize
 
