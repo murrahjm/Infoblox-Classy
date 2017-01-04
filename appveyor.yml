@@ -24,8 +24,8 @@ build: false
 before_test:
 # Build test environment in azure to run pester tests against
  - ps: $BuildEnvironment = . .\Tests\appveyor.testenv.ps1 -build
- - ps: $Gridmaster = $buildEnvironment.Gridmaster
- - ps: $AdminCredential = $buildEnvironment.AdminCredential
+# - ps: $Gridmaster = $buildEnvironment.Gridmaster
+# - ps: $AdminCredential = $buildEnvironment.AdminCredential
 test_script:
 # Test with native PS version
   - ps: . .\Tests\appveyor.pester.ps1 -Test
