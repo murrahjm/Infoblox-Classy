@@ -19,9 +19,9 @@ If ($Build){
 If (!(Get-azurermresourcegroup $rgname -ea 'silentlycontinue')){
     New-AzureRMResourceGroup -Name $RGName -Location $Location
 }
-$TestResult = test-AzureRmResourceGroupDeployment -ResourceGroupName $rgname -TemplateFile "$ProjectRoot\tests\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $SecureIBAdminPassword
+$TestResult = test-AzureRmResourceGroupDeployment -ResourceGroupName $rgname -TemplateFile "$ProjectRoot\tests\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $env:IBAdminPassword
 If ($Testresult.count -eq 0){
-    $Result = New-AzureRmResourceGroupDeployment -ResourceGroupName $rgname -TemplateFile "$ProjectRoot\tests\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $SecureIBAdminPassword
+    $Result = New-AzureRmResourceGroupDeployment -ResourceGroupName $rgname -TemplateFile "$ProjectRoot\tests\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $env:IBAdminPassword
     If ($result.ProvisioningState -ne 'Succeeded'){
         write-error $Result
         return
