@@ -25,8 +25,6 @@ $scripts | foreach-object {. $_.FullName}
 $Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn
 $Credential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $($env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force)
 
-write-output "Gridmaster:  $gridmaster"
-write-output "wapi version:  $Wapiversion"
 #below code allows for ignoring self-signed certificate on infoblox appliance
 add-type @"
     using System.Net;
@@ -40,6 +38,7 @@ add-type @"
     }
 "@
 [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+#
 if (!(Test-IBGridMaster -gridmaster $Gridmaster)){
 	throw "Gridmaster not accessible, aborting tests"
 }
