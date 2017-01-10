@@ -12,12 +12,12 @@ Param(
 #login to azure with secret stuff
 Disable-AzureRmDataCollection
 $AzureCredential = new-object -TypeName pscredential -ArgumentList $env:azureapploginid, $($env:azurepassword | convertto-securestring -AsPlainText -force)
-Login-AzureRmAccount -Credential $AzureCredential -ServicePrincipal -TenantId $env:AzureTenantID
+Login-AzureRmAccount -Credential $AzureCredential -ServicePrincipal -TenantId $env:AzureTenantID | Out-Null
 
 If ($Build){
 
 If (!(Get-azurermresourcegroup $rgname -ea 'silentlycontinue')){
-    New-AzureRMResourceGroup -Name $RGName -Location $Location
+    New-AzureRMResourceGroup -Name $RGName -Location $Location | Out-Null
 }
 $TestResult = test-AzureRmResourceGroupDeployment -ResourceGroupName $rgname -TemplateFile "$ProjectRoot\tests\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $env:IBAdminPassword
 If ($Testresult.count -eq 0){
