@@ -17,11 +17,12 @@
 #all delete tests
 $Recordlist = @()
 $ProjectRoot = $ENV:APPVEYOR_BUILD_FOLDER
-$Scripts = Get-ChildItem "$projectRoot\ModuleParts" -Filter *.ps1 -Recurse
-$Scripts | get-content | out-file -FilePath "$projectRoot\infoblox.ps1"
-. "$ProjectRoot\infoblox.ps1"
-$scripts | foreach-object {. $_.FullName}
+#$Scripts = Get-ChildItem "$projectRoot\ModuleParts" -Filter *.ps1 -Recurse
+#$Scripts | get-content | out-file -FilePath "$projectRoot\infoblox.ps1"
+#. "$ProjectRoot\infoblox.ps1"
+#$scripts | foreach-object {. $_.FullName}
 
+import-module "$projectRoot\Infoblox"
 $Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn
 $Credential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $($env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force)
 

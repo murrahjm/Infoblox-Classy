@@ -6,6 +6,7 @@ skip_commits:
   message: /updated readme.*/
 
 environment:
+  ModuleName: Infoblox
   ResourceGroupName: infobloxtesting
   location: SouthCentralUS
   IBAdminPassword:
@@ -19,7 +20,8 @@ environment:
 install:
  - ps: install-module Pester
  - ps: install-module AzureRM
-build: false
+build_script:
+ - ps: . .\build.ps1
 
 before_test:
 # Build test environment in azure to run pester tests against
@@ -29,7 +31,11 @@ test_script:
   - ps: . .\Tests\appveyor.pester.ps1 -Test
 # Finalize pass - collect and upload results
   - ps: . .\Tests\appveyor.pester.ps1 -Finalize
-
 after_test:
 #destroy test environment in azure after tests are complete
  - ps: . .\Tests\appveyor.testenv.ps1 -destroy
+
+ artifacts:
+ - path: Infoblox
+ - name: InfobloxModule
+ - type: zip
