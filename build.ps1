@@ -13,8 +13,8 @@ $Scripts | get-content | out-file -FilePath "$projectRoot\$ModuleName\$ModuleNam
 
 #Update module manifest
 $modulemanifestdata = @{
-    Author = $ENV:APVEYOR_ACCOUNT_NAME
-    Copyright = "(c) $((get-date).Year) $ENV:APVEYOR_ACCOUNT_NAME. All rights reserved."
+    Author = $ENV:APPVEYOR_ACCOUNT_NAME
+    Copyright = "(c) $((get-date).Year) $ENV:APPVEYOR_ACCOUNT_NAME. All rights reserved."
     Path = "$projectRoot\$ModuleName\$ModuleName.psd1"
     FunctionsToExport = $FunctionstoExport
     RootModule = "$ModuleName.psm1"
