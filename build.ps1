@@ -19,6 +19,5 @@ $modulemanifestdata = @{
     FunctionsToExport = $FunctionstoExport
     RootModule = "$ModuleName.psm1"
     ModuleVersion = $ENV:APPVEYOR_BUILD_VERSION
-
 }
 Update-ModuleManifest @modulemanifestdata
