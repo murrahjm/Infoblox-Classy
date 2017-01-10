@@ -12,7 +12,13 @@ Param(
 #login to azure with secret stuff
 Disable-AzureRmDataCollection
 $AzureCredential = new-object -TypeName pscredential -ArgumentList $env:azureapploginid, $($env:azurepassword | convertto-securestring -AsPlainText -force)
-Login-AzureRmAccount -Credential $AzureCredential -ServicePrincipal -TenantId $env:AzureTenantID | Out-Null
+$AzureLoginStatus = Login-AzureRmAccount -Credential $AzureCredential -ServicePrincipal -TenantId $env:AzureTenantID
+If ($AzureLoginStatus.tenantID -eq $env:AzureTenantID){
+    write-output "Azure Login Successful"
+} else {
+    write-error "Azure Login Failed"
+    return
+}
 
 If ($Build){
 
