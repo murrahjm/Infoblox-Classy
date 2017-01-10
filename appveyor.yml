@@ -22,7 +22,7 @@ install:
  - ps: install-module AzureRM
 build_script:
  - ps: . .\build.ps1
- artifacts:
+artifacts:
  - path: $(ModuleName)
 
 before_test:
