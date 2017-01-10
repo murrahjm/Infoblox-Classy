@@ -36,6 +36,4 @@ after_test:
  - ps: . .\Tests\appveyor.testenv.ps1 -destroy
 
  artifacts:
- - path: Infoblox
-   name: InfobloxModule
-   type: zip
+ - path: $(ModuleName)
