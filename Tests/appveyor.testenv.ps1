@@ -13,12 +13,13 @@ Param(
 Disable-AzureRmDataCollection
 $AzureCredential = new-object -TypeName pscredential -ArgumentList $env:azureapploginid, $($env:azurepassword | convertto-securestring -AsPlainText -force)
 $AzureLoginStatus = Login-AzureRmAccount -Credential $AzureCredential -ServicePrincipal -TenantId $env:AzureTenantID
-If ($AzureLoginStatus.tenantID -eq $env:AzureTenantID){
-    write-output "Azure Login Successful"
-} else {
-    write-error "Azure Login Failed"
-    return
-}
+write-output $AzureLoginStatus
+#If ($AzureLoginStatus.tenantID -eq $env:AzureTenantID){
+#    write-output "Azure Login Successful"
+#} else {
+#    write-error "Azure Login Failed"
+#    return
+#}
 
 If ($Build){
 
