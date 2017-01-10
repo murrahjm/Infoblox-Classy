@@ -37,5 +37,5 @@ after_test:
 
  artifacts:
  - path: Infoblox
- - name: InfobloxModule
- - type: zip
+   name: InfobloxModule
+   type: zip
