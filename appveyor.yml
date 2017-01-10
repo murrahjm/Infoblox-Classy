@@ -4,6 +4,8 @@
 # We can force this by adding [skip ci] or [ci skip] anywhere in commit message
 skip_commits:
   message: /updated readme.*/
+version: 1.0.{build}
+image: WMF 5
 environment:
   ModuleName: Infoblox
   ResourceGroupName: infobloxtesting
@@ -17,6 +19,7 @@ environment:
   AzureAppLoginID:
     secure:  eeRsMl/TAFnKPf6nqz/GlZ1PRdvIj/QhgSOqWDalQAQy5o+4OW8J5bWrZAp+rp7McQ6C/GAgkr6ypF0vTmA4ysAYsCcwqwBOzIxze2KQwaI=
 install:
+ - ps: Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Confirm:$false -Force -ErrorAction Stop
  - ps: install-module Pester, AzureRM -Confirm:$False -Force -ErrorAction SilentlyContinue
 build_script:
  - ps: . .\build.ps1

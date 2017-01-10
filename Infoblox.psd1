@@ -22,13 +22,13 @@ Copyright = '(c) 2017 JMMURRAH. All rights reserved.'
 # Description = ''
 
 # Minimum version of the Windows PowerShell engine required by this module
-# PowerShellVersion = ''
+PowerShellVersion = '5.0'
 
 # Name of the Windows PowerShell host required by this module
 # PowerShellHostName = ''
 
 # Minimum version of the Windows PowerShell host required by this module
-PowerShellHostVersion = '5.0'
+#PowerShellHostVersion = ''
 
 # Minimum version of Microsoft .NET Framework required by this module
 # DotNetFrameworkVersion = ''
