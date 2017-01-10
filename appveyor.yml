@@ -5,7 +5,7 @@
 skip_commits:
   message: /updated readme.*/
 version: 1.0.{build}
-image: WMF 5
+#image: WMF 5
 environment:
   ModuleName: Infoblox
   ResourceGroupName: infobloxtesting
@@ -21,6 +21,7 @@ environment:
 install:
 # - ps: Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Confirm:$false -Force -ErrorAction Stop
  - ps: install-module Pester, AzureRM -Confirm:$False -Force -ErrorAction SilentlyContinue
+ - ps:  get-module -listavailable
 build_script:
  - ps: . .\build.ps1
 artifacts:
