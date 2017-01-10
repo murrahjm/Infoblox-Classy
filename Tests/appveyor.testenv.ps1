@@ -13,17 +13,16 @@ Param(
 Disable-AzureRmDataCollection
 $AzureCredential = new-object -TypeName pscredential -ArgumentList $env:azureapploginid, $($env:azurepassword | convertto-securestring -AsPlainText -force)
 $AzureLoginStatus = Login-AzureRmAccount -Credential $AzureCredential -ServicePrincipal -TenantId $env:AzureTenantID
-write-output $AzureLoginStatus
-#If ($AzureLoginStatus.tenantID -eq $env:AzureTenantID){
-#    write-output "Azure Login Successful"
-#} else {
-#    write-error "Azure Login Failed"
-#    return
-#}
+If ($AzureLoginStatus -ne $Null){
+    write-output "Azure Login Successful"
+} else {
+    write-error "Azure Login Failed"
+    return
+}
 
 If ($Build){
 
-If (!(Get-azurermresourcegroup $rgname -ea 'silentlycontinue')){
+If (!(Get-azurermresourcegroup -name $rgname -ea 'silentlycontinue')){
     New-AzureRMResourceGroup -Name $RGName -Location $Location | Out-Null
 }
 $TestResult = test-AzureRmResourceGroupDeployment -ResourceGroupName $rgname -TemplateFile "$ProjectRoot\tests\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $env:IBAdminPassword
