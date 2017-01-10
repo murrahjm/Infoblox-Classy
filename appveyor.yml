@@ -22,18 +22,17 @@ install:
  - ps: install-module AzureRM
 build_script:
  - ps: . .\build.ps1
+ artifacts:
+ - path: $(ModuleName)
 
 before_test:
 # Build test environment in azure to run pester tests against
  - ps: . .\Tests\appveyor.testenv.ps1 -build
 test_script:
 # Test with native PS version
-  - ps: . .\Tests\appveyor.pester.ps1 -Test
+ - ps: . .\Tests\appveyor.pester.ps1 -Test
 # Finalize pass - collect and upload results
-  - ps: . .\Tests\appveyor.pester.ps1 -Finalize
+ - ps: . .\Tests\appveyor.pester.ps1 -Finalize
 after_test:
 #destroy test environment in azure after tests are complete
  - ps: . .\Tests\appveyor.testenv.ps1 -destroy
-
- artifacts:
- - path: $(ModuleName)
