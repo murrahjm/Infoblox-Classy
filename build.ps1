@@ -4,7 +4,7 @@
 $ModuleName = $ENV:ModuleName
 $ProjectRoot = $ENV:APPVEYOR_BUILD_FOLDER
 #create module folder
-new-item -Path $ProjectRoot -name $ModuleName
+new-item -Path $ProjectRoot -name $ModuleName -ItemType Directory
 
 #concat moduleparts files
 $Scripts = Get-ChildItem "$projectRoot\ModuleParts" -Filter *.ps1 -Recurse
