@@ -24,6 +24,8 @@ build_script:
  - ps: . .\build.ps1
 artifacts:
  - path: $(ModuleName)
+ - name: PowershellModule
+ - type: zip
 
 before_test:
 # Build test environment in azure to run pester tests against
