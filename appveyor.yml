@@ -13,28 +13,13 @@ environment:
   IBAdminPassword:
     secure: +Yhi3I1uR1xjocdrPn5HGA==
   AzurePassword:
-    secure:  YsJNS6K8bf+aQp94gs6CJA==
+    secure: YsJNS6K8bf+aQp94gs6CJA==
   AzureTenantID:
-    secure:  9dde4IdsaFmMXI+c8qpfltOt1vXkebzQldt43KK3i8ips7SWYUw8M3Z0ueHZkJcx
+    secure: 9dde4IdsaFmMXI+c8qpfltOt1vXkebzQldt43KK3i8ips7SWYUw8M3Z0ueHZkJcx
   AzureAppLoginID:
-    secure:  eeRsMl/TAFnKPf6nqz/GlZ1PRdvIj/QhgSOqWDalQAQy5o+4OW8J5bWrZAp+rp7McQ6C/GAgkr6ypF0vTmA4ysAYsCcwqwBOzIxze2KQwaI=
-install:
- - ps: install-module Pester -Confirm:$False -Force -ErrorAction SilentlyContinue
-build_script:
- - ps: . .\build.ps1
-artifacts:
- - path: $(ModuleName)
-   name: PowershellModule
-   type: zip
-
-before_test:
-# Build test environment in azure to run pester tests against
- - ps: . .\Tests\appveyor.testenv.ps1 -build
+    secure: eeRsMl/TAFnKPf6nqz/GlZ1PRdvIj/QhgSOqWDalQAQy5o+4OW8J5bWrZAp+rp7McQ6C/GAgkr6ypF0vTmA4ysAYsCcwqwBOzIxze2KQwaI=
+  PSGalleryAPIKey:
+    secure: xDwME6mHDFid5MFHB4Vi2HRYZo35I0a8fceT8LR8feHLhroh9jRJIOnvSyPnB89J
+build: false
 test_script:
-# Test with native PS version
- - ps: . .\Tests\appveyor.pester.ps1 -Test
-# Finalize pass - collect and upload results
- - ps: . .\Tests\appveyor.pester.ps1 -Finalize
-after_test:
-#destroy test environment in azure after tests are complete
- - ps: . .\Tests\appveyor.testenv.ps1 -destroy
+ - ps: . .\appveyor.ps1

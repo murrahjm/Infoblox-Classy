@@ -1,26 +1,22 @@
-#builds module artifact for uploading to appveyor.  basically just concats all the module parts, adds a folder and psd1 file and zips it.
-#called by appveyor.yml build step
-Param(
-    $ModuleName = $Env:ModuleName,
-    $ProjectRoot = $ENV:APPVEYOR_BUILD_FOLDER,
-    $Author = $ENV:APPVEYOR_ACCOUNT_NAME,
-    $ModuleVersion = $ENV:APPVEYOR_BUILD_VERSION
-)
-#create module folder
-new-item -Path $ProjectRoot -name $ModuleName -ItemType Directory
+#build script to act as launcher for psake.ps1 in the case of a manual build (like for testing)
+#appveyor builds will use appveyor.ps1, other build systems can use their own shim script
+#sets the variables that psake.ps1 expects, check for dependant modules, then launches psake.ps1
 
-#build module files
-$Scripts = Get-ChildItem "$projectRoot\ModuleParts" -Filter *.ps1 -Recurse
-$FunctionstoExport = $(get-childitem "$ProjectRoot\ModuleParts\Cmdlets").name.replace('.ps1','')
-$Scripts | get-content | out-file -FilePath "$projectRoot\$ModuleName\$ModuleName.psm1"
-copy-item "$projectroot\infoblox.psd1" "$projectroot\$modulename\$modulename.psd1"
-#Update module manifest
-$modulemanifestdata = @{
-    Author = $Author
-    Copyright = "(c) $((get-date).Year) $Author. All rights reserved."
-    Path = "$projectRoot\$ModuleName\$ModuleName.psd1"
-    FunctionsToExport = $FunctionstoExport
-    RootModule = "$ModuleName.psm1"
-    ModuleVersion = $ModuleVersion
+$env:BuildSystem = 'Manual'
+$env:ProjectRoot = $PSScriptRoot
+$env:ModuleName = 'Infoblox'
+$env:ResourceGroupName = 'infobloxtesting'
+$env:Location ='SouthCentralUS'
+$env:Author = $env:USERNAME
+$env:Moduleversion = $(read-host "Version")
+$DependentModules = @('AzureRM','Pester','Psake')
+$env:IBAdminPassword = $(read-host "IBAdminPassword")
+$ErrorActionPreference = 'Stop'
+Foreach ($Module in $DependentModules){
+    If (-not (get-module $module -ListAvailable)){
+        install-module -Scope CurrentUser
+    }
+    import-module $module -ErrorAction Stop
 }
-Update-ModuleManifest @modulemanifestdata
+Login-AzureRMAccount -SubscriptionName 'MSDN Platforms'
+invoke-psake "$PSScriptRoot\psake.ps1"

@@ -16,14 +16,12 @@
 #all set tests
 #all delete tests
 $Recordlist = @()
-$ProjectRoot = $ENV:APPVEYOR_BUILD_FOLDER
 #$Scripts = Get-ChildItem "$projectRoot\ModuleParts" -Filter *.ps1 -Recurse
 #$Scripts | get-content | out-file -FilePath "$projectRoot\infoblox.ps1"
 #. "$ProjectRoot\infoblox.ps1"
 #$scripts | foreach-object {. $_.FullName}
 
-import-module "$projectRoot\Infoblox"
-get-module | write-output
+import-module "$env:projectRoot\Infoblox"
 $Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn
 $Credential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $($env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force)
 
@@ -40,7 +38,16 @@ add-type @"
     }
 "@
 [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-#
+#wait for test environment to become available.  give up after 5 minutes
+$i = 0
+Do {
+	start-sleep 30
+	$i += 1
+} until (
+	(Test-IBGridMaster -gridmaster $Gridmaster -ea silentlycontinue) -or ($i -ge 10)
+)
+
+
 if (!(Test-IBGridMaster -gridmaster $Gridmaster)){
 	throw "Gridmaster not accessible, aborting tests"
 }
@@ -1934,7 +1941,8 @@ Describe "Set-IBNetwork tests" {
 Describe "Set-IBDNSARecord tests" {
 	#record retrieved before tests to allow tracking of changes to persist through each test
 	$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
-	$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
+	#$TestRecord = [IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)
+	$TestRecord = get-ibdnsarecord -gridmaster $gridmaster -credential $Credential -_ref $Ref
 	It "Throws an error with an invalid IP Address parameter" {
 		{$TestRecord | Set-IBDNSARecord -IPAddress 'notanIP'} | should Throw
 	}
@@ -2104,7 +2112,8 @@ Describe "Set-IBDNSARecord tests" {
 Describe "Set-IBDNSCNameRecord tests" {
 	#record retrieved before tests to allow tracking of changes to persist through each test
 	$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
-	$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
+	#$TestRecord = [IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Ref)
+	$TestRecord = Get-IBDNSCNameRecord -gridmaster $Gridmaster -Credential $Credential -_ref $Ref
 	It "Throws an error with an invalid TTL parameter" {
 		{$TestRecord | Set-IBDNSCNameRecord -TTL 'notaTTL'} | should Throw
 	}
@@ -2262,7 +2271,8 @@ Describe "Set-IBDNSCNameRecord tests" {
 Describe "Set-IBDNSPTRRecord tests" {
 	#record retrieved before tests to allow tracking of changes to persist through each test
 	$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.12.12.in-addr.arpa/default"}._ref
-	$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
+	#$TestRecord = [IB_DNSPTRRecord]::Get($gridmaster,$Credential,$Ref)
+	$TestRecord = Get-IBDNSPTRRecord -gridmaster $Gridmaster -Credential $Credential -_ref $Ref
 	It "Throws an error with an invalid TTL parameter" {
 		{$TestRecord | Set-IBDNSPTRRecord -TTL 'notaTTL'} | should Throw
 	}
@@ -2433,7 +2443,8 @@ Describe "Set-IBDNSPTRRecord tests" {
 Describe "Set-IBFixedAddress tests" {
 	#record retrieved before tests to allow tracking of changes to persist through each test
 	$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:12.12.1.1/default"}._ref
-	$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)
+	#$TestRecord = [IB_FixedAddress]::Get($gridmaster,$Credential,$Ref)
+	$TestRecord = get-IBFixedAddress -Gridmaster $Gridmaster -Credential $Credential -_ref $Ref
 	It "Throws an error with an invalid TTL parameter" {
 		{$TestRecord | Set-IBFixedAddress -TTL 'notaTTL'} | should Throw
 	}
@@ -2701,14 +2712,14 @@ Describe "Remove-IBDNSARecord tests" {
 	It "Deletes the record using byObject method" {
 		$Record = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $credential -name testrecord.domain.com -View default
 		$Return = $Record | Remove-IBDNSARecord -confirm:$False 
-		{[IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)} | should throw
+		{Get-IBDNSARecord -Gridmaster $gridmaster -Credential $credential -_ref $record._ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Record._ref
 	}
 	It "Deletes the record using byRef method" {
 		$Record = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $credential -name testrecord2.domain.com -View default
 		$Return = Remove-IBDNSARecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Record._ref
-		{[IB_DNSARecord]::Get($gridmaster,$Credential,$Ref)} | should throw
+		{Get-IBDNSARecord -Gridmaster $gridmaster -Credential $credential -_ref $record._ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Record._Ref
 	}
@@ -2733,14 +2744,14 @@ Describe "Remove-IBDNSCNameRecord tests" {
 	It "Deletes the record using byObject method" {
 		$TestRecord = Get-IBDNSCNameRecord -Gridmaster $gridmaster -Credential $credential -name testalias.domain.com -View default
 		$Return = $TestRecord | Remove-IBDNSCNameRecord -confirm:$False 
-		{[IB_DNSCNameRecord]::Get($gridmaster,$Credential,$TestRecord._Ref)} | should throw
+		{Get-IBDNSCNameRecord -Gridmaster $gridmaster -Credential $credential -_ref $TestRecord._ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $TestRecord._Ref
 	}
 	It "Deletes the record using byRef method" {
 		$TestRecord = Get-IBDNSCNameRecord -Gridmaster $gridmaster -Credential $credential -name testalias2.domain.com -View default
 		$Return = Remove-IBDNSCNameRecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $TestRecord._Ref
-		{[IB_DNSCNameRecord]::Get($gridmaster,$Credential,$Refstring)} | should throw
+		{Get-IBDNSCNameRecord -Gridmaster $gridmaster -Credential $credential -_ref $TestRecord._ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $TestRecord._Ref
 	}
@@ -2765,14 +2776,14 @@ Describe "Remove-IBDNSPTRRecord tests" {
 	It "Deletes the record using byObject method" {
 		$TestRecord = Get-IBDNSPTRRecord -Gridmaster $gridmaster -Credential $credential -name '1.1.12.12.in-addr.arpa' -View default
 		$Return = $TestRecord | Remove-IBDNSPTRRecord -confirm:$False 
-		{[IB_DNSPTRRecord]::Get($gridmaster,$Credential,$TestRecord._Ref)} | should throw
+		{Get-IBDNSPTRRecord -Gridmaster $gridmaster -Credential $credential -_ref $TestRecord._ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $TestRecord._Ref
 	}
 	It "Deletes the record using byRef method" {
 		$TestRecord = Get-IBDNSPTRRecord -Gridmaster $gridmaster -Credential $credential -name '2.1.12.12.in-addr.arpa' -View default
 		$Return = Remove-IBDNSPTRRecord -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $TestRecord._Ref
-		{[IB_DNSPTRRecord]::Get($gridmaster,$Credential,$TestRecord._Ref)} | should throw
+		{Get-IBDNSPTRRecord -Gridmaster $gridmaster -Credential $credential -_ref $TestRecord._ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $TestRecord._Ref
 	}
@@ -2797,14 +2808,14 @@ Describe "Remove-IBFixedAddress tests" {
 	It "Deletes the record using byObject method" {
 		$TestRecord = Get-IBFixedAddress -Gridmaster $gridmaster -Credential $credential -IPAddress '12.12.1.1' -NetworkView default
 		$Return = $TestRecord | Remove-IBFixedAddress -confirm:$False 
-		{[IB_FixedAddress]::Get($gridmaster,$Credential,$Testrecord._Ref)} | should throw
+		{Get-IBFixedAddress -Gridmaster $gridmaster -Credential $credential -_ref $TestRecord._ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $TestRecord._Ref
 	}
 	It "Deletes the record using byRef method" {
 		$TestRecord = Get-IBFixedAddress -Gridmaster $gridmaster -Credential $credential -IPAddress '12.12.1.2' -NetworkView default
 		$Return = Remove-IBFixedAddress -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $TestRecord._Ref
-		{[IB_FixedAddress]::Get($gridmaster,$Credential,$TestRecord._Ref)} | should throw
+		{Get-IBFixedAddress -Gridmaster $gridmaster -Credential $credential -_ref $TestRecord._ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $TestRecord._Ref
 	}
@@ -2822,14 +2833,14 @@ Describe "Remove-IBRecord tests" {
 	It "Deletes an A record using byRef method" {
 		$Ref = $script:recordlist.where{$_._ref -like "record:a/*:testrecord4.domain.com/view2"}._ref
 		$Return = Remove-IBRecord -confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref
-		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
+		{Get-ibrecord -Gridmaster $gridmaster -Credential $credential -_ref $ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
 	}
 	It "Deletes an PTR record using byRef method" {
 		$Ref = $script:recordlist.where{$_._ref -like "record:ptr/*:1.1.12.12.in-addr.arpa/view2"}._ref
 		$Return = Remove-IBRecord -confirm:$False -gridmaster $gridmaster -credential $credential -_Ref $Ref
-		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
+		{Get-ibrecord -Gridmaster $gridmaster -Credential $credential -_ref $ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
 	}
@@ -2837,7 +2848,7 @@ Describe "Remove-IBRecord tests" {
 		$Ref = $script:recordlist.where{$_._ref -like "record:cname/*:testalias4.domain.com/view2"}._ref
 		$Record = Get-IBDNSCNameRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $ref
 		$return = $Record | Remove-IBRecord -confirm:$False 
-		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
+		{Get-ibrecord -Gridmaster $gridmaster -Credential $credential -_ref $ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
 	}
@@ -2846,7 +2857,7 @@ Describe "Remove-IBNetwork tests" {
 	It "deletes network using byRef method" {
 		$Ref = $Script:recordlist.where{$_._ref -like "network/*:192.168.1.0/24/networkview2"}._ref
 		$Return = Remove-IBNetwork -confirm:$False -gridmaster $Gridmaster -credential $Credential -_ref $Ref
-		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
+		{Get-ibrecord -Gridmaster $gridmaster -Credential $credential -_ref $ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
 	}
@@ -2854,7 +2865,7 @@ Describe "Remove-IBNetwork tests" {
 		$Ref = $Script:recordlist.where{$_._ref -like "network/*:12.12.0.0*16/networkview3"}._ref
 		$Record = get-IBNetwork -gridmaster $Gridmaster -credential $Credential -_ref $Ref
 		$Return = $Record | Remove-IBNetwork -confirm:$False
-		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
+		{Get-ibrecord -Gridmaster $gridmaster -Credential $credential -_ref $ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
 	}
@@ -2875,7 +2886,7 @@ Describe "Remove-IBDNSZone tests" {
 	It "deletes zone using byRef method" {
 		$Ref = $Script:recordlist.where{$_._ref -like "zone_auth/*:domain.com/default"}._ref
 		$Return = Remove-IBDNSZone -confirm:$False -gridmaster $Gridmaster -credential $Credential -_ref $Ref
-		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should Throw
+		{Get-ibrecord -Gridmaster $gridmaster -Credential $credential -_ref $ref} | should Throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
 	}
@@ -2883,7 +2894,7 @@ Describe "Remove-IBDNSZone tests" {
 		$Ref = $Script:recordlist.where{$_._ref -like "zone_auth/*:12.0.0.0*8/view2"}._ref
 		$Record = get-IBDNSZone -gridmaster $Gridmaster -credential $Credential -_ref $Ref
 		$Return = $Record | Remove-IBDNSZone -confirm:$False
-		{[IB_ReferenceObject]::Get($gridmaster,$Credential,$Ref)} | should throw
+		{Get-ibrecord -Gridmaster $gridmaster -Credential $credential -_ref $ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
 	}
@@ -2933,7 +2944,8 @@ Describe "Remove-IBExtensibleAttributeDefinition tests" {
 	}
 	It "Throws an error with parameters from both sets" {
 		$Ref = $script:Recordlist.where{$_._ref -like "extensibleattributedef/*:EA2"}._ref
-		$TestRecord = [IB_ExtAttrsDef]::Get($gridmaster,$Credential,$Ref)
+		#$TestRecord = [IB_ExtAttrsDef]::Get($gridmaster,$Credential,$Ref)
+		$TestRecord = Get-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -credential $Credential -_ref $Ref
 		{Remove-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Record $TestRecord} | should Throw
 	}
 	It "Throws an error with pipeline input object missing a ref property" {
@@ -2941,16 +2953,16 @@ Describe "Remove-IBExtensibleAttributeDefinition tests" {
 	}
 	It "Deletes the record using byObject method" {
 		$Ref = $script:Recordlist.where{$_._ref -like "extensibleattributedef/*:EA2"}._ref
-		$Record = [IB_ExtAttrsDef]::Get($gridmaster,$Credential,$Ref)
+		$Record = Get-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -credential $Credential -_ref $Ref
 		$Return = $Record | Remove-IBExtensibleAttributeDefinition -confirm:$False 
-		{[IB_ExtAttrsDef]::Get($gridmaster,$Credential,$Ref)} | should throw
+		{Get-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -credential $Credential -_ref $Ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
 	}
 	It "Deletes the record using byRef method" {
 		$Ref = $script:Recordlist.where{$_._ref -like "extensibleattributedef/*:EA3"}._ref
 		$Return = Remove-IBExtensibleAttributeDefinition -confirm:$False  -gridmaster $gridmaster -credential $credential -_Ref $Ref
-		{[IB_ExtAttrsDef]::Get($gridmaster,$Credential,$Ref)} | should throw
+		{Get-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -credential $Credential -_ref $Ref} | should throw
 		$Return.GetType().Name | Should be 'String'
 		$Return | should be $Ref
 	}
