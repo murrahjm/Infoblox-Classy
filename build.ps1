@@ -14,7 +14,7 @@ $env:IBAdminPassword = $(read-host "IBAdminPassword")
 $ErrorActionPreference = 'Stop'
 Foreach ($Module in $DependentModules){
     If (-not (get-module $module -ListAvailable)){
-        install-module -Scope CurrentUser
+        install-module -name $Module -Scope CurrentUser
     }
     import-module $module -ErrorAction Stop
 }

@@ -9,7 +9,7 @@ $env:Moduleversion = $env:APPVEYOR_BUILD_VERSION
 $DependentModules = @('Pester','Psake')
 Foreach ($Module in $DependentModules){
     If (-not (get-module $module -ListAvailable)){
-        install-module -Scope CurrentUser
+        install-module -name $Module -Scope CurrentUser
     }
     import-module $module -ErrorAction Stop
 }
