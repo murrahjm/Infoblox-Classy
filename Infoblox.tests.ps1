@@ -16,7 +16,7 @@
 #all set tests
 #all delete tests
 $Recordlist = @()
-import-module "$env:artifactRoot\Infoblox"
+import-module "$env:artifactRoot\$env:ModuleName"
 $Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn
 $Credential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $($env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force)
 
