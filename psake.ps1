@@ -28,7 +28,7 @@ Task Clean -depends Init {
     If (test-path "$env:projectroot\$env:modulename") {
         Remove-Item "$env:projectroot\$env:modulename" -Force -Recurse
     }
-    new-item -Path $env:ProjectRoot -name $env:ModuleName -ItemType Directory
+    new-item -Path $env:ProjectRoot -name $env:ModuleName -ItemType Directory | out-null
 
 }
 Task Build -Depends Clean {

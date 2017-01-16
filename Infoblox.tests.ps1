@@ -16,11 +16,6 @@
 #all set tests
 #all delete tests
 $Recordlist = @()
-#$Scripts = Get-ChildItem "$projectRoot\ModuleParts" -Filter *.ps1 -Recurse
-#$Scripts | get-content | out-file -FilePath "$projectRoot\infoblox.ps1"
-#. "$ProjectRoot\infoblox.ps1"
-#$scripts | foreach-object {. $_.FullName}
-
 import-module "$env:projectRoot\Infoblox"
 $Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn
 $Credential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $($env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force)
@@ -50,10 +45,6 @@ Do {
 
 if (!(Test-IBGridMaster -gridmaster $Gridmaster)){
 	throw "Gridmaster not accessible, aborting tests"
-}
-Describe "PSScriptAnalyzer" {
-	$output = Invoke-ScriptAnalyzer -path "$env:projectRoot\Infoblox"
-	$output | should be nullorempty
 }
 Describe "New-IBExtensibleAttributeDefinition tests" {
 	It "Creates new extensible attribute definition with value type String" {
