@@ -34,8 +34,8 @@ Function Remove-IBDNSARecord{
 		[String]$Gridmaster,
 
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
-        [ValidateNotNullorEmpty()]
-        [System.Management.Automation.Credential()]
+		[System.Management.Automation.PSCredential]
+		[System.Management.Automation.Credential()]
 		$Credential,
 
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]

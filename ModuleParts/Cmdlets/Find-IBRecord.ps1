@@ -53,7 +53,8 @@ Function Find-IBRecord {
         [String]$Gridmaster,
 
         [Parameter(Mandatory=$True)]
-        [System.Management.Automation.Credential()]
+		[System.Management.Automation.PSCredential]
+		[System.Management.Automation.Credential()]
 		$Credential,
 
         [Parameter(Mandatory=$True,ValueFromPipeline=$True,ParameterSetName='globalSearchbyString')]
@@ -78,7 +79,7 @@ Function Find-IBRecord {
         write-verbose "$FunctionName`:  Beginning Function"
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
         Try {
-            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
+		get-ibview -Gridmaster $Gridmaster -Credential $Credential -Type dnsview | out-null
         } Catch {
             Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
         }

@@ -54,9 +54,9 @@ Task BuildTestEnvironment -depends Build {
     If (!(Get-azurermresourcegroup -name $env:ResourceGroupName -ea 'silentlycontinue')){
         New-AzureRMResourceGroup -Name $env:ResourceGroupName -Location $env:Location | Out-Null
     }
-    $TestResult = test-AzureRmResourceGroupDeployment -ResourceGroupName $env:ResourceGroupName -TemplateFile "$env:ProjectRoot\tests\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $env:IBAdminPassword
+    $TestResult = test-AzureRmResourceGroupDeployment -ResourceGroupName $env:ResourceGroupName -TemplateFile "$env:ProjectRoot\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $env:IBAdminPassword
     If ($Testresult.count -eq 0){
-        $Result = New-AzureRmResourceGroupDeployment -ResourceGroupName $env:ResourceGroupName -TemplateFile "$env:ProjectRoot\tests\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $env:IBAdminPassword
+        $Result = New-AzureRmResourceGroupDeployment -ResourceGroupName $env:ResourceGroupName -TemplateFile "$env:ProjectRoot\AzureDeploy.json" -virtualMachines_TestGridmaster_adminPassword $env:IBAdminPassword
         If ($result.ProvisioningState -ne 'Succeeded'){
             write-error $Result
             return
@@ -72,7 +72,7 @@ Task Test -Depends BuildTestEnvironment  {
     "`n`tSTATUS: Testing with PowerShell $PSVersion"
 
     # Gather test results. Store them in a variable and file
-    $TestResults = Invoke-Pester -Path $env:ProjectRoot\Tests -PassThru -OutputFormat NUnitXml -OutputFile "$env:ProjectRoot\$TestFile"
+    $TestResults = Invoke-Pester -Path $env:ProjectRoot -PassThru -OutputFormat NUnitXml -OutputFile "$env:ProjectRoot\$TestFile"
 
     # In Appveyor?  Upload our tests! #Abstract this into a function?
     If($env:BuildSystem -eq 'AppVeyor')
@@ -94,7 +94,9 @@ Task Test -Depends BuildTestEnvironment  {
 }
 Task Deploy -Depends Test {
     $lines
-    "<Add deployment code>"
+    if ($env:BuildSystem -eq 'AppVeyor'){
+        Publish-Module -name $env:modulename -NuGetApiKey $env:PSGalleryAPIKey
+    }
 }
 
 Task CleanTestEnvironment -depends Test {

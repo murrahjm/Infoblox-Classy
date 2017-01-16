@@ -31,7 +31,8 @@ Function New-IBNetwork {
         [String]$Gridmaster,
 
         [Parameter(Mandatory=$True)]
-        [System.Management.Automation.Credential()]
+		[System.Management.Automation.PSCredential]
+		[System.Management.Automation.Credential()]
 		$Credential,
 
         [Parameter(Mandatory=$True)]

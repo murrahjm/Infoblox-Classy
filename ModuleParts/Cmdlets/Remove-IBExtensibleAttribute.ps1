@@ -41,8 +41,8 @@ Function Remove-IBExtensibleAttribute {
 
         [Parameter(Mandatory=$True,ParameterSetName='byRefEAName')]
         [Parameter(Mandatory=$True,ParameterSetName='byRefAll')]
-        [ValidateNotNullorEmpty()]
-        [System.Management.Automation.Credential()]
+		[System.Management.Automation.PSCredential]
+		[System.Management.Automation.Credential()]
 		$Credential,
 
         [Parameter(Mandatory=$True,ParameterSetName='byRefEAName')]

@@ -162,7 +162,7 @@ Class IB_DNSARecord : IB_ReferenceObject {
 	){
 		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $Name -Value $(New-object psobject -Property @{value=$Value})
-		$ExtAttr = new-object psobject -Property @{$Name=$(get-variable $Name | select -ExpandProperty Value)}
+		$ExtAttr = new-object psobject -Property @{$Name=$(get-variable $Name | Select-Object -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs+"=$extattr}
 		$JSONBody = $body | ConvertTo-Json
 		If ($JSONBody){
@@ -180,7 +180,7 @@ Class IB_DNSARecord : IB_ReferenceObject {
 	){
 		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $ExtAttrib -Value $(New-object psobject -Property @{})
-		$ExtAttr = new-object psobject -Property @{$extattrib=$(get-variable $ExtAttrib | select -ExpandProperty Value)}
+		$ExtAttr = new-object psobject -Property @{$extattrib=$(get-variable $ExtAttrib | Select-Object -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs-"=$extattr}
 		$JSONBody = $body | ConvertTo-Json
 		If ($JSONBody){

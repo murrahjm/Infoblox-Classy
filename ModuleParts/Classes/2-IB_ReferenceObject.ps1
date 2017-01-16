@@ -1,7 +1,10 @@
 Class IB_ReferenceObject {
     #properties
     hidden [String]$gridmaster
-    hidden [System.Management.Automation.Credential()]$credential
+    hidden [System.Management.Automation.PSCredential]
+		   [System.Management.Automation.Credential()]
+		   $Credential
+
     [String]$_ref
     #methods
 	

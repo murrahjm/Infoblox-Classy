@@ -40,8 +40,8 @@ Function Remove-IBRecord{
 		[String]$Gridmaster,
 
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
-        [ValidateNotNullorEmpty()]
-        [System.Management.Automation.Credential()]
+		[System.Management.Automation.PSCredential]
+		[System.Management.Automation.Credential()]
 		$Credential,
 
         [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
