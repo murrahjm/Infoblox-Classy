@@ -94,7 +94,7 @@ Task Test -Depends BuildTestEnvironment  {
 Task Deploy -Depends Test {
     $lines
     if ($env:BuildSystem -eq 'AppVeyor'){
-        Publish-Module -name $env:modulename -NuGetApiKey $env:PSGalleryAPIKey
+        Publish-Module -Path "$env:artifactroot\$env:modulename" -NuGetApiKey $env:PSGalleryAPIKey
     }
 }
 
