@@ -102,8 +102,8 @@ Task Deploy -Depends Test {
 Task CleanTestEnvironment -depends Test {
     #remove azure testing resource group if it exists
     Get-azurermResourceGroup -name $env:resourceGroupname | remove-azurermresourcegroup -confirm:$False -Force
-    If (test-path "$env:projectroot\$env:modulename") {
-        Remove-Item "$env:projectroot\$env:modulename" -Force -Recurse
+    If (test-path "$env:artifactroot\$env:modulename") {
+        Remove-Item "$env:artifactroot\$env:modulename" -Force -Recurse
     }
 
 }
