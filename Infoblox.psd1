@@ -19,7 +19,7 @@ Author = 'null'
 Copyright = '(c) 2017 JMMURRAH. All rights reserved.'
 
 # Description of the functionality provided by this module
-# Description = ''
+Description = 'Powershell module for Infoblox vNIOS API.  Cmdlets for DNS and IPAM functions.  Requires PowerShell version 5.0 or later'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '5.0'
