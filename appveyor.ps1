@@ -4,6 +4,7 @@
 
 $env:BuildSystem = 'Appveyor'
 $env:ProjectRoot = $env:APPVEYOR_BUILD_FOLDER
+$env:ArtifactRoot = $env:APPVEYOR_BUILD_FOLDER
 $env:Author = $env:APPVEYOR_ACCOUNT_NAME
 $env:Moduleversion = $env:APPVEYOR_BUILD_VERSION
 $DependentModules = @('Pester','Psake')

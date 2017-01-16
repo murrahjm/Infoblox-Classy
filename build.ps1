@@ -4,6 +4,7 @@
 
 $env:BuildSystem = 'Manual'
 $env:ProjectRoot = $PSScriptRoot
+$env:ArtifactRoot = $env:temp
 $env:ModuleName = 'Infoblox'
 $env:ResourceGroupName = 'infobloxtesting'
 $env:Location ='SouthCentralUS'

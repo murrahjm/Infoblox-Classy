@@ -25,10 +25,10 @@ Task Init {
 Task Clean -depends Init {
     $lines
     #create empty folder for module build task, delete any existing data
-    If (test-path "$env:projectroot\$env:modulename") {
-        Remove-Item "$env:projectroot\$env:modulename" -Force -Recurse
+    If (test-path "$env:artifactroot\$env:modulename") {
+        Remove-Item "$env:artifactroot\$env:modulename" -Force -Recurse
     }
-    new-item -Path $env:ProjectRoot -name $env:ModuleName -ItemType Directory | out-null
+    new-item -Path $env:artifactroot -name $env:ModuleName -ItemType Directory | out-null
 
 }
 Task Build -Depends Clean {
@@ -36,13 +36,13 @@ Task Build -Depends Clean {
     #build module files
     $Scripts = Get-ChildItem "$env:projectRoot\ModuleParts" -Filter *.ps1 -Recurse
     $FunctionstoExport = $(get-childitem "$env:ProjectRoot\ModuleParts\Cmdlets").name.replace('.ps1','')
-    $Scripts | get-content | out-file -FilePath "$env:projectRoot\$env:ModuleName\$env:ModuleName.psm1"
-    copy-item "$env:projectroot\infoblox.psd1" "$env:projectroot\$env:modulename\$env:modulename.psd1"
+    $Scripts | get-content | out-file -FilePath "$env:artifactroot\$env:ModuleName\$env:ModuleName.psm1"
+    copy-item "$env:projectroot\infoblox.psd1" "$env:artifactroot\$env:modulename\$env:modulename.psd1"
     #Update module manifest
     $modulemanifestdata = @{
         Author = $env:Author
         Copyright = "(c) $((get-date).Year) $env:Author. All rights reserved."
-        Path = "$env:projectRoot\$env:ModuleName\$env:ModuleName.psd1"
+        Path = "$env:artifactroot\$env:ModuleName\$env:ModuleName.psd1"
         FunctionsToExport = $FunctionstoExport
         RootModule = "$env:ModuleName.psm1"
         ModuleVersion = $env:ModuleVersion
