@@ -50,6 +50,7 @@ Task Build -Depends Clean {
     Update-ModuleManifest @modulemanifestdata
 }
 Task BuildTestEnvironment -depends Build {
+    $lines
     #connect to azure and deploy test environment from azuredeploy.json
     If (!(Get-azurermresourcegroup -name $env:ResourceGroupName -ea 'silentlycontinue')){
         New-AzureRMResourceGroup -Name $env:ResourceGroupName -Location $env:Location | Out-Null
@@ -69,8 +70,6 @@ Task BuildTestEnvironment -depends Build {
 
 Task Test -Depends BuildTestEnvironment  {
     $lines
-    "`n`tSTATUS: Testing with PowerShell $PSVersion"
-
     # Gather test results. Store them in a variable and file
     $TestResults = Invoke-Pester -Path $env:ProjectRoot -PassThru -OutputFormat NUnitXml -OutputFile "$env:ProjectRoot\$TestFile"
 
