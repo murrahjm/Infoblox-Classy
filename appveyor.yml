@@ -6,6 +6,9 @@ skip_commits:
   message: /updated readme.*/
 version: 1.1.{build}
 #image: WMF 5
+branches:
+  only:
+    - master
 environment:
   ModuleName: InfobloxCmdlets
   ResourceGroupName: infobloxtesting
