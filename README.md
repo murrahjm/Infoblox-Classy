@@ -8,7 +8,10 @@ Powershell module project to interface with Infoblox REST API.  Makes use of new
 
 The basic structure of the class definitions mirrors the REST API object definitions, with various methods also mirroring the REST API documentation.  Due to the nature of the class structure, the multiple class and cmdlet files cannot just be dot-sourced from a central module file.  All the files must be concatenated together into one large psm1 file to function.  
 
-Pester tests are performed against an infoblox appliance in Azure.  Visual Studio Online build definition provisions infoblox appliance in azure with AzureDeploy.json template, runs pester tests against appliance, then deletes the Azure resource group.
+Pester tests are performed against an infoblox appliance in Azure.  Appveyor build script provisions infoblox appliance in azure with AzureDeploy.json template, runs pester tests against appliance, then deletes the Azure resource group.
 
+### v1.1 release notes:
 
+Added support for REST web session.  Currently the gridmaster and credential object must be provided for each command, with returned objects including these as hidden properties.
+New feature will provide for creating a web session on the first successful operation, and referencing that as the default if no alternate credentials are provided.
 
