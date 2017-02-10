@@ -44,12 +44,12 @@
 Function Get-IBView {
     [CmdletBinding(DefaultParameterSetName='byQuery')]
     Param(
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory=$False)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
         [ValidateNotNullorEmpty()]
         [String]$Gridmaster,
 
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory=$False)]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
@@ -82,22 +82,32 @@ Function Get-IBView {
     )
     $FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
     write-verbose "$FunctionName`:  Beginning Function"
-		Try {
-			If ($pscmdlet.ParameterSetName -eq 'byRef'){
-				Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_ref $_Ref
-			} else {
-				If ($Type -eq 'DNSView'){
-					Write-Verbose "$Functionname`:  calling IB_View Get method with the following parameters`:"
-					Write-Verbose "$FunctionName`:  $gridmaster,$credential,$name,$isDefault,$Comment,$Strict,$MaxResults"
-					[IB_View]::Get($Gridmaster,$Credential,$Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
-				} else {
-					Write-Verbose "$Functionname`:  calling IB_NetworkView Get method with the following parameters`:"
-					Write-Verbose "$FunctionName`:  $gridmaster,$credential,$name,$isDefault,$Comment,$Strict,$MaxResults"
-					[IB_NetworkView]::Get($Gridmaster,$Credential,$Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
-				}
-
-			}
-		} Catch {
-			Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
+	If (! $script:IBSession){
+		write-verbose "Existing session to infoblox gridmaster does not exist."
+		If ($gridmaster -and $Credential){
+			write-verbose "Creating session to $gridmaster with user $credential"
+			New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+		} else {
+			write-error "Missing required parameters to connect to Gridmaster"
+			return
 		}
+	}
+	Try {
+		If ($pscmdlet.ParameterSetName -eq 'byRef'){
+			Get-IBRecord -_ref $_Ref
+		} else {
+			If ($Type -eq 'DNSView'){
+				Write-Verbose "$Functionname`:  calling IB_View Get method with the following parameters`:"
+				Write-Verbose "$FunctionName`:  $name,$isDefault,$Comment,$Strict,$MaxResults"
+				[IB_View]::Get($Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
+			} else {
+				Write-Verbose "$Functionname`:  calling IB_NetworkView Get method with the following parameters`:"
+				Write-Verbose "$FunctionName`:  $name,$isDefault,$Comment,$Strict,$MaxResults"
+				[IB_NetworkView]::Get($Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
+			}
+
+		}
+	} Catch {
+		Write-error "Unable to connect to Infoblox device $Script:IBgridmaster.  Error code:  $($_.exception)" -ea Stop
+	}
 }

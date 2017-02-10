@@ -9,32 +9,26 @@ Class IB_View : IB_ReferenceObject {
         return $this.name
     }
 	static [IB_View] Create(
-		[String]$Gridmaster,
-		[PSCredential]$Credential,
 		[String]$Name,
 		[String]$Comment
 	){
-		$URIString = "https://$Gridmaster/wapi/$Global:WapiVersion/view"
+		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/view"
 		$bodyhashtable = @{name=$Name}
 		If ($Comment){$bodyhashtable += @{comment=$Comment}}
-		$Return = Invoke-RestMethod -uri $URIString -Method Post -body $bodyhashtable -Credential $Credential
-		return [IB_View]::Get($gridmaster,$Credential,$return)
+		$Return = Invoke-RestMethod -uri $URIString -Method Post -body $bodyhashtable -WebSession $Script:IBSession
+		return [IB_View]::Get($return)
 	}
 	static [IB_View] Get (
-		[String]$Gridmaster,
-		[PSCredential]$Credential,
 		[String]$_ref
 	) {
 		$ReturnFields = "extattrs,name,is_default,comment"
-		$URIString = "https://$gridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
-		$return = Invoke-RestMethod -Uri $URIString -Credential $Credential
+		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
+		$return = Invoke-RestMethod -Uri $URIString -WebSession $Script:IBSession
 		If ($Return) {
 			return [IB_View]::New($Return.name, 
 								  $Return.is_default, 
 								  $Return.comment, 
 								  $Return._ref, 
-								  $gridmaster, 
-								  $credential,
 								  $($return.extattrs | ConvertTo-ExtAttrsArray))
 		} else {
 			return $Null
@@ -44,8 +38,6 @@ Class IB_View : IB_ReferenceObject {
 
 
     static [IB_View[]] Get(
-        [String]$GridMaster,
-        [PSCredential]$Credential,
         [String]$Name,
 		[String]$Is_Default,
 		[String]$Comment,
@@ -54,7 +46,7 @@ Class IB_View : IB_ReferenceObject {
         [Int]$MaxResults
     ){
 		$ReturnFields = "extattrs,name,is_default,comment"
-		$URI = "https://$Gridmaster/wapi/$Global:WapiVersion/view?"
+		$URI = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/view?"
 		If ($Strict){$Operator = ":="} else {$Operator = "~:="}
 		If ($Name){
 			$URI += "name$Operator$Name&"
@@ -73,15 +65,13 @@ Class IB_View : IB_ReferenceObject {
 		}
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
-        $return = Invoke-RestMethod -URI $URI -Credential $Credential
+        $return = Invoke-RestMethod -URI $URI -WebSession $Script:IBSession
         $output = @()
         Foreach ($item in $return){
                 $output += [IB_View]::New($item.name,
 										  $Item.is_default,
 										  $item.comment,
 										  $item._ref,
-										  $Gridmaster,
-										  $credential,
 										  $($item.extattrs | ConvertTo-ExtAttrsArray))
         }
         return $output
@@ -91,12 +81,12 @@ Class IB_View : IB_ReferenceObject {
 		[String]$Name,
         [String]$Comment
     ){
-        $URIString = "https://$($this.Gridmaster)/wapi/$Global:WapiVersion/$($this._ref)"
+        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
         $bodyhashtable = $null
 		$bodyhashtable += @{name=$Name}
 		$bodyhashtable += @{comment=$Comment}
         If ($bodyhashtable){
-            $return = Invoke-RestMethod -uri $URIString -method Put -body $($bodyhashtable | convertto-json) -contenttype application/json -Credential $this.Credential
+            $return = Invoke-RestMethod -uri $URIString -method Put -body $($bodyhashtable | convertto-json) -contenttype application/json -WebSession $Script:IBSession
             If ($return) {
                 $this._ref = $return
 				$this.name = $Name
@@ -111,16 +101,12 @@ Class IB_View : IB_ReferenceObject {
         [bool]$is_default,
         [string]$comment,
         [string]$_ref,
-		[String]$Gridmaster,
-        [PSCredential]$Credential,
 		[Object]$ExtAttrib
     ){
         $this.name       = $name
         $this.is_default = $is_default
         $this.Comment    = $comment
         $this._ref       = $_ref
-		$this.Gridmaster = $Gridmaster
-		$this.Credential = $Credential
 		$this.extattrib  = $ExtAttrib
     }
 }

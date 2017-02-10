@@ -1,10 +1,5 @@
 Class IB_ReferenceObject {
     #properties
-    hidden [String]$gridmaster
-    hidden [System.Management.Automation.PSCredential]
-		   [System.Management.Automation.Credential()]
-		   $Credential
-
     [String]$_ref
     #methods
 	
@@ -12,32 +7,26 @@ Class IB_ReferenceObject {
         return $this._ref
     }
 	static [IB_ReferenceObject] Get(
-		[String]$Gridmaster,
-		[PSCredential]$Credential,
 		[string]$_ref
 	) {
-		$URIString = "https://$gridmaster/wapi/$Global:WapiVersion/$_ref"
-		$return = Invoke-RestMethod -Uri $URIString -Credential $Credential
+		$URIString = "https://$script:IBgridmaster/wapi/$Global:WapiVersion/$_ref"
+		$return = Invoke-RestMethod -Uri $URIString -WebSession $script:IBSession
         If ($Return) {
-			return [IB_ReferenceObject]::New($Gridmaster,$Credential,$return._ref)
+			return [IB_ReferenceObject]::New($return._ref)
 		} else {
 			return $null
 		}
 	}
    hidden [String] Delete(){
-        $URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
-        $return = Invoke-RestMethod -Uri $URIString -Method Delete -Credential $this.Credential
+        $URIString = "https://$script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
+        $return = Invoke-RestMethod -Uri $URIString -Method Delete -WebSession $script:IBSession
         return $return
     }
     #constructors
     IB_ReferenceObject(){}
     IB_ReferenceObject(
-		[String]$Gridmaster,
-		[PSCredential]$Credential,
 		[String]$_ref
 	){
-		$this.gridmaster = $Gridmaster
-		$this.credential = $Credential
 		$this._ref = $_ref
 	}
 }

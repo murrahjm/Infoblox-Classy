@@ -12,21 +12,19 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
 
     #region Create method
     static [IB_ExtAttrsDef] Create(
-        [String]$GridMaster,
-        [PSCredential]$Credential,
         [String]$Name,
 		[String]$Type,
 		[String]$Comment,
 		[String]$DefaultValue
     ){
-        $URIString = "https://$GridMaster/wapi/$Global:WapiVersion/extensibleattributedef"
+        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/extensibleattributedef"
         $BodyHashTable = @{name=$Name}
         $bodyhashtable += @{type=$Type.ToUpper()}
         $bodyhashtable += @{comment=$comment}
 		if ($defaultvalue){$bodyhashtable += @{default_value=$DefaultValue}}
-        $return = Invoke-RestMethod -Uri $URIString -Method Post -Body $BodyHashTable -Credential $Credential
+        $return = Invoke-RestMethod -Uri $URIString -Method Post -Body $BodyHashTable -WebSession $Script:IBSession
 		If ($return) {
-			return [IB_ExtAttrsDef]::Get($GridMaster,$Credential,$return)
+			return [IB_ExtAttrsDef]::Get($return)
 		}else {
 			return $Null
 		}
@@ -35,23 +33,19 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
     #endregion
     #region Get methods
 		static [IB_ExtAttrsDef] Get (
-		[String]$Gridmaster,
-		[PSCredential]$Credential,
 		[String]$_ref
 	) {
 		$ReturnFields = "name,comment,default_value,type"
-		$URIString = "https://$gridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
-		$return = Invoke-RestMethod -Uri $URIString -Credential $Credential
+		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
+		$return = Invoke-RestMethod -Uri $URIString -WebSession $Script:IBSession
         If ($Return) {
-			return [IB_ExtAttrsDef]::New($gridmaster,$credential,$return.name,$return.type,$return.comment,$return.default_value,$return._ref)
+			return [IB_ExtAttrsDef]::New($return.name,$return.type,$return.comment,$return.default_value,$return._ref)
 		} else {
 			return $null
 		}
 	}
 
     static [IB_ExtAttrsDef[]] Get(
-        [String]$GridMaster,
-        [PSCredential]$Credential,
         [String]$Name,
 		[String]$Type,
 		[String]$Comment,
@@ -59,7 +53,7 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
         [Int]$MaxResults
     ){
 		$ReturnFields = "name,comment,default_value,type"
-		$URI = "https://$Gridmaster/wapi/$Global:WapiVersion/extensibleattributedef?"
+		$URI = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/extensibleattributedef?"
 		If ($Strict){$Operator = ":="} else {$Operator = "~:="}
 		If ($Name){
 			$URI += "name$Operator$Name&"
@@ -75,10 +69,10 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
 		}
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
-        $return = Invoke-RestMethod -URI $URI -Credential $Credential
+        $return = Invoke-RestMethod -URI $URI -WebSession $Script:IBSession
         $output = @()
 		Foreach ($item in $return){
-			$output += [IB_ExtAttrsDef]::New($gridmaster,$credential,$Item.name,$Item.type,$Item.comment,$Item.default_value,$Item._ref)
+			$output += [IB_ExtAttrsDef]::New($Item.name,$Item.type,$Item.comment,$Item.default_value,$Item._ref)
 		}
         return $output
     }
@@ -91,14 +85,14 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
 		[String]$DefaultValue
     )
 	{
-        $URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
+        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
         $bodyHashTable = $null
         $bodyHashTable+=@{name=$Name}
         $bodyHashTable+=@{type=$Type.ToUpper()}
         $bodyHashTable+=@{comment=$comment}
 		$bodyHashTable+=@{default_value=$DefaultValue}
         If ($bodyHashTable){
-			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $($bodyHashTable | ConvertTo-Json) -ContentType application/json -Credential $this.Credential
+			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $($bodyHashTable | ConvertTo-Json) -ContentType application/json -WebSession $Script:IBSession
 			if ($return) {
 				$this._ref = $return
 				$this.type = $Type
@@ -111,8 +105,6 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
 #endregion
 #region Constructors
     IB_ExtAttrsDef(
-        [String]$GridMaster,
-        [PSCredential]$Credential,
         [String]$Name,
 		[String]$Type,
 		[String]$Comment,
@@ -122,8 +114,6 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
         $this.Name         = $Name
         $this.Comment      = $Comment
         $this._ref         = $_ref
-        $this.gridmaster   = $Gridmaster
-        $this.credential   = $Credential
 		$this.type         = $Type
 		$this.DefaultValue = $DefaultValue
     }

@@ -65,17 +65,27 @@ Function Get-IBRecord{
     BEGIN{
         $FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
         write-verbose "$FunctionName`:  Beginning Function"
+		If (! $script:IBSession){
+			write-verbose "Existing session to infoblox gridmaster does not exist."
+			If ($gridmaster -and $Credential){
+				write-verbose "Creating session to $gridmaster with user $credential"
+				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+			} else {
+				write-error "Missing required parameters to connect to Gridmaster"
+				return
+			}
+		}
     }
     PROCESS{
 		$return = Switch ($_ref.ToString().split('/')[0]) {
-			'record:a' {[IB_DNSARecord]::Get($Gridmaster, $Credential, $_ref)}
-			'record:ptr' {[IB_DNSPTRRecord]::Get($gridmaster, $Credential, $_ref)}
-			'record:cname' {[IB_DNSCNameRecord]::Get($Gridmaster, $Credential, $_ref)}
-			'fixedaddress' {[IB_FixedAddress]::Get($gridmaster, $Credential, $_ref)}
-			'view' {[IB_View]::Get($gridmaster, $Credential, $_ref)}
-			'networkview' {[IB_NetworkView]::Get($Gridmaster, $Credential, $_ref)}
-			'extensibleattributedef' {]IB_ExtAttrsDef]::Get($Gridmaster, $credential, $_ref)}
-			default {[IB_ReferenceObject]::Get($gridmaster, $Credential, $_ref)}
+			'record:a' {[IB_DNSARecord]::Get($_ref)}
+			'record:ptr' {[IB_DNSPTRRecord]::Get($_ref)}
+			'record:cname' {[IB_DNSCNameRecord]::Get($_ref)}
+			'fixedaddress' {[IB_FixedAddress]::Get($_ref)}
+			'view' {[IB_View]::Get($_ref)}
+			'networkview' {[IB_NetworkView]::Get($_ref)}
+			'extensibleattributedef' {[IB_ExtAttrsDef]::Get($_ref)}
+			default {[IB_ReferenceObject]::Get($_ref)}
 		}
 		If ($Return){
 			return $Return

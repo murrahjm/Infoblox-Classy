@@ -12,8 +12,6 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 #region Methods
     #region Create method
     static [IB_DNSPTRRecord] Create(
-        [String]$GridMaster,
-        [PSCredential]$Credential,
         [String]$PTRDName,
         [IPAddress]$IPAddress,
         [String]$Comment,
@@ -22,7 +20,7 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
         [bool]$Use_TTL
 
     ){
-        $URIString = "https://$GridMaster/wapi/$Global:WapiVersion/record:ptr"
+        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/record:ptr"
         $BodyHashTable = @{ipv4addr=$($IPAddress.IPAddressToString)}
         $bodyhashtable += @{ptrdname=$PTRDName}
         $bodyhashtable += @{comment=$comment}
@@ -31,9 +29,9 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
             $BodyHashTable+= @{ttl=$ttl}
             $bodyhashtable+= @{use_ttl=$use_ttl}
         }
-        $return = Invoke-RestMethod -Uri $URIString -Method Post -Body $BodyHashTable -Credential $Credential
+        $return = Invoke-RestMethod -Uri $URIString -Method Post -Body $BodyHashTable -WebSession $Script:IBSession
         If ($Return) {
-			return [IB_DNSPTRRecord]::Get($GridMaster,$Credential,$return)
+			return [IB_DNSPTRRecord]::Get($return)
 		} else {
 			return $Null
 		}
@@ -41,13 +39,11 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
     #endregion
     #region Get methods
 	static [IB_DNSPTRRecord] Get (
-		[String]$Gridmaster,
-		[PSCredential]$Credential,
 		[String]$_ref
 	) {
 		$ReturnFields = "extattrs,name,ptrdname,ipv4addr,comment,view,ttl,use_ttl"
-		$URIString = "https://$gridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
-		$return = Invoke-RestMethod -Uri $URIString -Credential $Credential
+		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
+		$return = Invoke-RestMethod -Uri $URIString -WebSession $Script:IBSession
         If ($Return) {
 			If ($return.ipv4addr.length -eq 0){$return.ipv4addr = $Null}
 			return [IB_DNSPTRRecord]::New($return.ptrdname,
@@ -56,8 +52,6 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 										  $return.comment,
 										  $return._ref,
 										  $return.view,
-										  $Gridmaster,
-										  $credential,
 										  $return.ttl,
 										  $return.use_ttl,
 										  $($return.extattrs | ConvertTo-ExtAttrsArray))
@@ -67,8 +61,6 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 	}
 
     static [IB_DNSPTRRecord[]] Get(
-        [String]$GridMaster,
-        [PSCredential]$Credential,
         [String]$Name,
 		[IPAddress]$IPAddress,
 		[String]$PTRdname,
@@ -80,7 +72,7 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
         [Int]$MaxResults
     ){
 		$ReturnFields = "extattrs,name,ptrdname,ipv4addr,comment,view,ttl,use_ttl"
-		$URI = "https://$Gridmaster/wapi/$Global:WapiVersion/record:ptr?"
+		$URI = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/record:ptr?"
 		If ($Strict){$Operator = ":="} else {$Operator = "~:="}
 		If ($Name){
 			$URI += "name$Operator$Name&"
@@ -108,7 +100,7 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 		}
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
-        $return = Invoke-RestMethod -URI $URI -Credential $Credential
+        $return = Invoke-RestMethod -URI $URI -WebSession $Script:IBSession
         $output = @()
         Foreach ($item in $return){
 				If ($item.ipv4addr.length -eq 0){$item.ipv4addr = $Null}
@@ -118,8 +110,6 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 												  $item.comment,
 												  $item._ref,
 												  $item.view,
-												  $Gridmaster,
-												  $credential,
 												  $item.ttl,
 												  $item.use_ttl,
 												  $($item.extattrs | ConvertTo-ExtAttrsArray))
@@ -134,7 +124,7 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
         [uint32]$ttl,
         [bool]$use_ttl
     ){
-        $URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
+        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
         $bodyHashTable = $null
         $bodyHashTable+=@{ptrdname=$PTRDName}
         $bodyHashTable+=@{comment=$comment}
@@ -146,7 +136,7 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 		}
 
         If ($bodyHashTable){
-			$return = Invoke-RestMethod -Uri $URIString -Method Put -Body $($bodyHashTable | ConvertTo-Json) -ContentType application/json -Credential $this.Credential
+			$return = Invoke-RestMethod -Uri $URIString -Method Put -Body $($bodyHashTable | ConvertTo-Json) -ContentType application/json -WebSession $Script:IBSession
 			if ($return) {
 				$this._ref = $return
 				$this.ptrdname = $PTRDName
@@ -167,15 +157,15 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 		[String]$Name,
 		[String]$Value
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
+		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $Name -Value $(New-object psobject -Property @{value=$Value})
 		$ExtAttr = new-object psobject -Property @{$Name=$(get-variable $Name | Select-Object -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs+"=$extattr}
 		$JSONBody = $body | ConvertTo-Json
 		If ($JSONBody){
-			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -Credential $this.Credential
+			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Script:IBSession
 			If ($Return){
-				$record = [IB_DNSPTRRecord]::Get($this.gridmaster,$this.credential,$return)
+				$record = [IB_DNSPTRRecord]::Get($return)
 				$this.ExtAttrib = $record.extAttrib
 			}
 		}
@@ -185,15 +175,15 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 	hidden [void] RemoveExtAttrib (
 		[String]$ExtAttrib
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
+		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $ExtAttrib -Value $(New-object psobject -Property @{})
 		$ExtAttr = new-object psobject -Property @{$extattrib=$(get-variable $ExtAttrib | Select-Object -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs-"=$extattr}
 		$JSONBody = $body | ConvertTo-Json
 		If ($JSONBody){
-			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -Credential $this.Credential
+			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Script:IBSession
 			If ($Return){
-				$record = [IB_DNSPTRRecord]::Get($this.gridmaster,$this.credential,$return)
+				$record = [IB_DNSPTRRecord]::Get($return)
 				$this.ExtAttrib = $record.extAttrib
 			}
 		}
@@ -208,8 +198,6 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
         [String]$Comment,
         [String]$_ref,
         [String]$view,
-        [String]$Gridmaster,
-        [PSCredential]$Credential,
         [uint32]$TTL,
         [bool]$Use_ttl,
 		[Object]$ExtAttrib
@@ -220,8 +208,6 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
         $this.Comment     = $Comment
         $this._ref        = $_ref
         $this.view        = $view
-        $this.gridmaster  = $Gridmaster
-        $this.credential  = $Credential
         $this.ttl         = $TTL
         $this.Use_TTL     = $Use_ttl
 		$this.extattrib   = $ExtAttrib

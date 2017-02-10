@@ -9,15 +9,13 @@ Class IB_FixedAddress : IB_ReferenceObject {
 #region Methods
 #region Create method
     static [IB_FixedAddress] Create(
-        [String]$GridMaster,
-        [PSCredential]$Credential,
         [String]$Name,
         [IPAddress]$IPAddress,
         [String]$Comment,
         [String]$NetworkView,
 		[String]$MAC
     ){
-        $URIString = "https://$GridMaster/wapi/$Global:WapiVersion/fixedaddress"
+        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/fixedaddress"
         $bodyhashtable = @{ipv4addr=$IPAddress}
         $BodyHashTable += @{name=$Name}
         $bodyhashtable += @{comment=$comment}
@@ -29,20 +27,18 @@ Class IB_FixedAddress : IB_ReferenceObject {
 			$bodyHashTable += @{match_client='MAC_ADDRESS'}
 		}
 
-        $return = Invoke-RestMethod -Uri $URIString -Method Post -Body $BodyHashTable -Credential $Credential
-        return [IB_FixedAddress]::Get($GridMaster,$Credential,$return)
+        $return = Invoke-RestMethod -Uri $URIString -Method Post -Body $BodyHashTable -WebSession $Script:IBSession
+        return [IB_FixedAddress]::Get($return)
         
     }
     #endregion
     #region Get methods
 	static [IB_FixedAddress] Get (
-		[String]$Gridmaster,
-		[PSCredential]$Credential,
 		[String]$_ref
 	) {
 		$ReturnFields = "extattrs,name,ipv4addr,comment,network_view,mac"
-		$URIString = "https://$gridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
-		$return = Invoke-RestMethod -Uri $URIString -Credential $Credential
+		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
+		$return = Invoke-RestMethod -Uri $URIString -WebSession $Script:IBSession
         If ($Return) {
 			return [IB_FixedAddress]::New($return.name,
 										  $return.ipv4addr,
@@ -50,16 +46,12 @@ Class IB_FixedAddress : IB_ReferenceObject {
 										  $return._ref,
 										  $return.network_view,
 										  $return.mac,
-										  $Gridmaster,
-										  $Credential,
 										  $($return.extattrs | Convertto-ExtAttrsArray))
 		} else {
 			return $Null
 		}
 	}
 	static [IB_FixedAddress[]] Get(
-		[String]$Gridmaster,
-		[PSCredential]$Credential,
 		[IPAddress]$IPAddress,
 		[String]$MAC,
 		[String]$Comment,
@@ -69,7 +61,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
 		[Int]$MaxResults
 	){
 		$ReturnFields = "extattrs,name,ipv4addr,comment,network_view,mac"
-		$URI = "https://$gridmaster/wapi/$Global:WapiVersion/fixedaddress?"
+		$URI = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/fixedaddress?"
 		If ($Strict){$Operator = ":="} else {$Operator = "~:="}
 		If ($IPAddress){
 			$URI += "ipv4addr=$($IPAddress.IPAddressToString)&"
@@ -91,7 +83,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
 		}
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
-        $return = Invoke-RestMethod -URI $URI -Credential $Credential
+        $return = Invoke-RestMethod -URI $URI -WebSession $Script:IBSession
         $output = @()
         Foreach ($item in $return){
             $output += [IB_FixedAddress]::New($item.name,
@@ -100,8 +92,6 @@ Class IB_FixedAddress : IB_ReferenceObject {
 											  $item._ref,
 											  $item.network_view,
 											  $item.mac,
-											  $Gridmaster,
-											  $Credential,
 											  $($item.extattrs | convertto-extAttrsArray))
         }
         return $output
@@ -113,7 +103,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
         [String]$Comment,
 		[String]$MAC
     ){
-        $URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
+        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
         $bodyHashTable = $null
         $bodyHashTable+=@{name=$Name}
         $bodyHashTable+=@{comment=$comment}
@@ -124,7 +114,7 @@ Class IB_FixedAddress : IB_ReferenceObject {
 			$bodyHashTable+=@{match_client='MAC_ADDRESS'}
 		}
         If ($bodyHashTable){
-			$return = Invoke-RestMethod -Uri $URIString -Method Put -Body $($bodyHashTable | ConvertTo-Json) -ContentType application/json -Credential $this.Credential
+			$return = Invoke-RestMethod -Uri $URIString -Method Put -Body $($bodyHashTable | ConvertTo-Json) -ContentType application/json -WebSession $Script:IBSession
 			if ($return) {
 				$this._ref = $return
 				$this.name = $Name
@@ -139,15 +129,15 @@ Class IB_FixedAddress : IB_ReferenceObject {
 		[String]$Name,
 		[String]$Value
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
+		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $Name -Value $(New-object psobject -Property @{value=$Value})
 		$ExtAttr = new-object psobject -Property @{$Name=$(get-variable $Name | Select-Object -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs+"=$extattr}
 		$JSONBody = $body | ConvertTo-Json
 		If ($JSONBody){
-			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -Credential $this.Credential
+			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Script:IBSession
 			If ($Return){
-				$record = [IB_FixedAddress]::Get($this.gridmaster,$this.credential,$return)
+				$record = [IB_FixedAddress]::Get($return)
 				$this.ExtAttrib = $record.extAttrib
 			}
 		}
@@ -157,15 +147,15 @@ Class IB_FixedAddress : IB_ReferenceObject {
 	hidden [void] RemoveExtAttrib (
 		[String]$ExtAttrib
 	){
-		$URIString = "https://$($this.GridMaster)/wapi/$Global:WapiVersion/$($this._ref)"
+		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
 		New-Variable -name $ExtAttrib -Value $(New-object psobject -Property @{})
 		$ExtAttr = new-object psobject -Property @{$extattrib=$(get-variable $ExtAttrib | Select-Object -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs-"=$extattr}
 		$JSONBody = $body | ConvertTo-Json
 		If ($JSONBody){
-			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -Credential $this.Credential
+			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Script:IBSession
 			If ($Return){
-				$record = [IB_FixedAddress]::Get($this.gridmaster,$this.credential,$return)
+				$record = [IB_FixedAddress]::Get($return)
 				$this.ExtAttrib = $record.extAttrib
 			}
 		}
@@ -180,8 +170,6 @@ Class IB_FixedAddress : IB_ReferenceObject {
         [String]$_ref,
         [String]$NetworkView,
 		[String]$MAC,
-        [String]$Gridmaster,
-        [PSCredential]$Credential,
 		[Object]$ExtAttrib
     ){
         $this.Name         = $Name
@@ -190,8 +178,6 @@ Class IB_FixedAddress : IB_ReferenceObject {
         $this._ref         = $_ref
         $this.networkview  = $NetworkView
 		$this.MAC          = $MAC
-        $this.gridmaster   = $Gridmaster
-        $this.credential   = $Credential
 		$this.ExtAttrib    = $ExtAttrib
     }
 #endregion
