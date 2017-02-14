@@ -65,12 +65,12 @@
 Function Get-IBDNSCNameRecord {
 	[CmdletBinding(DefaultParameterSetName = 'byQuery')]
 	Param(
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory=$False)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
         [ValidateNotNullorEmpty()]
         [String]$Gridmaster,
 
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory=$False)]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
@@ -104,11 +104,21 @@ Function Get-IBDNSCNameRecord {
     BEGIN{
         $FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
         write-verbose "$FunctionName`:  Beginning Function"
-        Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
+		If (! $script:IBSession){
+			write-verbose "Existing session to infoblox gridmaster does not exist."
+			If ($gridmaster -and $Credential){
+				write-verbose "Creating session to $gridmaster with user $credential"
+				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+			} else {
+				write-error "Missing required parameters to connect to Gridmaster"
+				return
+			}
+		}
+        Write-Verbose "$FunctionName`:  Connecting to Infoblox device $script:IBgridmaster to retrieve Views"
         Try {
-            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
+            $IBViews = Get-IBView -Type DNSView
         } Catch {
-            Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
+            Write-error "Unable to connect to Infoblox device $script:IBgridmaster.  Error code:  $($_.exception)" -ea Stop
         }
         If ($View){
             Write-Verbose "$FunctionName`:  Validating View parameter against list from Infoblox device"
@@ -121,10 +131,10 @@ Function Get-IBDNSCNameRecord {
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
 			Write-Verbose "$FunctionName`:  Performing query search for CName Records"
-			[IB_DNSCNameRecord]::Get($Gridmaster,$Credential,$Name,$Canonical,$Comment,$ExtAttributeQuery,$Zone,$View,$Strict,$MaxResults)
+			[IB_DNSCNameRecord]::Get($Name,$Canonical,$Comment,$ExtAttributeQuery,$Zone,$View,$Strict,$MaxResults)
 		} else {
-			Write-Verbose "$FunctionName`: Querying $gridmaster for CName record with reference string $_ref"
-			[IB_DNSCNameRecord]::Get($Gridmaster, $Credential, $_ref)
+			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for CName record with reference string $_ref"
+			[IB_DNSCNameRecord]::Get($_ref)
 		}
 	}
 	END{}

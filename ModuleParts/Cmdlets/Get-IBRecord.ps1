@@ -44,16 +44,16 @@
 	System.String
 	IB_ReferenceObject
 .OUTPUTS
-	IB_DNSARecord
+	object
 #>
 Function Get-IBRecord{
     [CmdletBinding(DefaultParameterSetName='byObject')]
     Param(
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
 		[String]$Gridmaster,
 
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True)]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
