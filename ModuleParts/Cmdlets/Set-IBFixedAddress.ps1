@@ -59,11 +59,11 @@
 Function Set-IBFixedAddress{
     [CmdletBinding(DefaultParameterSetName='byObject',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
         [String]$Gridmaster,
 
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
@@ -91,7 +91,7 @@ Function Set-IBFixedAddress{
     PROCESS{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
 			
-            $Record = [IB_FixedAddress]::Get($Gridmaster,$Credential,$_Ref)
+            $Record = [IB_FixedAddress]::Get($_Ref)
             If ($Record){
                 $Record | Set-IBFixedAddress -Name $Name -Comment $Comment -mac $MAC -Passthru:$Passthru
             }

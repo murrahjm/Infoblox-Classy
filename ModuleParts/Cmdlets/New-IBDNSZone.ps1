@@ -35,12 +35,12 @@
 Function New-IBDNSZone {
     [CmdletBinding(SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory=$False)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
         [ValidateNotNullorEmpty()]
         [String]$Gridmaster,
 
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory=$False)]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
@@ -59,9 +59,19 @@ Function New-IBDNSZone {
     BEGIN{
         $FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
         write-verbose "$FunctionName`:  Beginning Function"
-        Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
+		If (! $script:IBSession){
+			write-verbose "Existing session to infoblox gridmaster does not exist."
+			If ($gridmaster -and $Credential){
+				write-verbose "Creating session to $gridmaster with user $credential"
+				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+			} else {
+				write-error "Missing required parameters to connect to Gridmaster"
+				return
+			}
+		}
+        Write-Verbose "$FunctionName`:  Connecting to Infoblox device $script:IBgridmaster to retrieve Views"
         Try {
-            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
+            $IBViews = Get-IBView -Type DNSView
         } Catch {
             Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
         }
@@ -76,7 +86,7 @@ Function New-IBDNSZone {
     }
     PROCESS{
         If ($pscmdlet.ShouldProcess($fqdn)){
-            $output = [IB_ZoneAuth]::Create($Gridmaster, $Credential, $FQDN, $View, $ZoneFormat, $Comment)
+            $output = [IB_ZoneAuth]::Create($FQDN, $View, $ZoneFormat, $Comment)
             $output
         }
     }

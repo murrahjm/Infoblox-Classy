@@ -35,11 +35,11 @@
 Function Remove-IBRecord{
     [CmdletBinding(DefaultParameterSetName='byObject',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
 		[String]$Gridmaster,
 
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True)]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
@@ -53,7 +53,7 @@ Function Remove-IBRecord{
         write-verbose "$FunctionName`:  Beginning Function"
     }
     PROCESS{
-		$Record = [IB_ReferenceObject]::Get($Gridmaster,$Credential,$_Ref)
+		$Record = [IB_ReferenceObject]::Get($_Ref)
 		If ($Record){
 			Write-verbose "$FunctionName`:  Record $_ref found, proceeding with deletion"
 			If ($pscmdlet.ShouldProcess($Record)) {

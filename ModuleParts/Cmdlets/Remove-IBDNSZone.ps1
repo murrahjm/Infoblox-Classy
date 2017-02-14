@@ -28,11 +28,11 @@
 Function Remove-IBDNSZone{
     [CmdletBinding(DefaultParameterSetName='byObject',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
         [String]$Gridmaster,
 
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
@@ -47,10 +47,20 @@ Function Remove-IBDNSZone{
     BEGIN{
         $FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
         write-verbose "$FunctionName`:  Beginning Function"
-    }
+    		If (! $script:IBSession){
+			write-verbose "Existing session to infoblox gridmaster does not exist."
+			If ($gridmaster -and $Credential){
+				write-verbose "Creating session to $gridmaster with user $credential"
+				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+			} else {
+				write-error "Missing required parameters to connect to Gridmaster"
+				return
+			}
+		}
+}
     PROCESS{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
-            $Record = [ib_zoneauth]::Get($Gridmaster,$Credential,$_Ref)
+            $Record = [ib_zoneauth]::Get($_Ref)
             If ($Record){
                 $Record | Remove-IBDNSZone
             }

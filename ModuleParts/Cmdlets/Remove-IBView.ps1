@@ -26,11 +26,11 @@
 Function Remove-IBView{
     [CmdletBinding(SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
 		[String]$Gridmaster,
 
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True)]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True)]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
@@ -47,13 +47,13 @@ Function Remove-IBView{
 
     PROCESS{
         Try {
-            $object = [IB_View]::Get($gridmaster,$Credential,$_ref)
+            $object = [IB_View]::Get($_ref)
         } Catch {
                 write-verbose "No object of type IB_View found with reference string $_ref.  Searching IB_NetworkView types"
         }
         If (! $object){
             Try {
-                [IB_NetworkView]::Get($gridmaster,$Credential,$_ref)
+                [IB_NetworkView]::Get($_ref)
             }Catch{
                 write-verbose "No object of type IB_NetworkView found with reference string $_ref"        
             }

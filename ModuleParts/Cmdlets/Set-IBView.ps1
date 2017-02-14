@@ -53,11 +53,11 @@
 Function Set-IBView{
     [CmdletBinding(DefaultParameterSetName='byObject',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
 		[String]$Gridmaster,
 
-        [Parameter(Mandatory=$True,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
+        [Parameter(Mandatory=$False,ValueFromPipelinebyPropertyName=$True,ParameterSetName='byRef')]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
@@ -80,14 +80,23 @@ Function Set-IBView{
     BEGIN{
         $FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
 		write-verbose "$FunctionName`:  Beginning Function"
+		If (! $script:IBSession){
+			write-verbose "Existing session to infoblox gridmaster does not exist."
+			If ($gridmaster -and $Credential){
+				write-verbose "Creating session to $gridmaster with user $credential"
+				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+			} else {
+				write-error "Missing required parameters to connect to Gridmaster"
+				return
+			}
+		}
    }
-
     PROCESS{
         If ($pscmdlet.ParameterSetName -eq 'byRef'){
             If ($_Ref -like "view/*"){
-                $Record = [IB_View]::Get($Gridmaster,$Credential,$_Ref)
+                $Record = [IB_View]::Get($_Ref)
             } elseif ($_Ref -like "networkview/*") {
-                $Record = [IB_NetworkView]::Get($Gridmaster,$Credential,$_Ref)
+                $Record = [IB_NetworkView]::Get($_Ref)
             }
                 If ($Record){
                     $Record | Set-IBView -name $Name -Comment $Comment -Passthru:$Passthru

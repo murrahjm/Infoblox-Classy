@@ -34,13 +34,13 @@
 Function Remove-IBExtensibleAttribute {
     [CmdletBinding(DefaultParameterSetName='byObjectEAName',SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
-        [Parameter(Mandatory=$True,ParameterSetName='byRefEAName')]
-        [Parameter(Mandatory=$True,ParameterSetName='byRefAll')]
+        [Parameter(Mandatory=$False,ParameterSetName='byRefEAName')]
+        [Parameter(Mandatory=$False,ParameterSetName='byRefAll')]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
 		[String]$Gridmaster,
 
-        [Parameter(Mandatory=$True,ParameterSetName='byRefEAName')]
-        [Parameter(Mandatory=$True,ParameterSetName='byRefAll')]
+        [Parameter(Mandatory=$False,ParameterSetName='byRefEAName')]
+        [Parameter(Mandatory=$False,ParameterSetName='byRefAll')]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
@@ -68,18 +68,28 @@ Function Remove-IBExtensibleAttribute {
 		$FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
 		write-verbose "$FunctionName`:  Beginning Function"
 		write-verbose "$FunctionName`:  ParameterSetName=$($pscmdlet.ParameterSetName)"
+		If (! $script:IBSession){
+			write-verbose "Existing session to infoblox gridmaster does not exist."
+			If ($gridmaster -and $Credential){
+				write-verbose "Creating session to $gridmaster with user $credential"
+				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+			} else {
+				write-error "Missing required parameters to connect to Gridmaster"
+				return
+			}
+		}
 	}
     PROCESS{
         If ($pscmdlet.ParameterSetName -eq "byRefEAName"){
 			Write-Verbose "$FunctionName`:  Refstring passed, querying infoblox for record"
-			$Record = Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_Ref
+			$Record = Get-IBRecord -_Ref $_Ref
             If ($Record){
 				Write-Verbose "$FunctionName`: object found, passing to cmdlet through pipeline"
                 $Record | Remove-IBExtensibleAttribute -EAName $EAName -passthru:$Passthru
             }	
         } elseif($pscmdlet.ParameterSetName -eq "byRefAll"){
 			Write-Verbose "$FunctionName`:  Refstring passed, querying infoblox for record"
-			$Record = Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_Ref $_Ref
+			$Record = Get-IBRecord -_Ref $_Ref
             If ($Record){
 				Write-Verbose "$FunctionName`: object found, passing to cmdlet through pipeline"
                 $Record | Remove-IBExtensibleAttribute -RemoveAll:$RemoveAll -passthru:$Passthru
