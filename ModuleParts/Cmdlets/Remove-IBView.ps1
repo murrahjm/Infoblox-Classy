@@ -43,8 +43,17 @@ Function Remove-IBView{
     BEGIN{
         $FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
 		write-verbose "$FunctionName`:  Beginning Function"
-   }
-
+   		If (! $script:IBSession){
+			write-verbose "Existing session to infoblox gridmaster does not exist."
+			If ($gridmaster -and $Credential){
+				write-verbose "Creating session to $gridmaster with user $credential"
+				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+			} else {
+				write-error "Missing required parameters to connect to Gridmaster"
+				return
+			}
+		}
+}
     PROCESS{
         Try {
             $object = [IB_View]::Get($_ref)
