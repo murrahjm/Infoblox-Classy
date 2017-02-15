@@ -114,7 +114,7 @@ Function Get-IBFixedAddress {
 			[IB_FixedAddress]::Get($IPAddress,$MAC,$Comment,$ExtAttributeQuery,$NetworkView,$Strict,$MaxResults)
 		} else {
 			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for A record with reference string $_ref"
-			[IB_FixedAddress]::Get($Credential, $_ref)
+			[IB_FixedAddress]::Get($_ref)
 		}
 	}
 	END{}
