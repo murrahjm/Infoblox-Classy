@@ -7,6 +7,7 @@ Properties {
     $PSVersion = $PSVersionTable.PSVersion.Major
     $TestFile = "TestResults_PS$PSVersion`_$TimeStamp.xml"
     $lines = '----------------------------------------------------------------------'
+    $ErrorActionPreference = 'Stop'
 
 }
 
@@ -25,6 +26,7 @@ Task Init {
 Task Clean -depends Init {
     $lines
     #create empty folder for module build task, delete any existing data
+    if (get-module $env:modulename){remove-module $env:modulename -Force}
     If (test-path "$env:artifactroot\$env:modulename") {
         Remove-Item "$env:artifactroot\$env:modulename" -Force -Recurse
     }
@@ -48,6 +50,8 @@ Task Build -Depends Clean {
         ModuleVersion = $env:ModuleVersion
     }
     Update-ModuleManifest @modulemanifestdata
+    Import-Module "$env:artifactroot\$env:ModuleName" -RequiredVersion $env:ModuleVersion
+    
 }
 Task BuildTestEnvironment -depends Build {
     $lines

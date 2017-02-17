@@ -51,24 +51,25 @@ Function Remove-IBRecord{
     BEGIN{
         $FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
         write-verbose "$FunctionName`:  Beginning Function"
-    		If (! $script:IBSession){
+		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
-}
+	}
     PROCESS{
-		$Record = [IB_ReferenceObject]::Get($_Ref)
+		$Record = [IB_ReferenceObject]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
 		If ($Record){
 			Write-verbose "$FunctionName`:  Record $_ref found, proceeding with deletion"
 			If ($pscmdlet.ShouldProcess($Record)) {
 				Write-Verbose "$FunctionName`:  Deleting Record $Record"
-				$Record.Delete()
+				$Record.Delete($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion)
 			}
 		} else {
 			Write-Verbose "$FunctionName`:  No record found with reference string $_ref"

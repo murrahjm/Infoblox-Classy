@@ -68,24 +68,25 @@ Function Get-IBRecord{
 		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
     }
     PROCESS{
 		$return = Switch ($_ref.ToString().split('/')[0]) {
-			'record:a' {[IB_DNSARecord]::Get($_ref)}
-			'record:ptr' {[IB_DNSPTRRecord]::Get($_ref)}
-			'record:cname' {[IB_DNSCNameRecord]::Get($_ref)}
-			'fixedaddress' {[IB_FixedAddress]::Get($_ref)}
-			'view' {[IB_View]::Get($_ref)}
-			'networkview' {[IB_NetworkView]::Get($_ref)}
-			'extensibleattributedef' {[IB_ExtAttrsDef]::Get($_ref)}
-			default {[IB_ReferenceObject]::Get($_ref)}
+			'record:a' {[IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
+			'record:ptr' {[IB_DNSPTRRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
+			'record:cname' {[IB_DNSCNameRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
+			'fixedaddress' {[IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
+			'view' {[IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
+			'networkview' {[IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
+			'extensibleattributedef' {[IB_ExtAttrsDef]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
+			default {[IB_ReferenceObject]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
 		}
 		If ($Return){
 			return $Return

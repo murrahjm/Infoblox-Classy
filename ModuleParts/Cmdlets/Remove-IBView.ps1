@@ -46,23 +46,24 @@ Function Remove-IBView{
    		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
-}
+    }
     PROCESS{
         Try {
-            $object = [IB_View]::Get($_ref)
+            $object = [IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
         } Catch {
                 write-verbose "No object of type IB_View found with reference string $_ref.  Searching IB_NetworkView types"
         }
         If (! $object){
             Try {
-                [IB_NetworkView]::Get($_ref)
+                [IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
             }Catch{
                 write-verbose "No object of type IB_NetworkView found with reference string $_ref"        
             }
@@ -70,7 +71,7 @@ Function Remove-IBView{
         If ($object){
             If ($pscmdlet.shouldProcess($object)){
                 Write-Verbose "$FunctionName`:  Deleting object $object"
-                $object.Delete()
+                $object.Delete($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion)
             }
         } else {
             Write-error "No object found with reference string $_ref"

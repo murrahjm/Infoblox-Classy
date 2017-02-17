@@ -66,13 +66,15 @@ Function Add-IBExtensibleAttribute {
 		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
+		
 	}
     PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byRef'){
@@ -88,7 +90,7 @@ Function Add-IBExtensibleAttribute {
 			# add code to validate ea data against extensible attribute definition on infoblox.
 				If ($pscmdlet.ShouldProcess($Item)) {
 					write-verbose "$FunctionName`:  Adding EA $eaname to $item"
-					$Item.AddExtAttrib($EAName,$EAValue)
+					$Item.AddExtAttrib($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$EAName,$EAValue)
 					If ($Passthru) {
 						Write-Verbose "$FunctionName`:  Passthru specified, returning dns object as output"
 						return $Item

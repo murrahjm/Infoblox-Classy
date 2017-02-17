@@ -47,7 +47,6 @@ Function Get-IBDNSZone {
 	Param(
         [Parameter(Mandatory=$False)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
-        [ValidateNotNullorEmpty()]
         [String]$Gridmaster,
 
         [Parameter(Mandatory=$False)]
@@ -85,12 +84,13 @@ Function Get-IBDNSZone {
 		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $script:IBgridmaster to retrieve Views"
         Try {
@@ -109,10 +109,10 @@ Function Get-IBDNSZone {
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
 			Write-Verbose "$FunctionName`:  Performing query search for DNSZone Records"
-			[IB_ZoneAuth]::Get($FQDN,$View,$ZoneFormat,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
+			[IB_ZoneAuth]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$FQDN,$View,$ZoneFormat,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
 		} else {
 			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for DNSZone record with reference string $_ref"
-			[IB_ZoneAuth]::Get($_ref)
+			[IB_ZoneAuth]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
 		}
 	}
 	END{}

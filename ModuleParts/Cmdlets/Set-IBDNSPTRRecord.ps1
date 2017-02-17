@@ -96,18 +96,19 @@ Function Set-IBDNSPTRRecord{
 		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
     }
     PROCESS{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
 			
-            $Record = [IB_DNSPTRRecord]::Get($_Ref)
+            $Record = [IB_DNSPTRRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
             If ($Record){
                 $Record | Set-IBDNSPTRRecord -PTRDName $PTRDName -Comment $Comment -TTL $TTL -ClearTTL:$ClearTTL -Passthru:$Passthru
             }
@@ -117,18 +118,18 @@ Function Set-IBDNSPTRRecord{
 				If ($pscmdlet.ShouldProcess($DNSrecord)) {
 					If ($PTRDName -ne 'unspecified'){
 						Write-Verbose "$FunctionName`:  Setting PTRDName to $PTRDName"
-						$DNSRecord.Set($PTRDName, $DNSRecord.Comment, $DNSRecord.TTL, $DNSrecord.Use_TTL)
+						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$PTRDName, $DNSRecord.Comment, $DNSRecord.TTL, $DNSrecord.Use_TTL)
 					}
 					If ($Comment -ne "unspecified"){
 						write-verbose "$FunctionName`:  Setting comment to $comment"
-						$DNSRecord.Set($DNSRecord.PTRDName, $Comment, $DNSRecord.TTL, $DNSRecord.Use_TTL)
+						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$DNSRecord.PTRDName, $Comment, $DNSRecord.TTL, $DNSRecord.Use_TTL)
 					}
 					If ($ClearTTL){
 						write-verbose "$FunctionName`:  Setting TTL to 0 and Use_TTL to false"
-						$DNSRecord.Set($DNSrecord.PTRDName, $DNSrecord.comment, $Null, $False)
+						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$DNSrecord.PTRDName, $DNSrecord.comment, $Null, $False)
 					} elseIf ($TTL -ne 4294967295){
 						write-verbose "$FunctionName`:  Setting TTL to $TTL and Use_TTL to True"
-						$DNSrecord.Set($DNSrecord.PTRDName, $DNSrecord.Comment, $TTL, $True)
+						$DNSrecord.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$DNSrecord.PTRDName, $DNSrecord.Comment, $TTL, $True)
 					}
 					If ($Passthru) {
 						Write-Verbose "$FunctionName`:  Passthru specified, returning dns object as output"

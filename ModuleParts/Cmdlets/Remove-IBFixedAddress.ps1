@@ -51,17 +51,18 @@ Function Remove-IBFixedAddress{
 		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
     }
     PROCESS{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
-            $Record = [IB_FixedAddress]::Get($_Ref)
+            $Record = [IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
             If ($Record){
                 $Record | Remove-IBFixedAddress
             }
@@ -69,7 +70,7 @@ Function Remove-IBFixedAddress{
 			Foreach ($Item in $Record){
 				If ($pscmdlet.ShouldProcess($Item)) {
 					Write-Verbose "$FunctionName`:  Deleting Record $Item"
-					$Item.Delete()
+					$Item.Delete($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion)
 				}
 			}
 		}

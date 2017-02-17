@@ -9,21 +9,27 @@ Class IB_networkview : IB_ReferenceObject {
         return $this.name
     }
 	static [IB_NetworkView] Create(
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
 		[String]$Name,
 		[String]$Comment
 	){
-		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/networkview"
+		$URIString = "https://$Gridmaster/wapi/$WapiVersion/networkview"
 		$bodyhashtable = @{name=$Name}
 		If ($Comment){$bodyhashtable += @{comment=$Comment}}
-		$Return = Invoke-RestMethod -uri $URIString -Method Post -body $bodyhashtable -WebSession $Script:IBSession
-		return [IB_NetworkView]::Get($return)
+		$Return = Invoke-RestMethod -uri $URIString -Method Post -body $bodyhashtable -WebSession $Session
+		return [IB_NetworkView]::Get($gridmaster,$Session,$WapiVersion,$return)
 	}
 	static [IB_networkview] Get (
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
 		[String]$_ref
 	) {
 		$ReturnFields = "extattrs,name,is_default,comment"
-		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
-		$return = Invoke-RestMethod -Uri $URIString -WebSession $Script:IBSession
+		$URIString = "https://$Gridmaster/wapi/$WapiVersion/$_ref`?_return_fields=$ReturnFields"
+		$return = Invoke-RestMethod -Uri $URIString -WebSession $Session
 		If ($Return) {
 			return [IB_networkview]::New($Return.name,
 										 $Return.is_default, 
@@ -36,6 +42,9 @@ Class IB_networkview : IB_ReferenceObject {
 				
 	}
     static [IB_networkview[]] Get(
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
         [String]$Name,
 		[String]$Is_Default,
 		[String]$Comment,
@@ -44,7 +53,7 @@ Class IB_networkview : IB_ReferenceObject {
         [Int]$MaxResults
     ){
 		$ReturnFields = "extattrs,name,is_default,comment"
-		$URI = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/networkview?"
+		$URI = "https://$Gridmaster/wapi/$WapiVersion/networkview?"
 		If ($Strict){$Operator = ":="} else {$Operator = "~:="}
 		If ($Name){
 			$URI += "name$Operator$Name&"
@@ -63,7 +72,7 @@ Class IB_networkview : IB_ReferenceObject {
 		}
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
-        $return = Invoke-RestMethod -URI $URI -WebSession $Script:IBSession
+        $return = Invoke-RestMethod -URI $URI -WebSession $Session
         $output = @()
         Foreach ($item in $return){
                 $output += [IB_networkview]::New($item.name,
@@ -76,15 +85,18 @@ Class IB_networkview : IB_ReferenceObject {
     }
 #region Set Method
     hidden [void]Set (
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
 		[String]$Name,
         [String]$Comment
     ){
-        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
+        $URIString = "https://$Gridmaster/wapi/$WapiVersion/$($this._ref)"
         $bodyhashtable = $Null
 		$bodyhashtable += @{name=$Name}
 		$bodyhashtable += @{comment=$Comment}
         If ($bodyhashtable){
-            $return = Invoke-RestMethod -uri $URIString -method Put -body $($bodyhashtable | convertto-json) -contenttype application/json -WebSession $Script:IBSession
+            $return = Invoke-RestMethod -uri $URIString -method Put -body $($bodyhashtable | convertto-json) -contenttype application/json -WebSession $Session
             If ($return) {
                 $this._ref = $return
 				$this.name = $Name

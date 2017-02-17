@@ -28,7 +28,6 @@ Function New-IBView {
     Param(
         [Parameter(Mandatory=$False)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
-        [ValidateNotNullorEmpty()]
         [String]$Gridmaster,
 
         [Parameter(Mandatory=$False)]
@@ -52,16 +51,17 @@ Function New-IBView {
 		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $script:IBgridmaster to retrieve Views"
         Try {
-            $IBViews = Get-IBView -Gridmaster $Gridmaster -Credential $Credential -Type DNSView
+            $IBViews = Get-IBView -Type DNSView
         } Catch {
             Write-error "Unable to connect to Infoblox device $script:IBgridmaster.  Error code:  $($_.exception)" -ea Stop
         }
@@ -77,10 +77,10 @@ Function New-IBView {
     PROCESS{
         If ($pscmdlet.ShouldProcess($Name)){
             If ($Type -eq 'DNSView'){
-                $output = [IB_View]::Create($Name, $Comment)
+                $output = [IB_View]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $Comment)
                 $output
             } else {
-                $output = [IB_NetworkView]::Create($Name, $Comment)
+                $output = [IB_NetworkView]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $Comment)
                 $output
             }
         }

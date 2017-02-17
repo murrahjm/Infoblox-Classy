@@ -16,7 +16,7 @@
 #all set tests
 #all delete tests
 $Recordlist = @()
-import-module "$env:artifactRoot\$env:ModuleName"
+import-module "$env:artifactRoot\$env:ModuleName" -RequiredVersion $env:moduleVersion
 $Gridmaster = $(Get-AzureRmPublicIpAddress -ResourceGroupName $env:resourcegroupname).DnsSettings.Fqdn
 $Credential = new-object -TypeName system.management.automation.pscredential -ArgumentList 'admin', $($env:IBAdminPassword | ConvertTo-SecureString -AsPlainText -Force)
 
@@ -36,10 +36,10 @@ add-type @"
 #wait for test environment to become available.  give up after 5 minutes
 $i = 0
 Do {
-	start-sleep 30
+	start-sleep 10
 	$i += 1
 } until (
-	(Test-IBGridMaster -gridmaster $Gridmaster -ea silentlycontinue) -or ($i -ge 10)
+	(Test-IBGridMaster -gridmaster $Gridmaster -ea silentlycontinue) -or ($i -ge 30)
 )
 
 
@@ -47,12 +47,12 @@ if (!(Test-IBGridMaster -gridmaster $Gridmaster)){
 	throw "Gridmaster not accessible, aborting tests"
 }
 Describe "New-IBExtensibleAttributeDefinition tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{New-IBExtensibleAttributeDefinition -Name 'EA2' -Type 'String' -DefaultValue 'Corp' -Confirm:$False} | should Throw
 	}
 	It "Creates new extensible attribute definition with value type String" {
-		$Record = New-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Credential $Credential -Name 'EA2' -Type 'String' -DefaultValue 'Corp' -confirm:$False 
+		$Record = New-IBExtensibleAttributeDefinition -Gridmaster $Gridmaster -Credential $Credential -Name 'EA2' -Type 'String' -DefaultValue 'Corp' -confirm:$False
 		$Script:Recordlist += $Record
 		$Record.GetType().Name | should be 'IB_ExtAttrsDef'
 		$Record.Name | should be 'EA2'
@@ -80,12 +80,12 @@ Describe "New-IBExtensibleAttributeDefinition tests" {
 	}
 }
 Describe "New-IBView tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
-		{New-IBView -Name 'view2' -comment 'Second View' -Type 'DNSView' -confirm:$False } | should Throw
+		{New-IBView -Name 'view2' -comment 'Second View' -Type 'DNSView' -confirm:$False} | should Throw
 	}
 	It "Creates new dns view" {
-		$Record = New-IBView -Gridmaster $Gridmaster -credential $Credential -Name 'view2' -comment 'Second View' -Type 'DNSView' -confirm:$False 
+		$Record = New-IBView -Gridmaster $Gridmaster -credential $Credential -Name 'view2' -comment 'Second View' -Type 'DNSView' -confirm:$False
 		$Script:Recordlist += $Record
 		$Record.GetType().Name | should be 'IB_View'
 		$Record.Name | should be 'view2'
@@ -119,7 +119,7 @@ Describe "New-IBView tests" {
 
 }
 Describe "New-IBNetwork tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{New-IBNetwork -Network '12.0.0.0/8' -comment 'network 1' -confirm:$False} | should Throw
 	}
@@ -180,7 +180,7 @@ Describe "New-IBNetwork tests" {
 }
 
 Describe "New-IBDNSZone tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{New-IBDNSZone -FQDN 'domain.com' -zoneFormat 'forward' -confirm:$False } | should Throw
 	}
@@ -240,7 +240,7 @@ Describe "New-IBDNSZone tests" {
 	}
 }
 Describe "New-IBDNSARecord tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{New-IBDNSARecord -Name 'testrecord.domain.com' -IPAddress '12.12.1.1' -confirm:$False } | should Throw
 	}
@@ -292,7 +292,7 @@ Describe "New-IBDNSARecord tests" {
 
 }
 Describe "New-IBDNSCNameRecord tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{New-IBDNSCNameRecord -confirm:$False -Name 'testalias.domain.com' -Canonical 'testrecord.domain.com'} | should Throw
 	}
@@ -344,7 +344,7 @@ Describe "New-IBDNSCNameRecord tests" {
 
 }
 Describe "New-IBDNSPTRRecord tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{New-IBDNSPTRRecord -confirm:$False -PTRDName 'testrecord.domain.com' -IPAddress '12.12.1.1'} | should Throw
 	}
@@ -402,7 +402,7 @@ Describe "New-IBDNSPTRRecord tests" {
 
 }
 Describe "New-IBFixedAddress tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{New-IBFixedAddress -confirm:$False -IPAddress '12.12.1.1'} | should Throw
 	}
@@ -468,7 +468,7 @@ Describe "New-IBFixedAddress tests" {
 
 }
 Describe "Get-IBExtensibleAttributeDefinition tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{get-ibextensibleattributedefinition} | should Throw
 	}
@@ -485,7 +485,7 @@ Describe "Get-IBExtensibleAttributeDefinition tests" {
 	}
 }
 Describe "Get-IBView tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{get-ibview -Type NetworkView} | should Throw
 	}
@@ -748,7 +748,7 @@ Describe "Get-IBView tests" {
 
 }
 Describe "Get-IBDNSZone tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{get-IBDNSZone -zoneformat forward -view default} | should Throw
 	}
@@ -775,7 +775,7 @@ Describe "Get-IBNetwork tests" {
 	#bueller?  bueller?
 }
 Describe "Find-IBRecord" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Find-IBRecord -SearchString testrecord} | should Throw
 	}
@@ -1003,7 +1003,7 @@ Describe "Find-IBRecord" {
 	}
 }
 Describe "Get-IBDNSARecord tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Get-IBDNSARecord -name 'testrecord.domain.com' -strict} | should Throw
 	}
@@ -1190,7 +1190,7 @@ Describe "Get-IBDNSARecord tests" {
 	}
 }
 Describe "Get-IBDNSCNameRecord tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Get-IBDNSCNameRecord -name 'testalias.domain.com' -strict} | should Throw
 	}
@@ -1411,7 +1411,7 @@ Describe "Get-IBDNSCNameRecord tests" {
 	}
 }
 Describe "Get-IBDNSPTRRecord tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Get-IBDNSPTRRecord -name '1.1.12.12.in-addr.arpa' -strict} | should Throw
 	}
@@ -1669,7 +1669,7 @@ Describe "Get-IBDNSPTRRecord tests" {
 	}
 }
 Describe "Get-IBFixedAddress tests" {
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Get-IBFixedAddress} | should Throw
 	}
@@ -1856,9 +1856,10 @@ Describe "Get-IBFixedAddress tests" {
 	}
 }
 Describe "Get-IBRecord tests" {
-	clear-variable IBSession
+	$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
-		{Get-IBRecord} | should Throw
+		{Get-IBRecord -_Ref $ref} | should Throw
 	}
 	It "Throws an error with an empty gridmaster" {
 		{Get-IBRecord -Gridmaster '' -Credential $Credential -_Ref 'refstring'} | should throw
@@ -1985,7 +1986,7 @@ Describe "Set-IBNetwork tests" {
 Describe "Set-IBDNSARecord tests" {
 	#record retrieved before tests to allow tracking of changes to persist through each test
 	$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord.domain.com/default"}._ref
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Set-IBDNSARecord -_Ref $Ref} | should Throw
 	}
@@ -2156,7 +2157,7 @@ Describe "Set-IBDNSARecord tests" {
 Describe "Set-IBDNSCNameRecord tests" {
 	#record retrieved before tests to allow tracking of changes to persist through each test
 	$Ref = $Script:Recordlist.where{$_._ref -like "record:cname/*:testalias.domain.com/default"}._ref
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Set-IBDNSCNameRecord -_Ref $Ref} | should Throw
 	}
@@ -2318,7 +2319,7 @@ Describe "Set-IBDNSCNameRecord tests" {
 Describe "Set-IBDNSPTRRecord tests" {
 	#record retrieved before tests to allow tracking of changes to persist through each test
 	$Ref = $Script:Recordlist.where{$_._ref -like "record:ptr/*:1.1.12.12.in-addr.arpa/default"}._ref
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Set-IBDNSPTRRecord -_Ref $Ref} | should Throw
 	}
@@ -2493,7 +2494,7 @@ Describe "Set-IBDNSPTRRecord tests" {
 Describe "Set-IBFixedAddress tests" {
 	#record retrieved before tests to allow tracking of changes to persist through each test
 	$Ref = $Script:Recordlist.where{$_._ref -like "fixedaddress/*:12.12.1.1/default"}._ref
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Set-IBFixedAddress -_Ref $Ref} | should Throw
 	}
@@ -2586,7 +2587,7 @@ Describe "Set-IBFixedAddress tests" {
 Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
 	#record retrieved before tests to allow tracking of changes to persist through each test
 	$Ref = $Script:Recordlist.where{$_._ref -like "record:a/*:testrecord2.domain.com/default"}._ref
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Add-IBExtensibleAttribute -_ref $Ref -EAName 'EA2' -EAValue 'Value2' -confirm:$False } | should Throw
 		{Remove-IBExtensibleAttribute -_ref $Ref -EAName 'EA2' -confirm:$False } | should Throw
@@ -2701,7 +2702,7 @@ Describe "Add-IBExtensibleAttribute, Remove-IBExtensibleAttribute tests" {
 Describe "Set-IBView tests"{
 	$Viewref = $Script:Recordlist.where{$_._ref -like "view/*:view2/false"}._ref
 	$networkviewref = $Script:Recordlist.where{$_._ref -like "networkview/*:networkview2/false"}._ref
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Set-IBView -_ref $viewref -comment $Null -confirm:$False} | should Throw
 	}
@@ -2756,7 +2757,7 @@ Describe "Set-IBView tests"{
 }
 Describe "Remove-IBDNSARecord tests" {
 	$Record = Get-IBDNSARecord -Gridmaster $gridmaster -Credential $credential -name testrecord2.domain.com -View default
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Remove-IBDNSARecord -_Ref $Record._ref -confirm:$False} | should Throw
 	}
@@ -2793,7 +2794,7 @@ Describe "Remove-IBDNSARecord tests" {
 }
 Describe "Remove-IBDNSCNameRecord tests" {
 	$Record = Get-IBDNSCNameRecord -Gridmaster $gridmaster -Credential $credential -name testalias.domain.com -View default
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Remove-IBDNSCNameRecord -_Ref $Record._ref -confirm:$False} | should Throw
 	}
@@ -2830,7 +2831,7 @@ Describe "Remove-IBDNSCNameRecord tests" {
 }
 Describe "Remove-IBDNSPTRRecord tests" {
 	$Record = Get-IBDNSPTRRecord -Gridmaster $gridmaster -Credential $credential -name '1.1.12.12.in-addr.arpa' -View default
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Remove-IBDNSPTRRecord -_Ref $Record._ref -confirm:$False} | should Throw
 	}
@@ -2866,8 +2867,8 @@ Describe "Remove-IBDNSPTRRecord tests" {
 	}
 }
 Describe "Remove-IBFixedAddress tests" {
-	$Record = Get-FixedAddress -Gridmaster $gridmaster -Credential $credential -IPAddress '12.12.1.1' -NetworkView default
-	clear-variable IBSession
+	$Record = Get-IBFixedAddress -Gridmaster $gridmaster -Credential $credential -IPAddress '12.12.1.1' -NetworkView default
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Remove-IBFixedAddress -_Ref $Record._ref -confirm:$False} | should Throw
 	}
@@ -2904,7 +2905,7 @@ Describe "Remove-IBFixedAddress tests" {
 }
 Describe "Remove-IBRecord tests" {
 	$Ref = $script:recordlist.where{$_._ref -like "record:a/*:testrecord4.domain.com/view2"}._ref
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Remove-IBRecord -_Ref $ref -confirm:$False} | should Throw
 	}
@@ -2942,7 +2943,7 @@ Describe "Remove-IBRecord tests" {
 }
 Describe "Remove-IBNetwork tests" {
 	$Ref = $Script:recordlist.where{$_._ref -like "network/*:192.168.1.0/24/networkview2"}._ref
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Remove-IBNetwork -_Ref $ref -confirm:$False} | should Throw
 	}
@@ -2976,7 +2977,7 @@ Describe "Remove-IBNetwork tests" {
 }
 Describe "Remove-IBDNSZone tests" {
 	$Ref = $Script:recordlist.where{$_._ref -like "zone_auth/*:domain.com/default"}._ref
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Remove-IBDNSZone -_Ref $ref -confirm:$False} | should Throw
 	}
@@ -3010,7 +3011,7 @@ Describe "Remove-IBDNSZone tests" {
 }
 Describe "Remove-IBView tests" {
 	$view2 = get-ibview -Gridmaster $gridmaster -Credential $credential -name view2 -Strict -Type DNSView
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Remove-IBView -_Ref $View2._ref -confirm:$False} | should Throw
 	}
@@ -3036,7 +3037,7 @@ Describe "Remove-IBView tests" {
 }
 Describe "Remove-IBExtensibleAttributeDefinition tests" {
 	$Ref = $script:Recordlist.where{$_._ref -like "extensibleattributedef/*:EA2"}._ref
-	clear-variable IBSession
+	remove-module $env:Modulename -force; import-module "$env:artifactroot\$env:modulename" -requiredversion $env:ModuleVersion
 	It "throws error with no gridmaster parameter and no pre-defined web session" {
 		{Remove-IBExtensibleAttributeDefinition -_Ref $Ref -confirm:$False} | should Throw
 	}
@@ -3067,6 +3068,13 @@ Describe "Remove-IBExtensibleAttributeDefinition tests" {
 	}
 	It "Deletes the record using byRef method" {
 		$Ref = $script:Recordlist.where{$_._ref -like "extensibleattributedef/*:EA3"}._ref
+		$Return = Remove-IBExtensibleAttributeDefinition -confirm:$False -_Ref $Ref
+		{Get-IBExtensibleAttributeDefinition -_ref $Ref} | should throw
+		$Return.GetType().Name | Should be 'String'
+		$Return | should be $Ref
+	}
+	It "Deletes the record using byRef method"{
+		$Ref = $script:Recordlist.where{$_._ref -like "extensibleattributedef/*:extattr2"}._ref
 		$Return = Remove-IBExtensibleAttributeDefinition -confirm:$False -_Ref $Ref
 		{Get-IBExtensibleAttributeDefinition -_ref $Ref} | should throw
 		$Return.GetType().Name | Should be 'String'

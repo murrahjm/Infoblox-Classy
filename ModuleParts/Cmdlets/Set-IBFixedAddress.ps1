@@ -87,11 +87,22 @@ Function Set-IBFixedAddress{
     BEGIN{
         $FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
         write-verbose "$FunctionName`:  Beginning Function"
+		If (! $script:IBSession){
+			write-verbose "Existing session to infoblox gridmaster does not exist."
+			If ($gridmaster -and $Credential){
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
+				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+			} else {
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
+			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
+		}
     }
     PROCESS{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
 			
-            $Record = [IB_FixedAddress]::Get($_Ref)
+            $Record = [IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
             If ($Record){
                 $Record | Set-IBFixedAddress -Name $Name -Comment $Comment -mac $MAC -Passthru:$Passthru
             }
@@ -101,15 +112,15 @@ Function Set-IBFixedAddress{
 				If ($pscmdlet.ShouldProcess($Item)) {
 					If ($Name -ne 'unspecified'){
 						write-verbose "$FunctionName`:  Setting Name to $Name"
-						$Item.Set($Name, $Item.Comment, $Item.MAC)
+						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $Item.Comment, $Item.MAC)
 					}
 					If ($Comment -ne 'unspecified'){
 						write-verbose "$FunctionName`:  Setting comment to $comment"
-						$Item.Set($Item.Name, $Comment, $Item.MAC)
+						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Item.Name, $Comment, $Item.MAC)
 					}
 					If ($MAC -ne '99:99:99:99:99:99'){
 						write-verbose "$FunctionName`:  Setting MAC to $MAC"
-						$Item.Set($Item.Name, $Item.Comment, $MAC)
+						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Item.Name, $Item.Comment, $MAC)
 					}
 					If ($Passthru) {
 						Write-Verbose "$FunctionName`:  Passthru specified, returning object as output"

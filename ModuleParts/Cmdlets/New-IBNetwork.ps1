@@ -27,7 +27,6 @@ Function New-IBNetwork {
     Param(
         [Parameter(Mandatory=$False)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
-        [ValidateNotNullorEmpty()]
         [String]$Gridmaster,
 
         [Parameter(Mandatory=$False)]
@@ -53,12 +52,13 @@ Function New-IBNetwork {
 		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
         Write-Verbose "$FunctionName`:  Connecting to Infoblox device $script:IBgridmaster to retrieve Views"
         Try {
@@ -77,7 +77,7 @@ Function New-IBNetwork {
     }
     PROCESS{
         If ($pscmdlet.ShouldProcess($Network)){
-            $output = [IB_Network]::Create($Network, $NetworkView, $Comment)
+            $output = [IB_Network]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Network, $NetworkView, $Comment)
             $output
         }
     }

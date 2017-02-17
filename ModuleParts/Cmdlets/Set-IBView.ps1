@@ -83,20 +83,21 @@ Function Set-IBView{
 		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
    }
     PROCESS{
         If ($pscmdlet.ParameterSetName -eq 'byRef'){
             If ($_Ref -like "view/*"){
-                $Record = [IB_View]::Get($_Ref)
+                $Record = [IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
             } elseif ($_Ref -like "networkview/*") {
-                $Record = [IB_NetworkView]::Get($_Ref)
+                $Record = [IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
             }
                 If ($Record){
                     $Record | Set-IBView -name $Name -Comment $Comment -Passthru:$Passthru
@@ -106,11 +107,11 @@ Function Set-IBView{
                 If ($pscmdlet.shouldProcess($item)){
                     If ($comment -ne 'unspecified'){
                         write-verbose "$FunctionName`:  Setting comment to $comment"
-                        $item.Set($item.Name, $Comment)
+                        $item.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$item.Name, $Comment)
                     }
                     If ($Name -ne 'unspecified'){
                         write-verbose "$FunctionName`:  Setting name to $Name"
-                        $item.Set($Name, $item.comment)
+                        $item.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $item.comment)
                     }
                     If ($Passthru) {
                         Write-Verbose "$FunctionName`:  Passthru specified, returning object as output"

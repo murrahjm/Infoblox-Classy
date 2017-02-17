@@ -12,6 +12,9 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 #region Methods
     #region Create method
     static [IB_DNSPTRRecord] Create(
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
         [String]$PTRDName,
         [IPAddress]$IPAddress,
         [String]$Comment,
@@ -20,7 +23,7 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
         [bool]$Use_TTL
 
     ){
-        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/record:ptr"
+        $URIString = "https://$Gridmaster/wapi/$WapiVersion/record:ptr"
         $BodyHashTable = @{ipv4addr=$($IPAddress.IPAddressToString)}
         $bodyhashtable += @{ptrdname=$PTRDName}
         $bodyhashtable += @{comment=$comment}
@@ -29,9 +32,9 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
             $BodyHashTable+= @{ttl=$ttl}
             $bodyhashtable+= @{use_ttl=$use_ttl}
         }
-        $return = Invoke-RestMethod -Uri $URIString -Method Post -Body $BodyHashTable -WebSession $Script:IBSession
+        $return = Invoke-RestMethod -Uri $URIString -Method Post -Body $BodyHashTable -WebSession $Session
         If ($Return) {
-			return [IB_DNSPTRRecord]::Get($return)
+			return [IB_DNSPTRRecord]::Get($gridmaster,$Session,$WapiVersion,$return)
 		} else {
 			return $Null
 		}
@@ -39,11 +42,14 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
     #endregion
     #region Get methods
 	static [IB_DNSPTRRecord] Get (
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
 		[String]$_ref
 	) {
 		$ReturnFields = "extattrs,name,ptrdname,ipv4addr,comment,view,ttl,use_ttl"
-		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
-		$return = Invoke-RestMethod -Uri $URIString -WebSession $Script:IBSession
+		$URIString = "https://$Gridmaster/wapi/$WapiVersion/$_ref`?_return_fields=$ReturnFields"
+		$return = Invoke-RestMethod -Uri $URIString -WebSession $Session
         If ($Return) {
 			If ($return.ipv4addr.length -eq 0){$return.ipv4addr = $Null}
 			return [IB_DNSPTRRecord]::New($return.ptrdname,
@@ -61,6 +67,9 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 	}
 
     static [IB_DNSPTRRecord[]] Get(
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
         [String]$Name,
 		[IPAddress]$IPAddress,
 		[String]$PTRdname,
@@ -72,7 +81,7 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
         [Int]$MaxResults
     ){
 		$ReturnFields = "extattrs,name,ptrdname,ipv4addr,comment,view,ttl,use_ttl"
-		$URI = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/record:ptr?"
+		$URI = "https://$Gridmaster/wapi/$WapiVersion/record:ptr?"
 		If ($Strict){$Operator = ":="} else {$Operator = "~:="}
 		If ($Name){
 			$URI += "name$Operator$Name&"
@@ -100,7 +109,7 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 		}
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
-        $return = Invoke-RestMethod -URI $URI -WebSession $Script:IBSession
+        $return = Invoke-RestMethod -URI $URI -WebSession $Session
         $output = @()
         Foreach ($item in $return){
 				If ($item.ipv4addr.length -eq 0){$item.ipv4addr = $Null}
@@ -119,12 +128,15 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
     #endregion
     #region Set method
     hidden [Void] Set(
+ 		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
         [String]$PTRDName,
         [String]$Comment,
         [uint32]$ttl,
         [bool]$use_ttl
     ){
-        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
+        $URIString = "https://$Gridmaster/wapi/$WapiVersion/$($this._ref)"
         $bodyHashTable = $null
         $bodyHashTable+=@{ptrdname=$PTRDName}
         $bodyHashTable+=@{comment=$comment}
@@ -136,7 +148,7 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 		}
 
         If ($bodyHashTable){
-			$return = Invoke-RestMethod -Uri $URIString -Method Put -Body $($bodyHashTable | ConvertTo-Json) -ContentType application/json -WebSession $Script:IBSession
+			$return = Invoke-RestMethod -Uri $URIString -Method Put -Body $($bodyHashTable | ConvertTo-Json) -ContentType application/json -WebSession $Session
 			if ($return) {
 				$this._ref = $return
 				$this.ptrdname = $PTRDName
@@ -154,18 +166,21 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
     #endregion
 	#region AddExtAttrib method
 	hidden [void] AddExtAttrib (
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
 		[String]$Name,
 		[String]$Value
 	){
-		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
+		$URIString = "https://$Gridmaster/wapi/$WapiVersion/$($this._ref)"
 		New-Variable -name $Name -Value $(New-object psobject -Property @{value=$Value})
 		$ExtAttr = new-object psobject -Property @{$Name=$(get-variable $Name | Select-Object -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs+"=$extattr}
 		$JSONBody = $body | ConvertTo-Json
 		If ($JSONBody){
-			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Script:IBSession
+			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Session
 			If ($Return){
-				$record = [IB_DNSPTRRecord]::Get($return)
+				$record = [IB_DNSPTRRecord]::Get($gridmaster,$Session,$WapiVersion,$return)
 				$this.ExtAttrib = $record.extAttrib
 			}
 		}
@@ -173,17 +188,20 @@ Class IB_DNSPTRRecord : IB_ReferenceObject {
 	#endregion
 	#region RemoveExtAttrib method
 	hidden [void] RemoveExtAttrib (
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
 		[String]$ExtAttrib
 	){
-		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
+		$URIString = "https://$Gridmaster/wapi/$WapiVersion/$($this._ref)"
 		New-Variable -name $ExtAttrib -Value $(New-object psobject -Property @{})
 		$ExtAttr = new-object psobject -Property @{$extattrib=$(get-variable $ExtAttrib | Select-Object -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs-"=$extattr}
 		$JSONBody = $body | ConvertTo-Json
 		If ($JSONBody){
-			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Script:IBSession
+			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Session
 			If ($Return){
-				$record = [IB_DNSPTRRecord]::Get($return)
+				$record = [IB_DNSPTRRecord]::Get($gridmaster,$Session,$WapiVersion,$return)
 				$this.ExtAttrib = $record.extAttrib
 			}
 		}

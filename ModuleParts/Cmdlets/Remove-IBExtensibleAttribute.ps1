@@ -71,12 +71,13 @@ Function Remove-IBExtensibleAttribute {
 		If (! $script:IBSession){
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
-				write-verbose "Creating session to $gridmaster with user $credential"
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
 				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 			} else {
-				write-error "Missing required parameters to connect to Gridmaster"
-				return
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
 		}
 	}
     PROCESS{
@@ -101,13 +102,13 @@ Function Remove-IBExtensibleAttribute {
 					foreach ($EAName in $Item.extattrib.Name){
 						If ($pscmdlet.ShouldProcess($Item,"Remove EA $EAName")) {
 							write-verbose "$FunctionName`:  Removing EA $EAName from $item"
-							$Item.RemoveExtAttrib($EAName)
+							$Item.RemoveExtAttrib($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$EAName)
 						}
 					}
 				} else {
 					If ($pscmdlet.ShouldProcess($Item,"Remove EA $EAName")) {
 						write-verbose "$FunctionName`:  Removing EA $EAName from $item"
-						$Item.RemoveExtAttrib($EAName)
+						$Item.RemoveExtAttrib($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$EAName)
 					}
 				}
 				If ($Passthru) {

@@ -46,7 +46,6 @@ Function Get-IBView {
     Param(
         [Parameter(Mandatory=$False)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
-        [ValidateNotNullorEmpty()]
         [String]$Gridmaster,
 
         [Parameter(Mandatory=$False)]
@@ -85,12 +84,13 @@ Function Get-IBView {
 	If (! $script:IBSession){
 		write-verbose "Existing session to infoblox gridmaster does not exist."
 		If ($gridmaster -and $Credential){
-			write-verbose "Creating session to $gridmaster with user $credential"
+			write-verbose "Creating session to $gridmaster with user $($credential.username)"
 			New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
 		} else {
-			write-error "Missing required parameters to connect to Gridmaster"
-			return
+			write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 		}
+	} else {
+		write-verbose "Existing session to $script:IBGridmaster found"
 	}
 	Try {
 		If ($pscmdlet.ParameterSetName -eq 'byRef'){
@@ -99,11 +99,11 @@ Function Get-IBView {
 			If ($Type -eq 'DNSView'){
 				Write-Verbose "$Functionname`:  calling IB_View Get method with the following parameters`:"
 				Write-Verbose "$FunctionName`:  $name,$isDefault,$Comment,$Strict,$MaxResults"
-				[IB_View]::Get($Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
+				[IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
 			} else {
 				Write-Verbose "$Functionname`:  calling IB_NetworkView Get method with the following parameters`:"
 				Write-Verbose "$FunctionName`:  $name,$isDefault,$Comment,$Strict,$MaxResults"
-				[IB_NetworkView]::Get($Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
+				[IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
 			}
 
 		}

@@ -7,19 +7,26 @@ Class IB_ReferenceObject {
         return $this._ref
     }
 	static [IB_ReferenceObject] Get(
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
 		[string]$_ref
 	) {
-		$URIString = "https://$script:IBgridmaster/wapi/$Global:WapiVersion/$_ref"
-		$return = Invoke-RestMethod -Uri $URIString -WebSession $script:IBSession
+		$URIString = "https://$Gridmaster/wapi/$WapiVersion/$_ref"
+		$return = Invoke-RestMethod -Uri $URIString -WebSession $Session
         If ($Return) {
 			return [IB_ReferenceObject]::New($return._ref)
 		} else {
 			return $null
 		}
 	}
-   hidden [String] Delete(){
-        $URIString = "https://$script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
-        $return = Invoke-RestMethod -Uri $URIString -Method Delete -WebSession $script:IBSession
+   hidden [String] Delete(
+       	[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion
+   ){
+        $URIString = "https://$Gridmaster/wapi/$WapiVersion/$($this._ref)"
+        $return = Invoke-RestMethod -Uri $URIString -Method Delete -WebSession $Session
         return $return
     }
     #constructors

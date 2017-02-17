@@ -47,12 +47,11 @@
 Function Find-IBRecord {
     [CmdletBinding(DefaultParameterSetName = 'globalSearchbyIP')]
     Param(
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory=$False)]
         [ValidateScript({If($_){Test-IBGridmaster $_ -quiet}})]
-        [ValidateNotNullorEmpty()]
         [String]$Gridmaster,
 
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory=$False)]
 		[System.Management.Automation.PSCredential]
 		[System.Management.Automation.Credential()]
 		$Credential,
@@ -77,22 +76,33 @@ Function Find-IBRecord {
     BEGIN{
         $FunctionName = $pscmdlet.MyInvocation.InvocationName.ToUpper()
         write-verbose "$FunctionName`:  Beginning Function"
-        Write-Verbose "$FunctionName`:  Connecting to Infoblox device $gridmaster to retrieve Views"
+		If (! $script:IBSession){
+			write-verbose "Existing session to infoblox gridmaster does not exist."
+			If ($gridmaster -and $Credential){
+				write-verbose "Creating session to $gridmaster with user $($credential.username)"
+				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+			} else {
+				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
+			}
+		} else {
+			write-verbose "Existing session to $script:IBGridmaster found"
+		}
+        Write-Verbose "$FunctionName`:  Connecting to Infoblox device $script:IBgridmaster to retrieve Views"
         Try {
-		get-ibview -Gridmaster $Gridmaster -Credential $Credential -Type dnsview | out-null
+		get-ibview -Type dnsview | out-null
         } Catch {
-            Write-error "Unable to connect to Infoblox device $gridmaster.  Error code:  $($_.exception)" -ea Stop
+            Write-error "Unable to connect to Infoblox device $script:IBgridmaster.  Error code:  $($_.exception)" -ea Stop
         }
         if ($pscmdlet.ParameterSetName -eq 'globalSearchbyString'){
 			If ($Strict){
-				$uribase = "https://$gridmaster/wapi/$Global:WapiVersion/search?search_string:="
+				$uribase = "https://$script:IBgridmaster/wapi/$Global:WapiVersion/search?search_string:="
 
 			} else {
-				$uribase = "https://$gridmaster/wapi/$Global:WapiVersion/search?search_string~:="
+				$uribase = "https://$script:IBgridmaster/wapi/$Global:WapiVersion/search?search_string~:="
 
 			}
 		} elseif ($pscmdlet.ParameterSetName -eq 'globalSearchbyIP'){
-			$uribase = "https://$gridmaster/wapi/$Global:WapiVersion/search?address="
+			$uribase = "https://$script:IBgridmaster/wapi/$Global:WapiVersion/search?address="
 		}
 		
 	}
@@ -113,13 +123,13 @@ Function Find-IBRecord {
 		}
 		Write-verbose "$FunctionName`:  URI String`:  $uri"
 
-		$output = Invoke-RestMethod -Uri $URI -Credential $Credential
+		$output = Invoke-RestMethod -Uri $URI -WebSession $script:IBSession
 		write-verbose "$FunctionName`:  Found the following objects:"
 		foreach ($item in $output){
 			write-verbose "`t`t$($item._ref)"
 		}
 		Foreach ($item in $output){
-			Get-IBRecord -Gridmaster $Gridmaster -Credential $Credential -_ref $item._ref
+			Get-IBRecord -_ref $item._ref
 		}
 
     }

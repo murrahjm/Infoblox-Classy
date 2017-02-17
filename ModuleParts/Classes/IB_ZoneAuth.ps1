@@ -7,26 +7,32 @@ Class IB_ZoneAuth : IB_ReferenceObject {
     [Object]$ExtAttrib
 #region Create Method
     static [IB_ZoneAuth] Create(
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
         [String]$FQDN,
         [String]$View,
         [String]$ZoneFormat,
         [String]$Comment
     ){
-        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/zone_auth"
+        $URIString = "https://$Gridmaster/wapi/$WapiVersion/zone_auth"
         $bodyhashtable = @{fqdn=$fqdn}
         If ($comment){$bodyhashtable += @{comment=$Comment}}
         If ($View){$bodyhashtable += @{view = $View}}
         If ($ZoneFormat){$bodyhashtable += @{zone_format = $zoneformat.ToUpper()}}
-        $return = Invoke-RestMethod -uri $URIString -Method Post -Body $bodyhashtable -WebSession $Script:IBSession
-        return [IB_ZoneAuth]::Get($return)
+        $return = Invoke-RestMethod -uri $URIString -Method Post -Body $bodyhashtable -WebSession $Session
+        return [IB_ZoneAuth]::Get($gridmaster,$Session,$WapiVersion,$return)
     }
 #region Get Methods
     static [IB_ZoneAuth] Get (
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
         [String]$_ref
     ){
         $ReturnFields = "extattrs,fqdn,view,zone_format,comment"
-        $URIstring = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$_ref`?_return_fields=$ReturnFields"
-        $Return = Invoke-RestMethod -Uri $URIstring -WebSession $Script:IBSession
+        $URIstring = "https://$Gridmaster/wapi/$WapiVersion/$_ref`?_return_fields=$ReturnFields"
+        $Return = Invoke-RestMethod -Uri $URIstring -WebSession $Session
         If ($Return){
             return [IB_ZoneAuth]::New($Return.FQDN,
                                          $return.view,
@@ -40,6 +46,9 @@ Class IB_ZoneAuth : IB_ReferenceObject {
         }
     }
     static [IB_ZoneAuth[]] Get(
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
         [String]$FQDN,
         [String]$View,
         [String]$ZoneFormat,
@@ -49,7 +58,7 @@ Class IB_ZoneAuth : IB_ReferenceObject {
         [Int]$MaxResults
     ){
         $ReturnFields = "extattrs,fqdn,view,zone_format,comment"
-        $URI = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/zone_auth?"
+        $URI = "https://$Gridmaster/wapi/$WapiVersion/zone_auth?"
         If ($Strict){$Operator = "="} else {$Operator = "~="}
         If ($FQDN){
             $URI += "fqdn$Operator$fqdn&"
@@ -71,7 +80,7 @@ Class IB_ZoneAuth : IB_ReferenceObject {
         }
         $URI += "_return_fields=$ReturnFields"
         write-verbose "URI String:  $URI"
-        $return = Invoke-RestMethod -Uri $URI -WebSession $Script:IBSession
+        $return = Invoke-RestMethod -Uri $URI -WebSession $Session
         $output = @()
         Foreach ($Item in $Return){
             $output += [IB_ZoneAuth]::New($item.fqdn,
@@ -86,12 +95,15 @@ Class IB_ZoneAuth : IB_ReferenceObject {
     }
 #region Set Method
     hidden [void]Set (
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
         [String]$Comment
     ){
-        $URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
+        $URIString = "https://$Gridmaster/wapi/$WapiVersion/$($this._ref)"
         $bodyhashtable = @{comment=$Comment}
         If ($bodyhashtable){
-            $return = Invoke-RestMethod -uri $URIString -method Put -body $($bodyhashtable | convertto-json) -contenttype application/json -WebSession $Script:IBSession
+            $return = Invoke-RestMethod -uri $URIString -method Put -body $($bodyhashtable | convertto-json) -contenttype application/json -WebSession $Session
             If ($return) {
                 $this._ref = $return
                 $this.comment = $Comment
@@ -100,35 +112,41 @@ Class IB_ZoneAuth : IB_ReferenceObject {
     }
 #region AddExtAttrib method
 	hidden [void] AddExtAttrib (
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
 		[String]$Name,
 		[String]$Value
 	){
-		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
+		$URIString = "https://$Gridmaster/wapi/$WapiVersion/$($this._ref)"
 		New-Variable -name $Name -Value $(New-object psobject -Property @{value=$Value})
 		$ExtAttr = new-object psobject -Property @{$Name=$(get-variable $Name | Select-Object -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs+"=$extattr}
 		$JSONBody = $body | ConvertTo-Json
 		If ($JSONBody){
-			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Script:IBSession
+			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Session
 			If ($Return){
-				$record = [IB_ZoneAuth]::Get($return)
+				$record = [IB_ZoneAuth]::Get($gridmaster,$Session,$WapiVersion,$return)
 				$this.ExtAttrib = $record.extAttrib
 			}
 		}
 	}
 #region RemoveExtAttrib method
 	hidden [void] RemoveExtAttrib (
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
 		[String]$ExtAttrib
 	){
-		$URIString = "https://$Script:IBGridmaster/wapi/$Global:WapiVersion/$($this._ref)"
+		$URIString = "https://$Gridmaster/wapi/$WapiVersion/$($this._ref)"
 		New-Variable -name $ExtAttrib -Value $(New-object psobject -Property @{})
 		$ExtAttr = new-object psobject -Property @{$extattrib=$(get-variable $ExtAttrib | Select-Object -ExpandProperty Value)}
 		$body = new-object psobject -Property @{"extattrs-"=$extattr}
 		$JSONBody = $body | ConvertTo-Json
 		If ($JSONBody){
-			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Script:IBSession
+			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Session
 			If ($Return){
-				$record = [IB_ZoneAuth]::Get($return)
+				$record = [IB_ZoneAuth]::Get($gridmaster,$Session,$WapiVersion,$return)
 				$this.ExtAttrib = $record.extAttrib
 			}
 		}
