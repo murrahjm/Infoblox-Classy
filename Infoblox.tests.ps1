@@ -819,6 +819,7 @@ Describe "Find-IBRecord" {
 		$Return[8].name | should be 'testrecord2.domain.com'
 		$Return[8].view | should be 'default'
 	}
+
 	It "Returns a records with non-strict name and type search" {
 		$return = Find-IBRecord -SearchString testrecord -Recordtype 'record:a'
 		$return.count | should be 3

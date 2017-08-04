@@ -60,15 +60,13 @@ Function Find-IBRecord {
         [String]$SearchString,
 
 		[Parameter(ParameterSetName='globalSearchbyString')]
-		[String]$RecordType,
+		[String]$RecordType='*',
 
         [Parameter(ParameterSetName='globalSearchbyString')]
         [Switch]$Strict,
 
         [Parameter(Mandatory=$True,ValueFromPipeline=$True,ParameterSetName='globalSearchbyIP')]
         [IPAddress]$IPAddress,
-
-		[String]$Type,
 
         [Int]$MaxResults
 
@@ -111,25 +109,23 @@ Function Find-IBRecord {
     PROCESS{
 		If ($SearchString){
 			$URI = "$uribase$SearchString"
-			If ($RecordType){$URI += "&objtype=$recordtype"}
 		} elseif ($IPAddress){
 			$URI = "$uribase$($ipaddress.IPAddresstoString)"
 		}
 		If ($MaxResults){
 			$Uri += "&_max_results=$MaxResults"
 		}
-		If ($Type){
-			$Uri += "&objtype=$Type"
-		}
 		Write-verbose "$FunctionName`:  URI String`:  $uri"
 
 		$output = Invoke-RestMethod -Uri $URI -WebSession $script:IBSession
-		write-verbose "$FunctionName`:  Found the following objects:"
-		foreach ($item in $output){
-			write-verbose "`t`t$($item._ref)"
-		}
-		Foreach ($item in $output){
-			Get-IBRecord -_ref $item._ref
+		write-verbose "$FunctionName`:  Found the following objects before filtering:"
+		$output | ForEach-Object{write-verbose "`t`t$($_._ref)"}
+		write-verbose "$FunctionName`:  Found the following objects after filtering:"
+		If ($output){
+			foreach ($item in $output.where{$_._ref -like "$recordtype/*"}){
+				write-verbose "`t`t$($item._ref)"
+				Get-IBRecord -_ref $item._ref
+			}
 		}
 
     }
