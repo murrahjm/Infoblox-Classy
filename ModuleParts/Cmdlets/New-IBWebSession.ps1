@@ -33,8 +33,8 @@ Function New-IBWebSession {
         [Parameter(Mandatory=$False)]
         [String]$WapiVersion
     )
-    If (! $WapiVersion){$WapiVersion = $Global:WapiVersion}
-    $URI = "https://$gridmaster/wapi/$Wapiversion/grid"
+    If ($WapiVersion){$Global:WapiVersion = $WapiVersion}
+    $URI = "https://$gridmaster/wapi/$Global:WapiVersion/grid"
     write-verbose "URIString:  $URI"
     $IBGrid = Invoke-RestMethod -uri $URI -Credential $Credential -SessionVariable Script:IBSession
     $script:IBGridmaster = $Gridmaster
