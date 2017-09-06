@@ -39,7 +39,7 @@ Do {
 	start-sleep 10
 	$i += 1
 } until (
-	(Test-IBGridMaster -gridmaster $Gridmaster -ea silentlycontinue) -or ($i -ge 30)
+	(Test-IBGridMaster -gridmaster $Gridmaster -quiet) -or ($i -ge 30)
 )
 
 
