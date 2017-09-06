@@ -109,10 +109,10 @@ Function Get-IBDNSZone {
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
 			Write-Verbose "$FunctionName`:  Performing query search for DNSZone Records"
-			[IB_ZoneAuth]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$FQDN,$View,$ZoneFormat,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
+			[IB_ZoneAuth]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$FQDN,$View,$ZoneFormat,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
 		} else {
 			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for DNSZone record with reference string $_ref"
-			[IB_ZoneAuth]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
+			[IB_ZoneAuth]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)
 		}
 	}
 	END{}

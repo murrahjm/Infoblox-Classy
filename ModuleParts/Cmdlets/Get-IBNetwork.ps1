@@ -115,10 +115,10 @@ Function Get-IBNetwork {
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
 			Write-Verbose "$FunctionName`:  Performing query search for Network Records"
-			[IB_Network]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Network,$NetworkView,$NetworkContainer,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
+			[IB_Network]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Network,$NetworkView,$NetworkContainer,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
 		} else {
 			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for network record with reference string $_ref"
-			[IB_Network]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
+			[IB_Network]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)
 		}
 	}
 	END{}

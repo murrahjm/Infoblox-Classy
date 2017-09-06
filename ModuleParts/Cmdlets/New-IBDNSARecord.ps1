@@ -116,7 +116,7 @@ Function New-IBDNSARecord {
             $use_TTL = $True
         }
         If ($pscmdlet.ShouldProcess($Name)){
-            $output = [IB_DNSARecord]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $IPAddress, $Comment, $View, $ttl, $use_ttl)
+            $output = [IB_DNSARecord]::Create($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $IPAddress, $Comment, $View, $ttl, $use_ttl)
             $output
         }
     }

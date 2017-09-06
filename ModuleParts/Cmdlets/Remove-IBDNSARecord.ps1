@@ -62,7 +62,7 @@ Function Remove-IBDNSARecord{
     }
     PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byRef'){
-            $Record = [IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
+            $Record = [IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             If ($Record){
                 $Record | Remove-IBDNSARecord
             }
@@ -70,7 +70,7 @@ Function Remove-IBDNSARecord{
 			Foreach ($DNSRecord in $Record){
 				If ($pscmdlet.ShouldProcess($DNSRecord)) {
 					Write-Verbose "$FunctionName`:  Deleting Record $DNSRecord"
-					$DNSRecord.Delete($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion)
+					$DNSRecord.Delete($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion)
 				}
 			}
 		}

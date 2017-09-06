@@ -107,7 +107,7 @@ Function New-IBFixedAddress {
 
     PROCESS{
         If ($pscmdlet.ShouldProcess($IPAddress)){
-            $output = [IB_FixedAddress]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $IPAddress, $Comment, $NetworkView, $MAC)
+            $output = [IB_FixedAddress]::Create($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $IPAddress, $Comment, $NetworkView, $MAC)
             $output
         }
     }

@@ -131,10 +131,10 @@ Function Get-IBDNSCNameRecord {
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
 			Write-Verbose "$FunctionName`:  Performing query search for CName Records"
-			[IB_DNSCNameRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name,$Canonical,$Comment,$ExtAttributeQuery,$Zone,$View,$Strict,$MaxResults)
+			[IB_DNSCNameRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name,$Canonical,$Comment,$ExtAttributeQuery,$Zone,$View,$Strict,$MaxResults)
 		} else {
 			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for CName record with reference string $_ref"
-			[IB_DNSCNameRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
+			[IB_DNSCNameRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)
 		}
 	}
 	END{}

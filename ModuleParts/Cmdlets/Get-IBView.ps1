@@ -99,11 +99,11 @@ Function Get-IBView {
 			If ($Type -eq 'DNSView'){
 				Write-Verbose "$Functionname`:  calling IB_View Get method with the following parameters`:"
 				Write-Verbose "$FunctionName`:  $name,$isDefault,$Comment,$Strict,$MaxResults"
-				[IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
+				[IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
 			} else {
 				Write-Verbose "$Functionname`:  calling IB_NetworkView Get method with the following parameters`:"
 				Write-Verbose "$FunctionName`:  $name,$isDefault,$Comment,$Strict,$MaxResults"
-				[IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
+				[IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name,$IsDefault,$Comment,$ExtAttributeQuery,$Strict,$MaxResults)
 			}
 
 		}

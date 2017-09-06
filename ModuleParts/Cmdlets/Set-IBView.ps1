@@ -95,9 +95,9 @@ Function Set-IBView{
     PROCESS{
         If ($pscmdlet.ParameterSetName -eq 'byRef'){
             If ($_Ref -like "view/*"){
-                $Record = [IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
+                $Record = [IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             } elseif ($_Ref -like "networkview/*") {
-                $Record = [IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
+                $Record = [IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             }
                 If ($Record){
                     $Record | Set-IBView -name $Name -Comment $Comment -Passthru:$Passthru
@@ -107,11 +107,11 @@ Function Set-IBView{
                 If ($pscmdlet.shouldProcess($item)){
                     If ($comment -ne 'unspecified'){
                         write-verbose "$FunctionName`:  Setting comment to $comment"
-                        $item.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$item.Name, $Comment)
+                        $item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$item.Name, $Comment)
                     }
                     If ($Name -ne 'unspecified'){
                         write-verbose "$FunctionName`:  Setting name to $Name"
-                        $item.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $item.comment)
+                        $item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $item.comment)
                     }
                     If ($Passthru) {
                         Write-Verbose "$FunctionName`:  Passthru specified, returning object as output"

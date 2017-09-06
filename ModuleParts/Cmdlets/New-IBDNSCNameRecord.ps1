@@ -116,7 +116,7 @@ Function New-IBDNSCNameRecord {
             $use_TTL = $True
         }
         If ($pscmdlet.ShouldProcess($Name)){
-            $output = [IB_DNSCNameRecord]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $Canonical, $Comment, $View, $ttl, $use_ttl)
+            $output = [IB_DNSCNameRecord]::Create($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $Canonical, $Comment, $View, $ttl, $use_ttl)
             $output
         }
     }

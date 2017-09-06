@@ -77,10 +77,10 @@ Function New-IBView {
     PROCESS{
         If ($pscmdlet.ShouldProcess($Name)){
             If ($Type -eq 'DNSView'){
-                $output = [IB_View]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $Comment)
+                $output = [IB_View]::Create($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $Comment)
                 $output
             } else {
-                $output = [IB_NetworkView]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $Comment)
+                $output = [IB_NetworkView]::Create($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $Comment)
                 $output
             }
         }

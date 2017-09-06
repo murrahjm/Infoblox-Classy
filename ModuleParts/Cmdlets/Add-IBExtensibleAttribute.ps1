@@ -90,7 +90,7 @@ Function Add-IBExtensibleAttribute {
 			# add code to validate ea data against extensible attribute definition on infoblox.
 				If ($pscmdlet.ShouldProcess($Item)) {
 					write-verbose "$FunctionName`:  Adding EA $eaname to $item"
-					$Item.AddExtAttrib($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$EAName,$EAValue)
+					$Item.AddExtAttrib($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$EAName,$EAValue)
 					If ($Passthru) {
 						Write-Verbose "$FunctionName`:  Passthru specified, returning dns object as output"
 						return $Item

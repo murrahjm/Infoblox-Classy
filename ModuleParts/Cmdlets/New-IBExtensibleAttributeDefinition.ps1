@@ -88,7 +88,7 @@ Function New-IBExtensibleAttributeDefinition {
     }
     PROCESS{
         If ($pscmdlet.ShouldProcess($Name)){
-            $output = [IB_ExtAttrsDef]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $Type, $Comment, $DefaultValue)
+            $output = [IB_ExtAttrsDef]::Create($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $Type, $Comment, $DefaultValue)
             $output
         }
     }

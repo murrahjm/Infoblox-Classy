@@ -64,12 +64,12 @@ Function Remove-IBRecord{
 		}
 	}
     PROCESS{
-		$Record = [IB_ReferenceObject]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
+		$Record = [IB_ReferenceObject]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
 		If ($Record){
 			Write-verbose "$FunctionName`:  Record $_ref found, proceeding with deletion"
 			If ($pscmdlet.ShouldProcess($Record)) {
 				Write-Verbose "$FunctionName`:  Deleting Record $Record"
-				$Record.Delete($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion)
+				$Record.Delete($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion)
 			}
 		} else {
 			Write-Verbose "$FunctionName`:  No record found with reference string $_ref"

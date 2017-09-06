@@ -102,7 +102,7 @@ Function Set-IBFixedAddress{
     PROCESS{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
 			
-            $Record = [IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
+            $Record = [IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             If ($Record){
                 $Record | Set-IBFixedAddress -Name $Name -Comment $Comment -mac $MAC -Passthru:$Passthru
             }
@@ -112,15 +112,15 @@ Function Set-IBFixedAddress{
 				If ($pscmdlet.ShouldProcess($Item)) {
 					If ($Name -ne 'unspecified'){
 						write-verbose "$FunctionName`:  Setting Name to $Name"
-						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name, $Item.Comment, $Item.MAC)
+						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $Item.Comment, $Item.MAC)
 					}
 					If ($Comment -ne 'unspecified'){
 						write-verbose "$FunctionName`:  Setting comment to $comment"
-						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Item.Name, $Comment, $Item.MAC)
+						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Item.Name, $Comment, $Item.MAC)
 					}
 					If ($MAC -ne '99:99:99:99:99:99'){
 						write-verbose "$FunctionName`:  Setting MAC to $MAC"
-						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Item.Name, $Item.Comment, $MAC)
+						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Item.Name, $Item.Comment, $MAC)
 					}
 					If ($Passthru) {
 						Write-Verbose "$FunctionName`:  Passthru specified, returning object as output"

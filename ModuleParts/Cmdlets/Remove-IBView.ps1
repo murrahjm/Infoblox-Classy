@@ -57,13 +57,13 @@ Function Remove-IBView{
     }
     PROCESS{
         Try {
-            $object = [IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
+            $object = [IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)
         } Catch {
                 write-verbose "No object of type IB_View found with reference string $_ref.  Searching IB_NetworkView types"
         }
         If (! $object){
             Try {
-                [IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
+                [IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)
             }Catch{
                 write-verbose "No object of type IB_NetworkView found with reference string $_ref"        
             }
@@ -71,7 +71,7 @@ Function Remove-IBView{
         If ($object){
             If ($pscmdlet.shouldProcess($object)){
                 Write-Verbose "$FunctionName`:  Deleting object $object"
-                $object.Delete($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion)
+                $object.Delete($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion)
             }
         } else {
             Write-error "No object found with reference string $_ref"
