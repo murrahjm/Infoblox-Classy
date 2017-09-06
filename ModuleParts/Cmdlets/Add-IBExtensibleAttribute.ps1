@@ -48,22 +48,16 @@ Function Add-IBExtensibleAttribute {
         [String]$_Ref,
         
         [Parameter(Mandatory=$True,ValueFromPipeline=$True,ParameterSetName='byObject')]
-		[Parameter(Mandatory=$True,ValueFromPipeline=$True,ParameterSetName='byObjectFromArray')]
         [object[]]$Record,
 
-		[Parameter(Mandatory=$True,ParameterSetName='byRef')]
-		[Parameter(Mandatory=$True,ParameterSetName='byObject')]
+		[Parameter(Mandatory=$True)]
 		[ValidateNotNullorEmpty()]
 		[String]$EAName,
 
-		[Parameter(Mandatory=$True,ParameterSetName='byRef')]
-		[Parameter(Mandatory=$True,ParameterSetName='byObject')]
+		[Parameter(Mandatory=$True)]
 		[ValidateNotNullorEmpty()]
 		[String]$EAValue,
 
-		[Parameter(Mandatory=$True,ParameterSetName='byObjectFromArray')]
-		[Object[]] $extAttrib,
-		
 		[Switch]$Passthru
 	)
 	BEGIN{        
@@ -91,20 +85,7 @@ Function Add-IBExtensibleAttribute {
                $Record | Add-IBExtensibleAttribute -EAName $EAName -EAValue $EAValue -Passthru:$Passthru
             }
 			
-        } elseif ($pscmdlet.ParameterSetName -eq 'byObjectFromArray') {
-			Foreach ($Item in $Record){
-			# add code to validate ea data against extensible attribute definition on infoblox.
-				#If ($pscmdlet.ShouldProcess($Item)) {
-					write-verbose "$FunctionName`:  Adding $($extAttrib.Count) EA to $item"
-					$Item.AddExtAttrib($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$extAttrib)
-					If ($Passthru) {
-						Write-Verbose "$FunctionName`:  Passthru specified, returning object as output"
-						return $Item
-					}
-
-				#}
-			}
-		} else {
+        } else {
 			Foreach ($Item in $Record){
 			# add code to validate ea data against extensible attribute definition on infoblox.
 				If ($pscmdlet.ShouldProcess($Item)) {
