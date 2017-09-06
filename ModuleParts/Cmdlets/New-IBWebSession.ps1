@@ -33,6 +33,7 @@ Function New-IBWebSession {
         [Parameter(Mandatory=$False)]
         [String]$WapiVersion='v2.2'
     )
+
     $URI = "https://$gridmaster/wapi/$Wapiversion/grid"
     write-verbose "URIString:  $URI"
     Invoke-RestMethod -uri $URI -Credential $Credential -SessionVariable Script:IBSession | out-null

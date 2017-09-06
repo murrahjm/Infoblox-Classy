@@ -129,6 +129,30 @@ Class IB_Network : IB_ReferenceObject {
 			}
 		}
 	}
+#region AddExtAttrib method - with Object[]
+	hidden [void] AddExtAttrib (
+		[String]$Gridmaster,
+		[Object]$Session,
+		[String]$WapiVersion,
+		[System.Object[]]$attr
+	){
+		$URIString = "https://$Gridmaster/wapi/$WapiVersion/$($this._ref)"
+		$extattr = @{}
+		$attr | ForEach-Object {
+			New-Variable -name $_.Name -Value $(New-object -TypeName psobject -Property @{value=$_.Value})
+			$extattr += @{$_.name=$(Get-Variable $_.name | Select-Object -ExpandProperty Value)}
+		}
+		$body = new-object psobject -Property @{"extattrs"=$extattr}
+		$JSONBody = $body | ConvertTo-Json
+		If ($JSONBody){
+			Write-Verbose -Message "JSON Body: $JSONBody"
+			$Return = Invoke-RestMethod -Uri $URIString -Method Put -Body $JSONBody -ContentType application/json -WebSession $Session
+			If ($Return){
+				$record = [IB_Network]::Get($gridmaster,$Session,$WapiVersion,$return)
+				$this.ExtAttrib = $record.extAttrib
+			}
+		}
+	}	
 #region RemoveExtAttrib method
 	hidden [void] RemoveExtAttrib (
 		[String]$Gridmaster,
