@@ -93,14 +93,14 @@ Function Find-IBRecord {
         }
         if ($pscmdlet.ParameterSetName -eq 'globalSearchbyString'){
 			If ($Strict){
-				$uribase = "https://$script:IBgridmaster/wapi/$Global:WapiVersion/search?search_string:="
+				$uribase = "https://$script:IBgridmaster/wapi/$Script:IBWapiVersion/search?search_string:="
 
 			} else {
-				$uribase = "https://$script:IBgridmaster/wapi/$Global:WapiVersion/search?search_string~:="
+				$uribase = "https://$script:IBgridmaster/wapi/$Script:IBWapiVersion/search?search_string~:="
 
 			}
 		} elseif ($pscmdlet.ParameterSetName -eq 'globalSearchbyIP'){
-			$uribase = "https://$script:IBgridmaster/wapi/$Global:WapiVersion/search?address="
+			$uribase = "https://$script:IBgridmaster/wapi/$Script:IBWapiVersion/search?address="
 		}
 		
 	}

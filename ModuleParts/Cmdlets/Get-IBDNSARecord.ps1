@@ -124,10 +124,10 @@ Function Get-IBDNSARecord {
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
 			Write-Verbose "$FunctionName`:  Performing query search for A Records"
-			[IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name,$IPAddress,$Comment,$ExtAttributeQuery,$Zone,$View,$Strict,$MaxResults)
+			[IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name,$IPAddress,$Comment,$ExtAttributeQuery,$Zone,$View,$Strict,$MaxResults)
 		} else {
 			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for A record with reference string $_ref"
-			[IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
+			[IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)
 		}
 	}
 	END{}

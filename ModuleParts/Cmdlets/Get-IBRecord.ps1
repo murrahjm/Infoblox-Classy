@@ -79,14 +79,14 @@ Function Get-IBRecord{
     }
     PROCESS{
 		$return = Switch ($_ref.ToString().split('/')[0]) {
-			'record:a' {[IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
-			'record:ptr' {[IB_DNSPTRRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
-			'record:cname' {[IB_DNSCNameRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
-			'fixedaddress' {[IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
-			'view' {[IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
-			'networkview' {[IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
-			'extensibleattributedef' {[IB_ExtAttrsDef]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
-			default {[IB_ReferenceObject]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)}
+			'record:a' {[IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)}
+			'record:ptr' {[IB_DNSPTRRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)}
+			'record:cname' {[IB_DNSCNameRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)}
+			'fixedaddress' {[IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)}
+			'view' {[IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)}
+			'networkview' {[IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)}
+			'extensibleattributedef' {[IB_ExtAttrsDef]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)}
+			default {[IB_ReferenceObject]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)}
 		}
 		If ($Return){
 			return $Return

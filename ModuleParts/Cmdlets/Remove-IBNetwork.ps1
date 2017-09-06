@@ -61,7 +61,7 @@ Function Remove-IBNetwork{
     }
     PROCESS{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
-            $Record = [IB_Network]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
+            $Record = [IB_Network]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             If ($Record){
                 $Record | Remove-IBNetwork
             }
@@ -69,7 +69,7 @@ Function Remove-IBNetwork{
 			Foreach ($Item in $Record){
 				If ($pscmdlet.ShouldProcess($Item)) {
 					Write-Verbose "$FunctionName`:  Deleting Record $Item"
-					$Item.Delete($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion)
+					$Item.Delete($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion)
 				}
 			}
 		}

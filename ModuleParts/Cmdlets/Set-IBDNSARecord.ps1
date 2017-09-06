@@ -109,7 +109,7 @@ Function Set-IBDNSARecord{
     PROCESS{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
 			
-            $Record = [IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
+            $Record = [IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             If ($Record){
                 $Record | Set-IBDNSARecord -IPAddress $IPAddress -Comment $Comment -TTL $TTL -ClearTTL:$ClearTTL -Passthru:$Passthru
             }
@@ -119,18 +119,18 @@ Function Set-IBDNSARecord{
 				If ($pscmdlet.ShouldProcess($DNSRecord)) {
 					If ($IPAddress -ne '0.0.0.0'){
 						write-verbose "$FunctionName`:  Setting IPAddress to $IPAddress"
-						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$IPAddress, $DNSRecord.Comment, $DNSRecord.TTL, $DNSRecord.Use_TTL)
+						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$IPAddress, $DNSRecord.Comment, $DNSRecord.TTL, $DNSRecord.Use_TTL)
 					}
 					If ($Comment -ne "unspecified"){
 						write-verbose "$FunctionName`:  Setting comment to $comment"
-						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$DNSRecord.IPAddress, $Comment, $DNSRecord.TTL, $DNSRecord.Use_TTL)
+						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$DNSRecord.IPAddress, $Comment, $DNSRecord.TTL, $DNSRecord.Use_TTL)
 					}
 					If ($ClearTTL){
 						write-verbose "$FunctionName`:  Setting TTL to 0 and Use_TTL to false"
-						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$DNSRecord.IPAddress, $DNSRecord.comment, $Null, $False)
+						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$DNSRecord.IPAddress, $DNSRecord.comment, $Null, $False)
 					} elseIf ($TTL -ne 4294967295){
 						write-verbose "$FunctionName`:  Setting TTL to $TTL and Use_TTL to True"
-						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$DNSRecord.IPAddress, $DNSRecord.Comment, $TTL, $True)
+						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$DNSRecord.IPAddress, $DNSRecord.Comment, $TTL, $True)
 					}
 					If ($Passthru) {
 						Write-Verbose "$FunctionName`:  Passthru specified, returning dns object as output"

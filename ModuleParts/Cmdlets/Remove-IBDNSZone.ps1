@@ -61,7 +61,7 @@ Function Remove-IBDNSZone{
 	}
     PROCESS{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
-            $Record = [ib_zoneauth]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_Ref)
+            $Record = [ib_zoneauth]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             If ($Record){
                 $Record | Remove-IBDNSZone
             }
@@ -69,7 +69,7 @@ Function Remove-IBDNSZone{
 			Foreach ($Item in $Record){
 				If ($pscmdlet.ShouldProcess($Item)) {
 					Write-Verbose "$FunctionName`:  Deleting Record $Item"
-					$Item.Delete($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion)
+					$Item.Delete($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion)
 				}
 			}
 		}

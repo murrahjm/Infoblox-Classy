@@ -31,11 +31,17 @@ Function New-IBWebSession {
 		$Credential,
 
         [Parameter(Mandatory=$False)]
-        [String]$WapiVersion
+        [String]$WapiVersion='v2.2'
     )
-    If ($WapiVersion){$Global:WapiVersion = $WapiVersion}
-    $URI = "https://$gridmaster/wapi/$Global:WapiVersion/grid"
+
+    $URI = "https://$gridmaster/wapi/$Wapiversion/grid"
     write-verbose "URIString:  $URI"
-    $IBGrid = Invoke-RestMethod -uri $URI -Credential $Credential -SessionVariable Script:IBSession
+    Invoke-RestMethod -uri $URI -Credential $Credential -SessionVariable Script:IBSession | out-null
     $script:IBGridmaster = $Gridmaster
+    $script:IBWapiVersion = $WapiVersion
+    new-object psobject -property @{
+        'IBSession' = $script:IBSession
+        'IBGridmaster' = $script:IBGridmaster
+        'IBWapiVersion' = $script:IBWapiVersion
+    }
 }

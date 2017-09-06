@@ -113,10 +113,10 @@ Function Get-IBExtensibleAttributeDefinition {
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
 			Write-Verbose "$FunctionName`:  Performing query search for extensible attribute definitions"
-			[IB_extattrsdef]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name,$Type,$Comment,$Strict,$MaxResults)
+			[IB_extattrsdef]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name,$Type,$Comment,$Strict,$MaxResults)
 		} else {
 			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for extensible attribute definitions with reference string $_ref"
-			[IB_extattrsdef]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
+			[IB_extattrsdef]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)
 		}
 	}
 	END{}

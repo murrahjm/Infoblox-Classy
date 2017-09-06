@@ -77,7 +77,7 @@ Function New-IBNetwork {
     }
     PROCESS{
         If ($pscmdlet.ShouldProcess($Network)){
-            $output = [IB_Network]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Network, $NetworkView, $Comment)
+            $output = [IB_Network]::Create($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Network, $NetworkView, $Comment)
             $output
         }
     }

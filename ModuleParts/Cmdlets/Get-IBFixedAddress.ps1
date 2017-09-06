@@ -111,10 +111,10 @@ Function Get-IBFixedAddress {
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
 			Write-Verbose "$FunctionName`:  Performing query search for FixedAddress Records"
-			[IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$IPAddress,$MAC,$Comment,$ExtAttributeQuery,$NetworkView,$Strict,$MaxResults)
+			[IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$IPAddress,$MAC,$Comment,$ExtAttributeQuery,$NetworkView,$Strict,$MaxResults)
 		} else {
 			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for A record with reference string $_ref"
-			[IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
+			[IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)
 		}
 	}
 	END{}

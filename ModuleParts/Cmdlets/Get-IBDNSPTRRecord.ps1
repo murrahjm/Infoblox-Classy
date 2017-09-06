@@ -128,10 +128,10 @@ Function Get-IBDNSPTRRecord {
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
 			Write-Verbose "$FunctionName`:  Performing query search for PTR Records"
-			[IB_DNSPTRRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$Name,$IPAddress,$PTRDName,$Comment,$ExtAttributeQuery,$Zone,$View,$Strict,$MaxResults)
+			[IB_DNSPTRRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name,$IPAddress,$PTRDName,$Comment,$ExtAttributeQuery,$Zone,$View,$Strict,$MaxResults)
 		} else {
 			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for PTR record with reference string $_ref"
-			[IB_DNSPTRRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$_ref)
+			[IB_DNSPTRRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)
 		}
 	}
 	END{}

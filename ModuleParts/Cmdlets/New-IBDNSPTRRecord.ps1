@@ -122,7 +122,7 @@ Function New-IBDNSPTRRecord {
             $use_TTL = $True
         }
         If ($pscmdlet.ShouldProcess($IPAddress)){
-            $output = [IB_DNSPTRRecord]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$PTRDName, $IPAddress, $Comment, $View, $ttl, $use_ttl)
+            $output = [IB_DNSPTRRecord]::Create($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$PTRDName, $IPAddress, $Comment, $View, $ttl, $use_ttl)
             $output
         }
     }

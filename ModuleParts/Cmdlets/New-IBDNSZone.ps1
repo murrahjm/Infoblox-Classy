@@ -86,7 +86,7 @@ Function New-IBDNSZone {
     }
     PROCESS{
         If ($pscmdlet.ShouldProcess($fqdn)){
-            $output = [IB_ZoneAuth]::Create($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$FQDN, $View, $ZoneFormat, $Comment)
+            $output = [IB_ZoneAuth]::Create($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$FQDN, $View, $ZoneFormat, $Comment)
             $output
         }
     }

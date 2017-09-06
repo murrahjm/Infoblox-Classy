@@ -102,13 +102,13 @@ Function Remove-IBExtensibleAttribute {
 					foreach ($EAName in $Item.extattrib.Name){
 						If ($pscmdlet.ShouldProcess($Item,"Remove EA $EAName")) {
 							write-verbose "$FunctionName`:  Removing EA $EAName from $item"
-							$Item.RemoveExtAttrib($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$EAName)
+							$Item.RemoveExtAttrib($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$EAName)
 						}
 					}
 				} else {
 					If ($pscmdlet.ShouldProcess($Item,"Remove EA $EAName")) {
 						write-verbose "$FunctionName`:  Removing EA $EAName from $item"
-						$Item.RemoveExtAttrib($Script:IBGridmaster,$Script:IBSession,$Global:WapiVersion,$EAName)
+						$Item.RemoveExtAttrib($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$EAName)
 					}
 				}
 				If ($Passthru) {
