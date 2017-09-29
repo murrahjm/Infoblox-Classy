@@ -51,7 +51,8 @@ Task Build -Depends Clean {
     }
     Update-ModuleManifest @modulemanifestdata
     Import-Module "$env:artifactroot\$env:ModuleName" -RequiredVersion $env:ModuleVersion
-    
+    #create help content
+    New-ExternalHelp -Path "$env:projectRoot\ModuleParts\docs" -OutputPath "$env:artifactroot\$env:ModuleName\en-US"
 }
 Task BuildTestEnvironment -depends Build {
     $lines
@@ -99,6 +100,8 @@ Task Deploy -Depends Test {
     $lines
     if ($env:BuildSystem -eq 'AppVeyor'){
         Publish-Module -Path "$env:artifactroot\$env:modulename" -NuGetApiKey $env:PSGalleryAPIKey
+    } else {
+        write-output "Local build execution, Deploy operation skipped."
     }
 }
 

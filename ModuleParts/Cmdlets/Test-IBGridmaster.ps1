@@ -1,21 +1,3 @@
-<#
-.Synopsis
-    Tests for connection to accessible Infoblox Gridmaster.
-.DESCRIPTION
-    Tests for connection to accessible Infoblox Gridmaster.  Connects to provided gridmaster FQDN over SSL and verifies gridmaster functionality.
-.PARAMETER Gridmaster
-	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
-.Parameter Quiet
-    Switch parameter to specify whether error output should be provided with more detail about the connection errors.
-.EXAMPLE
-    Test-IBGridmaster -Gridmaster testGM.domain.com
-
-	This example tests the connection to testGM.domain.com and returns a True or False value based on availability.
-.INPUTS
-	System.String
-.OUTPUTS
-    Bool
-#>
 Function Test-IBGridmaster {
     Param(
         [Parameter(Mandatory=$True)]

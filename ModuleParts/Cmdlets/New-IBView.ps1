@@ -1,28 +1,3 @@
-<#
-.Synopsis
-	New-IBView creates a dns or network view in the Infoblox database.
-.DESCRIPTION
-	New-IBView creates a dns or network view in the Infoblox database.  If creation is successful an object of type IB_View or IB_NetworkView is returned.
-.PARAMETER Gridmaster
-	The fully qualified domain name of the Infoblox gridmaster.  SSL is used to connect to this device, so a valid and trusted certificate must exist for this FQDN.
-.PARAMETER Credential
-	Powershell credential object for use in authentication to the specified gridmaster.  This username/password combination needs access to the WAPI interface.
-.PARAMETER Name
-	The Name of the new view.
-.PARAMETER Comment
-	Optional comment field for the view.  Can be used for notation and keyword searching by Get- cmdlets.
-.PARAMETER Type
-    Switch parameter to specify whether creating a DNS view or Network view.
-.EXAMPLE
-	New-IBView -Gridmaster $Gridmaster -Credential $Credential -Name NewView -Comment 'second view' -Type 'DNSView'
-
-    Creates a new dns view with a comment on the infoblox database
-.INPUTS
-	System.String
-.OUTPUTS
-	IB_View
-    IB_NetworkView
-#>
 Function New-IBView {
     [CmdletBinding(SupportsShouldProcess=$True,ConfirmImpact="High")]
     Param(
