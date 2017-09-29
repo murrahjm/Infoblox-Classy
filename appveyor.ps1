@@ -7,7 +7,7 @@ $env:ProjectRoot = $env:APPVEYOR_BUILD_FOLDER
 $env:ArtifactRoot = $env:APPVEYOR_BUILD_FOLDER
 $env:Author = $env:APPVEYOR_ACCOUNT_NAME
 $env:Moduleversion = $env:APPVEYOR_BUILD_VERSION
-$DependentModules = @('Pester','Psake')
+$DependentModules = @('Pester','Psake','PlatyPS')
 Foreach ($Module in $DependentModules){
     If (-not (get-module $module -ListAvailable)){
         install-module -name $Module -Scope CurrentUser
