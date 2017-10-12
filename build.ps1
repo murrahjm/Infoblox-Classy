@@ -21,5 +21,10 @@ Foreach ($Module in $DependentModules){
     }
     import-module $module -ErrorAction Stop
 }
-If (!(Get-AzureRMSubscription)){Login-AzureRMAccount -SubscriptionName 'MSDN Platforms'}
+Try {
+    Get-AzureRMSubscription -ErrorAction Stop
+} Catch {
+    Login-AzureRMAccount -SubscriptionName 'MSDN Platforms'
+}
+#If (!(Get-AzureRMSubscription)){Login-AzureRMAccount -SubscriptionName 'MSDN Platforms'}
 Invoke-psake "$PSScriptRoot\psake.ps1" $Task

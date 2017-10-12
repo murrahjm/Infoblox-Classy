@@ -35,7 +35,7 @@ Function Set-IBDNSCNameRecord{
 			write-verbose "Existing session to infoblox gridmaster does not exist."
 			If ($gridmaster -and $Credential){
 				write-verbose "Creating session to $gridmaster with user $($credential.username)"
-				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop
+				New-IBWebSession -gridmaster $Gridmaster -Credential $Credential -erroraction Stop  | out-null
 			} else {
 				write-error "Missing required parameters to connect to Gridmaster" -ea Stop
 			}

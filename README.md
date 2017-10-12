@@ -15,3 +15,7 @@ Pester tests are performed against an infoblox appliance in Azure.  Appveyor bui
 ### v1.1 release notes:
 
 Added support for REST web session.  Cmdlets add support for creating a web session on the first successful operation, and referencing that as the default if no alternate credentials are provided.
+
+### v1.2 release notes:
+
+Added support for DHCP lease objects via cmdlets Get-IBLease and Remove-IBLease
