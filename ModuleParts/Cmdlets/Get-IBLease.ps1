@@ -14,7 +14,7 @@ Function Get-IBlease {
 		[String]$Name,
         
 		[Parameter(ParameterSetName='byQuery')]
-		[String]$Address,
+		[String]$IPAddress,
 
 		[Parameter(ParameterSetName='byQuery')]
 		[ValidatePattern('^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$')]
@@ -62,7 +62,7 @@ Function Get-IBlease {
 	PROCESS{
 		If ($pscmdlet.ParameterSetName -eq 'byQuery') {
 			Write-Verbose "$FunctionName`:  Performing query search for DHCP Lease Records"
-			[IB_Lease]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name,$Address,$MAC,$NetworkView,$Strict,$MaxResults)
+			[IB_Lease]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name,$IPAddress,$MAC,$NetworkView,$Strict,$MaxResults)
 		} else {
 			Write-Verbose "$FunctionName`: Querying $script:IBgridmaster for DHCP lease with reference string $_ref"
 			[IB_Lease]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_ref)

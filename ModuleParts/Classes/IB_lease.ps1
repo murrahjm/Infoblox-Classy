@@ -1,7 +1,7 @@
 Class IB_lease : IB_ReferenceObject {
     ##Properties
     [String]$Name
-    [String]$Address
+    [String]$IPAddress
     [String]$MAC
     [String]$NetworkView
 	[String]$Network
@@ -21,7 +21,8 @@ Class IB_lease : IB_ReferenceObject {
 										  $return.address,
 										  $return._ref,
 										  $return.network_view,
-										  $return.hardware
+										  $return.hardware,
+										  $return.network
             )
 		} else {
 			return $Null
@@ -32,17 +33,17 @@ Class IB_lease : IB_ReferenceObject {
 		[Object]$Session,
         [String]$WapiVersion,
         [String]$Name,
-		[String]$Address,
+		[String]$IPAddress,
 		[String]$MAC,
 		[String]$NetworkView,
 		[Bool]$Strict,
 		[Int]$MaxResults
 	){
-		$ReturnFields = "client_hostname,address,network_view,hardware,network"
+		$ReturnFields = "client_hostname,address,network_view,hardware,network,starts"
 		$URI = "https://$Gridmaster/wapi/$WapiVersion/lease?"
 		If ($Strict){$Operator = "="} else {$Operator = "~="}
-		If ($Address){
-			$URI += "address$operator$Address&"
+		If ($IPAddress){
+			$URI += "address$operator$IPAddress&"
 		}
 		If ($MAC){
 			$URI += "hardware$operator$MAC&"
@@ -58,7 +59,8 @@ Class IB_lease : IB_ReferenceObject {
 		}
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
-        $return = Invoke-RestMethod -URI $URI -WebSession $Session
+		$return = Invoke-RestMethod -URI $URI -WebSession $Session
+		#filter return 
         $output = @()
         Foreach ($item in $return){
             $output += [IB_lease]::New($item.client_hostname,
@@ -76,14 +78,14 @@ Class IB_lease : IB_ReferenceObject {
 #region Constructors
     IB_lease(
         [String]$Name,
-        [String]$Address,
+        [String]$IPAddress,
         [String]$_ref,
         [String]$NetworkView,
         [String]$MAC,
         [String]$Network
     ){
         $this.Name         = $Name
-		$this.Address      = $Address
+		$this.IPAddress    = $IPAddress
         $this._ref         = $_ref
         $this.networkview  = $NetworkView
         $this.MAC          = $MAC
