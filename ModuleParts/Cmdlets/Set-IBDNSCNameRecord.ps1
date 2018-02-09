@@ -17,11 +17,11 @@ Function Set-IBDNSCNameRecord{
         [Parameter(Mandatory=$True,ValueFromPipeline=$True,ParameterSetName='byObject')]
         [IB_DNSCNameRecord[]]$Record,
         
-        [String]$Canonical = 'unspecified',
+        [String]$Canonical,
 
-        [String]$Comment = 'unspecified',
+        [String]$Comment,
 
-        [uint32]$TTL = 4294967295,
+        [uint32]$TTL,
 
         [Switch]$ClearTTL,
 
@@ -54,18 +54,18 @@ Function Set-IBDNSCNameRecord{
         }else {
 			Foreach ($DNSRecord in $Record){
 				If ($pscmdlet.ShouldProcess($DNSrecord)) {
-					If ($Canonical -ne 'unspecified'){
+					If ($PSBoundParameters.Keys -contains 'Canonical'){
 						Write-Verbose "$FunctionName`:  Setting canonical to $canonical"
 						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$canonical, $DNSRecord.Comment, $DNSRecord.TTL, $DNSrecord.Use_TTL)
 					}
-					If ($Comment -ne "unspecified"){
+					If ($PSBoundParameters.Keys -contains 'comment'){
 						write-verbose "$FunctionName`:  Setting comment to $comment"
 						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$DNSRecord.canonical, $Comment, $DNSRecord.TTL, $DNSRecord.Use_TTL)
 					}
 					If ($ClearTTL){
 						write-verbose "$FunctionName`:  Setting TTL to 0 and Use_TTL to false"
 						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$DNSrecord.canonical, $DNSrecord.comment, $Null, $False)
-					} elseIf ($TTL -ne 4294967295){
+					} elseIf ($PSBoundParameters.Keys -contains 'TTL'){
 						write-verbose "$FunctionName`:  Setting TTL to $TTL and Use_TTL to True"
 						$DNSrecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$DNSrecord.canonical, $DNSrecord.Comment, $TTL, $True)
 					}

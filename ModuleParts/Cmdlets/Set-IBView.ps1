@@ -18,9 +18,9 @@ Function Set-IBView{
         [ValidateScript({$_.GetType().Name -eq 'IB_View' -or $_.GetType().name -eq 'IB_NetworkView'})]
         [object[]]$Record,
         
-        [String]$Name = 'unspecified',
+        [String]$Name,
 
-        [String]$Comment = 'unspecified',
+        [String]$Comment,
 
 		[Switch]$Passthru
 
@@ -53,11 +53,11 @@ Function Set-IBView{
         } else {
             foreach ($item in $Record){
                 If ($pscmdlet.shouldProcess($item)){
-                    If ($comment -ne 'unspecified'){
+                    If ($PSBoundParameters.Keys -contains 'comment'){
                         write-verbose "$FunctionName`:  Setting comment to $comment"
                         $item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$item.Name, $Comment)
                     }
-                    If ($Name -ne 'unspecified'){
+                    If ($PSBoundParameters.Keys -contains 'Name'){
                         write-verbose "$FunctionName`:  Setting name to $Name"
                         $item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $item.comment)
                     }

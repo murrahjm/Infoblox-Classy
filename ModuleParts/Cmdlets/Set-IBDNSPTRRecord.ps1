@@ -17,11 +17,11 @@ Function Set-IBDNSPTRRecord{
         [Parameter(Mandatory=$True,ValueFromPipeline=$True,ParameterSetName='byObject')]
         [IB_DNSPTRRecord[]]$Record,
         
-        [String]$PTRDName = 'unspecified',
+        [String]$PTRDName,
 
-        [String]$Comment = 'unspecified',
+        [String]$Comment,
 
-        [uint32]$TTL = 4294967295,
+        [uint32]$TTL,
 
         [Switch]$ClearTTL,
 
@@ -54,18 +54,18 @@ Function Set-IBDNSPTRRecord{
         }else {
 			Foreach ($DNSRecord in $Record){
 				If ($pscmdlet.ShouldProcess($DNSrecord)) {
-					If ($PTRDName -ne 'unspecified'){
+					If ($PSBoundParameters.Keys -contains 'PTRDName'){
 						Write-Verbose "$FunctionName`:  Setting PTRDName to $PTRDName"
 						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$PTRDName, $DNSRecord.Comment, $DNSRecord.TTL, $DNSrecord.Use_TTL)
 					}
-					If ($Comment -ne "unspecified"){
+					If ($PSBoundParameters.Keys -contains 'Comment'){
 						write-verbose "$FunctionName`:  Setting comment to $comment"
 						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$DNSRecord.PTRDName, $Comment, $DNSRecord.TTL, $DNSRecord.Use_TTL)
 					}
 					If ($ClearTTL){
 						write-verbose "$FunctionName`:  Setting TTL to 0 and Use_TTL to false"
 						$DNSRecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$DNSrecord.PTRDName, $DNSrecord.comment, $Null, $False)
-					} elseIf ($TTL -ne 4294967295){
+					} elseIf ($PSBoundParameters.Keys -contains 'TTL'){
 						write-verbose "$FunctionName`:  Setting TTL to $TTL and Use_TTL to True"
 						$DNSrecord.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$DNSrecord.PTRDName, $DNSrecord.Comment, $TTL, $True)
 					}
