@@ -17,12 +17,12 @@ Function Set-IBFixedAddress{
         [Parameter(Mandatory=$True,ParameterSetName='byObject',ValueFromPipeline=$True)]
         [IB_FixedAddress[]]$Record,
 
-        [String]$Name = "unspecified",
+        [String]$Name,
 
-        [String]$Comment = "unspecified",
+        [String]$Comment,
 		
 		[ValidatePattern('^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$')]
-		[String]$MAC = '99:99:99:99:99:99',
+		[String]$MAC,
 
 		[Switch]$Passthru
     )
@@ -52,15 +52,15 @@ Function Set-IBFixedAddress{
         }else {
 			Foreach ($Item in $Record){
 				If ($pscmdlet.ShouldProcess($Item)) {
-					If ($Name -ne 'unspecified'){
+					If ($PSBoundParameters.keys -contains 'Name'){
 						write-verbose "$FunctionName`:  Setting Name to $Name"
 						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $Item.Comment, $Item.MAC)
 					}
-					If ($Comment -ne 'unspecified'){
+					If ($PSBoundParameters.keys -contains 'comment'){
 						write-verbose "$FunctionName`:  Setting comment to $comment"
 						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Item.Name, $Comment, $Item.MAC)
 					}
-					If ($MAC -ne '99:99:99:99:99:99'){
+					If ($PSBoundParameters.keys -contains 'MAC'){
 						write-verbose "$FunctionName`:  Setting MAC to $MAC"
 						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Item.Name, $Item.Comment, $MAC)
 					}
