@@ -73,9 +73,8 @@ Class IB_networkview : IB_ReferenceObject {
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
         $return = Invoke-RestMethod -URI $URI -WebSession $Session
-        $output = @()
-        Foreach ($item in $return){
-                $output += [IB_networkview]::New($item.name,
+        [array]$output = Foreach ($item in $return){
+                [IB_networkview]::New($item.name,
 												 $Item.is_default,
 												 $item.comment,
 												 $item._ref,

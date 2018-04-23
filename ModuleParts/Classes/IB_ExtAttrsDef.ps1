@@ -79,9 +79,8 @@ Class IB_ExtAttrsDef : IB_ReferenceObject {
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
         $return = Invoke-RestMethod -URI $URI -WebSession $Session
-        $output = @()
-		Foreach ($item in $return){
-			$output += [IB_ExtAttrsDef]::New($Item.name,$Item.type,$Item.comment,$Item.default_value,$Item._ref)
+		[array]$output = Foreach ($item in $return){
+			[IB_ExtAttrsDef]::New($Item.name,$Item.type,$Item.comment,$Item.default_value,$Item._ref)
 		}
         return $output
     }

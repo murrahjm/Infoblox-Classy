@@ -105,9 +105,8 @@ Class IB_DNSCNameRecord : IB_ReferenceObject {
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
         $return = Invoke-RestMethod -URI $URI -WebSession $Session
-        $output = @()
-        Foreach ($item in $return){
-                $output += [IB_DNSCNameRecord]::New($item.Name,
+        [array]$output = Foreach ($item in $return){
+                [IB_DNSCNameRecord]::New($item.Name,
 													$item.canonical,
 													$item.comment,
 													$item._ref,
