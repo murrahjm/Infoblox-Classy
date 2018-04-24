@@ -15,3 +15,4 @@ Foreach ($Module in $DependentModules){
     import-module $module -ErrorAction Stop
 }
 invoke-psake "$PSScriptRoot\psake.ps1"
+exit ( [int]( -not $psake.build_success ) )
