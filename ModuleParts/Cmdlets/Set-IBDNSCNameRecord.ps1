@@ -50,7 +50,7 @@ Function Set-IBDNSCNameRecord{
             If ($Return){
 				$Params = $PSBoundParameters
 				$Params.Add('Record',$Return)
-				$Params.Remove('_Ref')
+				$Params.Remove('_Ref') | Out-Null
 				If ($Params.keys -contains 'Gridmaster'){$Params.Remove('Gridmaster')}
 				If ($Params.keys -contains 'Credential'){$Params.Remove('Credential')}
                 Set-IBDNSCNameRecord @Params
