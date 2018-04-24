@@ -2160,7 +2160,7 @@ Describe "Set-IBDNSARecord tests" {
 		$TestRecord._ref | should be $TestRecord._Ref
 	}
 	It "Sets the TTL but also uses -clearTTL, which results in a null TTL - using byRef method and passthru" {
-		$TestRecord = Set-IBDNSARecord -confirm:$False -verbose:$False  -PassThru -gridmaster $gridmaster -credential $Credential -_Ref $TestRecord._Ref -TTL 100 -ClearTTL
+		$TestRecord = Set-IBDNSARecord -confirm:$False -verbose:$False -PassThru -gridmaster $gridmaster -credential $Credential -_Ref $TestRecord._Ref -TTL 100 -ClearTTL
 		$TestRecord.GetType().Name | should be 'IB_DNSARecord'
 		$TestRecord.name | should be 'testrecord.domain.com'
 		$TestRecord.View | should be 'default'

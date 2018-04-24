@@ -46,14 +46,14 @@ Function Set-IBDNSPTRRecord{
     PROCESS{
             If ($pscmdlet.ParameterSetName -eq 'byRef'){
 			
-            $Record = [IB_DNSPTRRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
-            If ($Record){
+            $Return = [IB_DNSPTRRecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
+            If ($Return){
 				$Params = $PSBoundParameters
-				$Params.Add('Record',$Record)
+				$Params.Add('Record',$Return)
 				$Params.Remove('_Ref')
 				If ($Params.keys -contains 'Gridmaster'){$Params.Remove('Gridmaster')}
 				If ($Params.keys -contains 'Credential'){$Params.Remove('Credential')}
-                Set-IBDNSARecord @Params
+                Set-IBDNSPTRRecord @Params
             }
 			
         }else {

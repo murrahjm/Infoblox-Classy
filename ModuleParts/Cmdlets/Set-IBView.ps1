@@ -43,17 +43,17 @@ Function Set-IBView{
     PROCESS{
         If ($pscmdlet.ParameterSetName -eq 'byRef'){
             If ($_Ref -like "view/*"){
-                $Record = [IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
+                $Return = [IB_View]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             } elseif ($_Ref -like "networkview/*") {
-                $Record = [IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
+                $Return = [IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             }
-            If ($Record){
+            If ($Return){
 				$Params = $PSBoundParameters
-				$Params.Add('Record',$Record)
+				$Params.Add('Record',$Return)
 				$Params.Remove('_Ref')
 				If ($Params.keys -contains 'Gridmaster'){$Params.Remove('Gridmaster')}
 				If ($Params.keys -contains 'Credential'){$Params.Remove('Credential')}
-                Set-IBDNSARecord @Params
+                Set-IBView @Params
             }
         } else {
             foreach ($item in $Record){
