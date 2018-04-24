@@ -18,9 +18,9 @@ environment:
   AzureTenantID:
     secure: 9dde4IdsaFmMXI+c8qpfltOt1vXkebzQldt43KK3i8ips7SWYUw8M3Z0ueHZkJcx
   AzureAppLoginID:
-    secure: RR3dytQ/WOKebiD59/K+tglatUeWFHk+Q1SWJOdk6QgCEkT8wlerbO9ZneIpkuyu
+    secure: scxpRnV18pop8UHxnkFwxS3T7NYAOAaUMKuyUL4nakfbjHp9DzIYgx9DI7PJcbEY
   AzurePassword:
-    secure: cYTE5h+K9ASAQnsB5fphs58/K66MN2YqHKVT9u1fXgRxgFd4RmVsBr7DVaRh6vHA
+    secure: ZeI2G27a3EEHiI8KAK/Y32hUkhhwHv+jJWTvzx5cFyV1eUXFzrBdGhU2RXJMsDYr
   PSGalleryAPIKey:
     secure: xDwME6mHDFid5MFHB4Vi2HRYZo35I0a8fceT8LR8feHLhroh9jRJIOnvSyPnB89J
 build: false
