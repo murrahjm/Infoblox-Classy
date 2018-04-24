@@ -47,9 +47,14 @@ Function Set-IBView{
             } elseif ($_Ref -like "networkview/*") {
                 $Record = [IB_NetworkView]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             }
-                If ($Record){
-                    $Record | Set-IBView -name $Name -Comment $Comment -Passthru:$Passthru
-                }
+            If ($Record){
+				$Params = $PSBoundParameters
+				$Params.Add('Record',$Record)
+				$Params.Remove('_Ref')
+				If ($Params.keys -contains 'Gridmaster'){$Params.Remove('Gridmaster')}
+				If ($Params.keys -contains 'Credential'){$Params.Remove('Credential')}
+                Set-IBDNSARecord @Params
+            }
         } else {
             foreach ($item in $Record){
                 If ($pscmdlet.shouldProcess($item)){

@@ -49,7 +49,12 @@ Function Set-IBDNSARecord{
 			
             $Record = [IB_DNSARecord]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             If ($Record){
-                $Record | Set-IBDNSARecord -IPAddress $IPAddress -Comment $Comment -TTL $TTL -ClearTTL:$ClearTTL -Passthru:$Passthru
+				$Params = $PSBoundParameters
+				$Params.Add('Record',$Record)
+				$Params.Remove('_Ref')
+				If ($Params.keys -contains 'Gridmaster'){$Params.Remove('Gridmaster')}
+				If ($Params.keys -contains 'Credential'){$Params.Remove('Credential')}
+                Set-IBDNSARecord @Params
             }
 			
         }else {

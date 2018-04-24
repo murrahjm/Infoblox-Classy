@@ -46,7 +46,12 @@ Function Set-IBFixedAddress{
 			
             $Record = [IB_FixedAddress]::Get($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$_Ref)
             If ($Record){
-                $Record | Set-IBFixedAddress -Name $Name -Comment $Comment -mac $MAC -Passthru:$Passthru
+				$Params = $PSBoundParameters
+				$Params.Add('Record',$Record)
+				$Params.Remove('_Ref')
+				If ($Params.keys -contains 'Gridmaster'){$Params.Remove('Gridmaster')}
+				If ($Params.keys -contains 'Credential'){$Params.Remove('Credential')}
+                Set-IBDNSARecord @Params
             }
 			
         }else {
