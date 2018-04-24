@@ -137,7 +137,7 @@ Aliases:
 
 Required: False
 Position: Named
-Default value: Unspecified
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
@@ -153,7 +153,7 @@ Aliases:
 
 Required: False
 Position: Named
-Default value: Unspecified
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

@@ -10,7 +10,7 @@ Function Get-IBNetwork {
 		[System.Management.Automation.Credential()]
 		$Credential,
 
-        [Parameter(ParameterSetName='byQuery')]
+        [Parameter(ParameterSetName='byQuery',Position=1)]
         [ValidateScript({If ($_ -match '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$') {
             $True
         } else {

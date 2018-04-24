@@ -10,7 +10,7 @@ Function Get-IBDNSCNameRecord {
 		[System.Management.Automation.Credential()]
 		$Credential,
 
-		[Parameter(ParameterSetName='byQuery')]
+		[Parameter(ParameterSetName='byQuery',Position=1)]
 		[String]$Name,
 
 		[Parameter(ParameterSetName='byQuery')]

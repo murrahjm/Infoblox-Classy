@@ -60,10 +60,8 @@ Class IB_lease : IB_ReferenceObject {
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
 		$return = Invoke-RestMethod -URI $URI -WebSession $Session
-		#filter return 
-        $output = @()
-        Foreach ($item in $return){
-            $output += [IB_lease]::New($item.client_hostname,
+        [array]$output = Foreach ($item in $return){
+            [IB_lease]::New($item.client_hostname,
                                         $item.address,
                                         $item._ref,
                                         $item.network_view,

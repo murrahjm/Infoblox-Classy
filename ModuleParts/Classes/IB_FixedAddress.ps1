@@ -93,9 +93,8 @@ Class IB_FixedAddress : IB_ReferenceObject {
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
         $return = Invoke-RestMethod -URI $URI -WebSession $Session
-        $output = @()
-        Foreach ($item in $return){
-            $output += [IB_FixedAddress]::New($item.name,
+        [array]$output = Foreach ($item in $return){
+            [IB_FixedAddress]::New($item.name,
 											  $item.ipv4addr,
 											  $item.comment,
 											  $item._ref,

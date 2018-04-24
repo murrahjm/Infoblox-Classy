@@ -10,7 +10,7 @@ Function Get-IBFixedAddress {
 		[System.Management.Automation.Credential()]
 		$Credential,
 
-		[Parameter(ParameterSetName='byQuery')]
+		[Parameter(ParameterSetName='byQuery',Position=1)]
 		[IPAddress]$IPAddress,
 
 		[Parameter(ParameterSetName='byQuery')]

@@ -53,11 +53,11 @@ Function Set-IBView{
         } else {
             foreach ($item in $Record){
                 If ($pscmdlet.shouldProcess($item)){
-                    If ($PSBoundParameters.Keys -contains 'comment'){
+                    If ($PSBoundParameters.keys -contains 'comment'){
                         write-verbose "$FunctionName`:  Setting comment to $comment"
                         $item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$item.Name, $Comment)
                     }
-                    If ($PSBoundParameters.Keys -contains 'Name'){
+                    If ($PSBoundParameters.keys -contains 'Name'){
                         write-verbose "$FunctionName`:  Setting name to $Name"
                         $item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $item.comment)
                     }

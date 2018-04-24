@@ -81,9 +81,8 @@ Class IB_ZoneAuth : IB_ReferenceObject {
         $URI += "_return_fields=$ReturnFields"
         write-verbose "URI String:  $URI"
         $return = Invoke-RestMethod -Uri $URI -WebSession $Session
-        $output = @()
-        Foreach ($Item in $Return){
-            $output += [IB_ZoneAuth]::New($item.fqdn,
+        [array]$output = Foreach ($Item in $Return){
+            [IB_ZoneAuth]::New($item.fqdn,
                                          $item.View,
                                          $item.zone_format,
                                          $item.Comment,

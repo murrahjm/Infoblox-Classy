@@ -10,7 +10,7 @@ Function Get-IBDNSZone {
 		[System.Management.Automation.Credential()]
 		$Credential,
 
-        [Parameter(ParameterSetName='byQuery')]
+        [Parameter(ParameterSetName='byQuery',Position=1)]
         [String]$FQDN,
 		
         [Parameter(ParameterSetName='byQuery')]

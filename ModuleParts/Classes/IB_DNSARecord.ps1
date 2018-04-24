@@ -106,10 +106,9 @@ Class IB_DNSARecord : IB_ReferenceObject {
 		$URI += "_return_fields=$ReturnFields"
 		write-verbose "URI String:  $URI"
         $return = Invoke-RestMethod -URI $URI -WebSession $Session
-        $output = @()
-		Foreach ($item in $return){
+		[array]$output = Foreach ($item in $return){
 			If ($item.ipv4addr.length -eq 0){$item.ipv4addr = $Null}
-			$output += [IB_DNSARecord]::New($item.name,
+			[IB_DNSARecord]::New($item.name,
 											$item.ipv4addr,
 											$item.comment,
 											$item._ref,

@@ -52,15 +52,15 @@ Function Set-IBFixedAddress{
         }else {
 			Foreach ($Item in $Record){
 				If ($pscmdlet.ShouldProcess($Item)) {
-					If ($PSBoundParameters.Keys -contains 'Name'){
+					If ($PSBoundParameters.keys -contains 'Name'){
 						write-verbose "$FunctionName`:  Setting Name to $Name"
 						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Name, $Item.Comment, $Item.MAC)
 					}
-					If ($PSBoundParameters.Keys -contains 'Comment'){
+					If ($PSBoundParameters.keys -contains 'comment'){
 						write-verbose "$FunctionName`:  Setting comment to $comment"
 						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Item.Name, $Comment, $Item.MAC)
 					}
-					If ($PSBoundParameters.Keys -contains 'MAC'){
+					If ($PSBoundParameters.keys -contains 'MAC'){
 						write-verbose "$FunctionName`:  Setting MAC to $MAC"
 						$Item.Set($Script:IBGridmaster,$Script:IBSession,$Script:IBWapiVersion,$Item.Name, $Item.Comment, $MAC)
 					}
