@@ -15,12 +15,12 @@ environment:
   location: SouthCentralUS
   IBAdminPassword:
     secure: +Yhi3I1uR1xjocdrPn5HGA==
-  AzurePassword:
-    secure: YsJNS6K8bf+aQp94gs6CJA==
   AzureTenantID:
     secure: 9dde4IdsaFmMXI+c8qpfltOt1vXkebzQldt43KK3i8ips7SWYUw8M3Z0ueHZkJcx
   AzureAppLoginID:
-    secure: eeRsMl/TAFnKPf6nqz/GlZ1PRdvIj/QhgSOqWDalQAQy5o+4OW8J5bWrZAp+rp7McQ6C/GAgkr6ypF0vTmA4ysAYsCcwqwBOzIxze2KQwaI=
+    secure: RR3dytQ/WOKebiD59/K+tglatUeWFHk+Q1SWJOdk6QgCEkT8wlerbO9ZneIpkuyu
+  AzurePassword:
+    secure: cYTE5h+K9ASAQnsB5fphs58/K66MN2YqHKVT9u1fXgRxgFd4RmVsBr7DVaRh6vHA
   PSGalleryAPIKey:
     secure: xDwME6mHDFid5MFHB4Vi2HRYZo35I0a8fceT8LR8feHLhroh9jRJIOnvSyPnB89J
 build: false
