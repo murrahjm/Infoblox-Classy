@@ -49,8 +49,8 @@ Function Set-IBView{
 				$Params = $PSBoundParameters
 				$Params.Add('Record',$Return)
 				$Params.Remove('_Ref') | Out-Null
-				If ($Params.keys -contains 'Gridmaster'){$Params.Remove('Gridmaster')}
-				If ($Params.keys -contains 'Credential'){$Params.Remove('Credential')}
+				If ($Params.keys -contains 'Gridmaster'){$Params.Remove('Gridmaster') | out-null}
+				If ($Params.keys -contains 'Credential'){$Params.Remove('Credential') | out-null}
                 Set-IBView @Params
             }
         } else {
