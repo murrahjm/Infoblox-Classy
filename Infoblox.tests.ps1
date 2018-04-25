@@ -3009,10 +3009,10 @@ Describe "Remove-IBNetwork tests" {
 	}
 	It "deletes multiple parent networks through byRef method" {
 		$networks = get-ibnetwork -network 12.0.0.0/8
-		$Networks | foreach-object{
-			$Result = Remove-IBNetwork -_Ref $_._ref -confirm:$False -verbose:$False
-			$Result | should be $_._ref
-			{get-ibnetwork -_ref $_._ref} | should throw
+		foreach ($network in $Networks){
+			$Result = Remove-IBNetwork -_Ref $network._ref -confirm:$False -verbose:$False
+			$Result | should be $network._ref
+			{get-ibnetwork -_ref $network._ref} | should throw
 		}
 	}
 }
